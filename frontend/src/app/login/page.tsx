@@ -12,9 +12,9 @@ function LoginPageInner() {
   const [email, setEmail] = useState('nkashyapnikhilnk@gmail.com'); 
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
-      const [isOtpMode, setIsOtpMode] = useState(false);
-    const [otpSent, setOtpSent] = useState(false);
-      const [isLoading, setIsLoading] = useState(false);
+  const [isOtpMode, setIsOtpMode] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const { login, verifyEmailLink } = useAuth();
   const searchParams = useSearchParams();
@@ -121,41 +121,6 @@ function LoginPageInner() {
     }
   };
 
-  const handleRequestPhoneOtp = async () => {
-    if (!phone) return toast.error('Phone number required');
-    setIsLoading(true);
-    try {
-      const confirmation = await signInWithPhone(phone);
-      setConfirmationResult(confirmation);
-      setPhoneOtpSent(true);
-      toast.success('Phone OTP sent!');
-    } catch (error) {
-      toast.error('Failed to send phone OTP');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyPhoneOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      const result = await confirmationResult.confirm(phoneOtp);
-      const idToken = await result.user.getIdToken();
-      const response = await api.post('/api/auth/firebase-login', { idToken });
-      const { access_token, user: userData } = response.data;
-      login(access_token, userData);
-      toast.success('Phone Verified');
-      if (!userData.roles) {
-        window.location.href = '/role-selection';
-      }
-    } catch (error) {
-      toast.error('Invalid phone OTP');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleLinkedinLogin = () => {
     window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000'}/api/auth/linkedin/start`;
   };
@@ -216,7 +181,7 @@ function LoginPageInner() {
                 {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>Enter Workspace</span> <ArrowRight className="h-4 w-4" /></>}
               </button>
             </motion.form>
-          ) : isOtpMode ? (
+          ) : (
             <motion.form 
               key="otp"
               initial={{ opacity: 0, x: -20 }}
@@ -250,28 +215,7 @@ function LoginPageInner() {
                 </button>
               )}
             </motion.form>
-          ) ) : null}
-
-              {!phoneOtpSent ? (
-                <button 
-                  type="button"
-                  onClick={handleRequestPhoneOtp}
-                  disabled={isLoading || !phone}
-                  className="w-full h-14 bg-secondary text-foreground font-black rounded-2xl flex items-center justify-center space-x-3 active:scale-95 transition-all text-sm uppercase tracking-widest disabled:opacity-50"
-                >
-                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <span>Send Phone OTP</span>}
-                </button>
-              ) : (
-                <button 
-                  type="submit" 
-                  disabled={isLoading}
-                  className="w-full h-14 bg-primary text-primary-foreground font-black rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-center space-x-3 active:scale-95 transition-all text-sm uppercase tracking-widest"
-                >
-                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <span>Verify Phone & Enter</span>}
-                </button>
-              )}
-            </motion.form>
-          ) : null}
+          )}
         </AnimatePresence>
 
         <div className="relative my-10 text-center uppercase">
@@ -291,9 +235,6 @@ function LoginPageInner() {
           New here? <a href="/signup" className="text-primary hover:underline">Register Identity</a>
         </p>
       </motion.div>
-
-      {/* reCAPTCHA container */}
-      <div id="recaptcha-container"></div>
     </div>
   );
 }
