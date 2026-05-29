@@ -105,8 +105,6 @@ def request_email_otp(data: schemas.OTPRequest, db: Session = Depends(database.g
         raise HTTPException(status_code=500, detail="Failed to send OTP email")
 
     response: dict = {"message": "OTP sent."}
-    if settings.OTP_DEBUG_RETURN_CODE:
-        response["debug_code"] = otp
     return response
 
 

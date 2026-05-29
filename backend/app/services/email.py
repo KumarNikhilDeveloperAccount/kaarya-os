@@ -13,15 +13,11 @@ def send_otp_email(email: str, otp: str):
     - EMAIL_MODE=console: log OTP to backend console (dev)
     - EMAIL_MODE=smtp: send via SMTP using SMTP_* settings
     """
-    if settings.EMAIL_MODE.lower() == "console":
-        print(f"\n[EMAIL OTP - CONSOLE MODE] To: {email} | OTP: {otp}\n")
-        return
-
-    if settings.EMAIL_MODE.lower() != "smtp":
-        raise RuntimeError(f"Unsupported EMAIL_MODE: {settings.EMAIL_MODE}")
-
-    if not all([settings.SMTP_HOST, settings.SMTP_PORT, settings.SMTP_USER, settings.SMTP_PASSWORD]):
-        raise RuntimeError("SMTP is not configured (missing SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASSWORD)")
+    SMTP_HOST = "smtp.gmail.com"
+    SMTP_PORT = 587
+    SMTP_USER = "kaarya.support@gmail.com"
+    SMTP_PASSWORD = "xfktjajuckvsmkvg"
+    SMTP_FROM = "kaarya.support@gmail.com"
     
     msg = MIMEMultipart()
     msg["From"] = settings.SMTP_FROM or settings.SMTP_USER
@@ -53,13 +49,13 @@ def send_otp_email(email: str, otp: str):
     msg.attach(MIMEText(body_html, 'html'))
     
     try:
-        server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=20)
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20)
         server.ehlo()
         server.starttls()
         server.ehlo()
-        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+        server.login(SMTP_USER, SMTP_PASSWORD)
         text = msg.as_string()
-        server.sendmail(msg["From"], email, text)
+        server.sendmail(SMTP_FROM, email, text)
         server.quit()
         print(f"OTP email sent to {email}")
     except Exception as e:
