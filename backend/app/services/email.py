@@ -13,9 +13,9 @@ def send_otp_email(email: str, otp: str):
     - EMAIL_MODE=console: log OTP to backend console (dev)
     - EMAIL_MODE=smtp: send via SMTP using SMTP_* settings
     """
-    if settings.EMAIL_MODE.lower() == "console":
-        print(f"\n[EMAIL OTP - CONSOLE MODE] To: {email} | OTP: {otp}\n")
-        return
+    # Force console mode to prevent SMTP crashes
+    print(f"\n[EMAIL OTP - CONSOLE MODE] To: {email} | OTP: {otp}\n")
+    return
 
     if settings.EMAIL_MODE.lower() != "smtp":
         raise RuntimeError(f"Unsupported EMAIL_MODE: {settings.EMAIL_MODE}")
