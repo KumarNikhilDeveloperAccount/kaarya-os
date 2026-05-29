@@ -61,7 +61,8 @@ export default function SignupPage() {
       setOtpSent(true);
       toast.success('OTP sent to your email');
       if (response.data.debug_code) {
-        toast.message(`Debug: OTP is ${response.data.debug_code}`);
+        setOtp(response.data.debug_code);
+        toast.info(`[Test Mode] OTP Auto-filled: ${response.data.debug_code}`);
       }
     } catch (err) {
       toast.error('Failed to send OTP');
