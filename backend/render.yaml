@@ -16,6 +16,14 @@ services:
       - key: ALGORITHM
         value: HS256
       - key: EMAIL_MODE
-        value: console
+        value: smtp
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        value: kaarya.support@gmail.com
+      - key: SMTP_PASSWORD
+        value: ALksdjhfvgmz#@202
       - key: FRONTEND_BASE_URL
         value: https://frontend-two-steel-22.vercel.app

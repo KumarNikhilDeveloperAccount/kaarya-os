@@ -28,8 +28,29 @@ def send_otp_email(email: str, otp: str):
     msg['To'] = email
     msg['Subject'] = "Kaarya.OS High-Security Verify"
     
-    body = f"Your OTP is {otp}. Do not share this with anyone."
-    msg.attach(MIMEText(body, 'plain'))
+    body_html = f"""
+    <html>
+      <body style="margin: 0; padding: 0; font-family: 'Inter', sans-serif; background-color: #030014; color: #fff;">
+        <div style="max-w-md; margin: 40px auto; padding: 40px; background-color: #0b0f19; border: 1px solid #1e293b; border-radius: 20px; text-align: center;">
+          
+          <img src="https://frontend-two-steel-22.vercel.app/logo.svg" alt="Kaarya.OS Logo" style="height: 60px; margin-bottom: 20px;" />
+          
+          <h2 style="background: linear-gradient(to right, #6366f1, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 24px; font-weight: 900; margin-bottom: 10px;">Security Gateway</h2>
+          
+          <p style="color: #94a3b8; font-size: 14px; letter-spacing: 2px; text-transform: uppercase;">Identity Verification</p>
+          
+          <div style="background-color: #030014; padding: 20px; border-radius: 12px; margin: 30px 0;">
+            <span style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #fff;">{otp}</span>
+          </div>
+          
+          <p style="color: #64748b; font-size: 12px; margin-top: 30px;">
+            This access code will expire in 10 minutes. Do not share this code with anyone.
+          </p>
+        </div>
+      </body>
+    </html>
+    """
+    msg.attach(MIMEText(body_html, 'html'))
     
     try:
         server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=20)

@@ -12,16 +12,11 @@ function LoginPageInner() {
   const [email, setEmail] = useState('nkashyapnikhilnk@gmail.com'); 
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
-  const [phone, setPhone] = useState('9315600875');
-  const [phoneOtp, setPhoneOtp] = useState('');
-  const [isOtpMode, setIsOtpMode] = useState(false);
-  const [isPhoneMode, setIsPhoneMode] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
+      const [isOtpMode, setIsOtpMode] = useState(false);
+    const [otpSent, setOtpSent] = useState(false);
+      const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login, signInWithPhone, verifyEmailLink } = useAuth();
+  const { login, verifyEmailLink } = useAuth();
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -186,27 +181,22 @@ function LoginPageInner() {
 
         <div className="flex bg-secondary p-1 rounded-2xl mb-8">
            <button 
-             onClick={() => { setIsOtpMode(false); setIsPhoneMode(false); }}
-             className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${!isOtpMode && !isPhoneMode ? 'bg-background shadow-lg text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+             onClick={() => { setIsOtpMode(false); }}
+             className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${!isOtpMode ? 'bg-background shadow-lg text-primary' : 'text-muted-foreground hover:text-foreground'}`}
            >
              Password
            </button>
            <button 
-             onClick={() => { setIsOtpMode(true); setIsPhoneMode(false); }}
-             className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${isOtpMode && !isPhoneMode ? 'bg-background shadow-lg text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+             onClick={() => { setIsOtpMode(true); }}
+             className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${isOtpMode ? 'bg-background shadow-lg text-primary' : 'text-muted-foreground hover:text-foreground'}`}
            >
              Email OTP
            </button>
-           <button 
-             onClick={() => { setIsPhoneMode(true); setIsOtpMode(false); }}
-             className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${isPhoneMode ? 'bg-background shadow-lg text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-           >
-             Phone OTP
-           </button>
+           
         </div>
 
         <AnimatePresence mode="wait">
-          {!isOtpMode && !isPhoneMode ? (
+          {!isOtpMode ? (
             <motion.form 
               key="password"
               initial={{ opacity: 0, x: -20 }}
@@ -226,7 +216,7 @@ function LoginPageInner() {
                 {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><span>Enter Workspace</span> <ArrowRight className="h-4 w-4" /></>}
               </button>
             </motion.form>
-          ) : isOtpMode && !isPhoneMode ? (
+          ) : isOtpMode ? (
             <motion.form 
               key="otp"
               initial={{ opacity: 0, x: -20 }}
@@ -260,20 +250,7 @@ function LoginPageInner() {
                 </button>
               )}
             </motion.form>
-          ) : isPhoneMode ? (
-            <motion.form 
-              key="phone"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              onSubmit={handleVerifyPhoneOtp} 
-              className="space-y-6"
-            >
-              <InputGroup label="Phone Number" icon={<Key className="h-4 w-4" />} value={phone} onChange={setPhone} type="tel" placeholder="+1234567890" />
-              
-              {phoneOtpSent ? (
-                <InputGroup label="Phone Verification Code" icon={<Key className="h-4 w-4" />} value={phoneOtp} onChange={setPhoneOtp} type="text" placeholder="6-digit code" />
-              ) : null}
+          ) ) : null}
 
               {!phoneOtpSent ? (
                 <button 

@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Kaarya.OS",
   description: "Hiring, decided.",
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 import { Toaster } from "sonner";

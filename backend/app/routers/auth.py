@@ -200,8 +200,8 @@ def linkedin_start(request: Request):
     state = "mock_state_123"
     url = f"{settings.FRONTEND_BASE_URL.rstrip('/')}/api/auth/linkedin/callback?code=mock_linkedin_code_123&state={state}"
     
-    # Wait, the redirect should be to the backend API callback!
-    url = f"http://127.0.0.1:8000/api/auth/linkedin/callback?code=mock_linkedin_code_123&state={state}"
+    base_url = str(request.base_url).rstrip('/')
+    url = f"{base_url}/api/auth/linkedin/callback?code=mock_linkedin_code_123&state={state}"
     resp = RedirectResponse(url=url, status_code=302)
     resp.set_cookie("li_oauth_state", state)
     return resp

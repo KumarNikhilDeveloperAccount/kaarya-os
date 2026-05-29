@@ -45,15 +45,22 @@ async def log_requests(request: Request, call_next):
 async def health_check():
     return {"status": "healthy", "message": "Kaarya.OS API is running"}
 
-# CORS refinement: '*' is incompatible with 'allow_credentials=True' for authenticated requests.
+import os
+
+# Build origins list dynamically
+origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+]
+frontend_url = os.environ.get("FRONTEND_BASE_URL")
+if frontend_url:
+    origins.append(frontend_url.rstrip('/'))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-    ],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
