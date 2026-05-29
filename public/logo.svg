@@ -1,34 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" width="100%" height="100%">
-  <!-- Defs for Gradients -->
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="128" fill="url(#grad_bg)" />
+  <path d="M150 120V392" stroke="white" stroke-width="56" stroke-linecap="round" />
+  <path d="M366 128L190 256L366 384" stroke="white" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" />
   <defs>
-    <linearGradient id="magnifyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#8b5cf6" />
-      <stop offset="100%" stop-color="#3b82f6" />
-    </linearGradient>
-    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#c4b5fd" />
-      <stop offset="100%" stop-color="#93c5fd" />
+    <linearGradient id="grad_bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#4F46E5" />
     </linearGradient>
   </defs>
-
-  <!-- Magnifying Glass / Person Icon -->
-  <g transform="translate(20, 20)">
-    <!-- Glass Handle -->
-    <line x1="55" y1="55" x2="80" y2="80" stroke="url(#magnifyGradient)" stroke-width="12" stroke-linecap="round" />
-    
-    <!-- Glass Circle -->
-    <circle cx="35" cy="35" r="30" fill="none" stroke="url(#magnifyGradient)" stroke-width="8" />
-    
-    <!-- Inner Person -->
-    <!-- Head -->
-    <circle cx="35" cy="25" r="10" fill="#a78bfa" />
-    <!-- Shoulders -->
-    <path d="M 15 50 Q 35 30 55 50 Z" fill="#a78bfa" />
-  </g>
-
-  <!-- Text Kaarya.os -->
-  <text x="120" y="65" font-family="'Inter', sans-serif" font-weight="900" font-size="42" fill="url(#textGradient)">Kaarya.os</text>
-  
-  <!-- Subtitle -->
-  <text x="125" y="85" font-family="'Inter', sans-serif" font-weight="600" font-size="12" fill="#64748b" letter-spacing="2">SEARCHING THE GENIUS..</text>
 </svg>
