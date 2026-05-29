@@ -142,9 +142,9 @@ function LoginPageInner() {
         className="w-full max-w-md p-10 bg-card border border-border/50 shadow-2xl rounded-[3rem] relative z-10 backdrop-blur-sm"
       >
         <div className="text-center mb-10">
-          <div className="flex justify-center mb-6">
-              <div className="relative w-48 h-16">
-                <Image src="/logo-dark.png" alt="Kaarya OS Logo" fill className="object-contain" />
+            <div className="flex justify-center mb-6">
+              <div className="relative w-24 h-24 rounded-[2rem] overflow-hidden shadow-2xl">
+                <Image src="/logo.png" alt="Kaarya OS Logo" fill className="object-contain" />
               </div>
             </div>
           <h1 className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-500 tracking-tighter">Kaarya.OS</h1>
