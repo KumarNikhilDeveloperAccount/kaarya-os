@@ -4,9 +4,9 @@ import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, ShieldCheck, Key, Linkedin, ArrowRight, Loader2, Sparkles } from 'lucide-react';
-import { toast } from 'sonner';
-import { useSearchParams } from 'next/navigation';
+import { Mail, Lock, Key, Linkedin, ArrowRight, Loader2, Phone } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 
 function LoginPageInner() {
@@ -142,9 +142,11 @@ function LoginPageInner() {
         className="w-full max-w-md p-10 bg-card border border-border/50 shadow-2xl rounded-[3rem] relative z-10 backdrop-blur-sm"
       >
         <div className="text-center mb-10">
-          <div className="inline-flex relative w-16 h-16 rounded-2xl overflow-hidden mb-4 group hover:scale-110 transition-transform shadow-xl shadow-primary/20">
-             <Image src="/logo.png" alt="Kaarya OS Logo" fill className="object-cover" />
-          </div>
+          <div className="flex justify-center mb-6">
+              <div className="relative w-48 h-16">
+                <Image src="/logo-dark.png" alt="Kaarya OS Logo" fill className="object-contain" />
+              </div>
+            </div>
           <h1 className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-500 tracking-tighter">Kaarya.OS</h1>
           <p className="text-muted-foreground mt-2 font-black uppercase tracking-[0.2em] text-[10px]">Security Gateway</p>
         </div>
