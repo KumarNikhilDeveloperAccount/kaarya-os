@@ -6,8 +6,19 @@ import { Sparkles } from 'lucide-react';
 
 export default function IntroCinematic({ onComplete }: { onComplete: () => void }) {
   const [stage, setStage] = useState(0);
+  const [mounted, setMounted] = useState(false);
+  const [particles, setParticles] = useState<{x: string, y: string, duration: number, delay: number}[]>([]);
 
   useEffect(() => {
+    setMounted(true);
+    setParticles(
+      Array.from({ length: 20 }).map(() => ({
+        x: Math.random() * 100 + '%',
+        y: Math.random() * 100 + '%',
+        duration: Math.random() * 2 + 2,
+        delay: Math.random() * 2
+      }))
+    );
     const timer1 = setTimeout(() => setStage(1), 800);
     const timer2 = setTimeout(() => setStage(2), 2200);
     const timer3 = setTimeout(() => onComplete(), 3200);
@@ -72,24 +83,24 @@ export default function IntroCinematic({ onComplete }: { onComplete: () => void 
 
       {/* Background Micro-particles */}
       <div className="absolute inset-0 pointer-events-none opacity-20">
-        {[1, 2, 3, 4, 5].map((i) => (
+        {particles.map((p, i) => (
           <motion.div
             key={i}
             className="absolute w-1 h-1 bg-primary rounded-full"
             initial={{ 
-              x: Math.random() * 100 + '%', 
-              y: Math.random() * 100 + '%', 
+              x: p.x, 
+              y: p.y, 
               scale: 0 
             }}
             animate={{ 
-              y: ['0%', '100%'], 
+              y: [null, '100%'],
               scale: [0, 1, 0],
               opacity: [0, 1, 0]
             }}
             transition={{ 
-              duration: Math.random() * 2 + 2, 
+              duration: p.duration, 
               repeat: Infinity,
-              delay: Math.random() * 2 
+              delay: p.delay 
             }}
           />
         ))}
