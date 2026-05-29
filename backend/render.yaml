@@ -18,4 +18,4 @@ services:
       - key: EMAIL_MODE
         value: console
       - key: FRONTEND_BASE_URL
-        value: https://frontend-3ctdpgfy7-kumarnikhildeveloperaccounts-projects.vercel.app
+        value: https://frontend-two-steel-22.vercel.app
