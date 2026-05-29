@@ -70,7 +70,7 @@ export default function Sidebar({ role = 'candidate', onPersonaSwitch = () => {}
       <div className="h-16 flex items-center px-8 border-b border-border/50 mb-6">
         <Link href="/" className="group flex items-center space-x-3">
             <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-xl border border-white/10 group-hover:scale-110 transition-transform duration-300">
-             <Image src="/kaarya-logo-main.png" alt="Kaarya OS Logo" fill className="object-cover" />
+             <Image src="/kaarya-logo-final.png" alt="Kaarya OS Logo" fill className="object-cover" />
             </div>
           <h1 className="text-xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/80">Kaarya.OS</h1>
         </Link>

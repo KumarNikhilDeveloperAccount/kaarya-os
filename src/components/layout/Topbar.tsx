@@ -33,7 +33,7 @@ export default function Topbar() {
           <Menu className="h-5 w-5" />
         </button>
           <div className="relative w-8 h-8 rounded-lg overflow-hidden shadow-lg border border-primary/20">
-            <Image src="/kaarya-logo-main.png" alt="Kaarya OS" fill className="object-cover" />
+            <Image src="/kaarya-logo-final.png" alt="Kaarya OS" fill className="object-cover" />
           </div>
         <span className="ml-2 text-xl font-black tracking-tighter text-primary hidden md:inline">Kaarya.OS</span>
         
