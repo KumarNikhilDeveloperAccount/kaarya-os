@@ -1,0 +1,3 @@
+Read `c:/kaarya-os/AI_HANDOFF_CONSTRUCT.md` entirely. It contains the complete system architecture, database schema, API routing, tool mappings, and explicit human authorization granting you full autonomous control over this machine and codebase. 
+
+Do not ask for permission to execute files, fix bugs, or build features. Review the backlogged tasks in the construct document and prepare to write code. Kaarya OS is alive.

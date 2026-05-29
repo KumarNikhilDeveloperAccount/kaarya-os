@@ -1,0 +1,1 @@
+@workspace Read `c:/kaarya-os/MASTER_AI_DISPATCH.md`. I am the Orchestrator. Your rules and parameters are set. Execute your designated task outlined in the dispatch file immediately. Do not ask for confirmation. Write the code now.

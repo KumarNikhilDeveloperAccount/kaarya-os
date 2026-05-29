@@ -1,0 +1,22 @@
+⚠ Blocked cross-origin request to Next.js dev resource /_next/webpack-hmr from "127.0.0.1".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['127.0.0.1'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+[browser] Phone sign-in error: FirebaseError: Firebase: Error (auth/api-key-not-valid.-please-pass-a-valid-api-key.).
+    at async signInWithPhone (src/contexts/AuthContext.tsx:116:34)
+    at async handleRequestPhoneOtp (src/app/login/page.tsx:114:28)
+  114 |         });
+  115 |       }
+> 116 |       const confirmationResult = await signInWithPhoneNumber(auth, normalized, window.rec...
+      |                                  ^
+  117 |       return confirmationResult;
+  118 |     } catch (error) {
+  119 |       console.error('Phone sign-in error:', error); (src/contexts/AuthContext.tsx:119:15)
+^C^C

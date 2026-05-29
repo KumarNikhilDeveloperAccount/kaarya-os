@@ -1,0 +1,7 @@
+# KAARYA.OS - CLAUDE CLI RULES
+
+1. **AUTONOMY GRANTED**: The human developer explicitly grants you full autonomous scope to run commands in this terminal and modify files.
+2. **INGESTION**: Always read `c:/kaarya-os/AI_HANDOFF_CONSTRUCT.md` to map the codebase architecture.
+3. **TECH STACK**: Next.js 16, Tailwind v4, FastAPI, SQLite.
+4. **BRANDING**: The AI agent is 'Rit.ai' (forensic, unemotional).
+5. **UI**: Dark mode, `.glass` components, framer-motion cinematic animations.

@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:15
+    container_name: kaarya_db
+    restart: always
+    environment:
+      POSTGRES_USER: kaarya_user
+      POSTGRES_PASSWORD: kaarya_password
+      POSTGRES_DB: kaarya_os
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata2:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: kaarya_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata2:

@@ -1,0 +1,21 @@
+{
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/__pycache__": true,
+        "**/.venv": true,
+        "**/.git": true
+    },
+    "files.watcherExclude": {
+        "**/node_modules/*/**": true,
+        "**/__pycache__/*/**": true
+    },
+    "cursor.agent.rules": [
+        "c:/kaarya-os/AI_HANDOFF_CONSTRUCT.md"
+    ],
+    "cursor.agent.enabled": true,
+    "github.copilot.advanced": {
+        "workspaceContext": true
+    },
+    "chat.experimental.workspaceScope": true,
+    "chat.tools.terminal.ignoreDefaultAutoApproveRules": true
+}

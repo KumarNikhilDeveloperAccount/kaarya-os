@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+@layer base {
+  .classic {
+    --background: #fdfdfd;
+    --foreground: #020617;
+    --card: #ffffff;
+    --card-foreground: #020617;
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    --secondary: #f1f5f9;
+    --secondary-foreground: #0f172a;
+    --muted: #f8fafc;
+    --muted-foreground: #64748b;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #3b82f6;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: #020205;
+    --foreground: #f8fafc;
+    --card: #0a0a0f;
+    --card-foreground: #f8fafc;
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    --secondary: #12121e;
+    --secondary-foreground: #f8fafc;
+    --muted: #0c0c14;
+    --muted-foreground: #64748b;
+    --border: #1e1e2d;
+    --input: #1e1e2d;
+    --ring: #3b82f6;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-card/60 backdrop-blur-xl border border-white/5 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)];
+  }
+  .glass-primary {
+    @apply bg-primary/10 backdrop-blur-md border border-primary/20 shadow-lg shadow-primary/5;
+  }
+  .text-glow {
+    text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+  }
+
+  /* Crisp chat safety: avoid mobile overlays clashing with UI */
+  @media (max-width: 768px) {
+    #crisp-chatbox,
+    .crisp-client,
+    .crisp-client * {
+      z-index: 30 !important;
+    }
+    .crisp-client .cc-kv6t {
+      bottom: 84px !important;
+    }
+  }
+}
+
+@layer base {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/20 rounded-full hover:bg-primary/40 transition-colors;
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    @apply antialiased;
+  }
+}

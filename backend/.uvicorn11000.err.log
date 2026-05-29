@@ -1,0 +1,8 @@
+Google GenAI SDK not installed; Rit.ai features will run in offline mode.
+GEMINI_API_KEY is missing in settings.
+INFO:     Started server process [20400]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:11000 (Press CTRL+C to quit)
+2026-04-27 06:00:53,452 [INFO] app.main: RID: c7d8ddb0-83ba-4f53-96fb-2c4fe49f92d4 | Method: GET | Path: /api/health | Status: 200 | Duration: 0.0013s
+2026-04-27 06:01:05,500 [INFO] app.main: RID: a37761ad-381a-4dde-aded-0dc94a924574 | Method: POST | Path: /api/auth/otp/request | Status: 200 | Duration: 0.5486s

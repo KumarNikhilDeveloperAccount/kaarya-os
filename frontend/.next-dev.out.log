@@ -1,0 +1,14 @@
+
+> frontend@0.1.0 dev
+> next dev --port 3000
+
+▲ Next.js 16.2.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.31.109:3000
+- Environments: .env.local
+✓ Ready in 738ms
+
+ GET /login 200 in 2.6s (next.js: 1555ms, application-code: 1088ms)
+ GET /login 200 in 59ms (next.js: 5ms, application-code: 54ms)
+ GET /login 200 in 68ms (next.js: 3ms, application-code: 65ms)
+ GET /login 200 in 90ms (next.js: 10ms, application-code: 80ms)
