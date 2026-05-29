@@ -102,7 +102,7 @@ def request_email_otp(data: schemas.OTPRequest, db: Session = Depends(database.g
         send_otp_email(user.email, otp)
     except Exception as e:
         logger.error(f"OTP email send failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to send OTP email")
+        raise HTTPException(status_code=500, detail=f"Failed to send OTP email: {str(e)}")
 
     response: dict = {"message": "OTP sent."}
     return response
