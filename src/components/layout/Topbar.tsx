@@ -32,9 +32,9 @@ export default function Topbar() {
         <button className="p-2 -ml-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors md:hidden">
           <Menu className="h-5 w-5" />
         </button>
-        <div className="w-8 h-8 relative rounded-lg overflow-hidden flex items-center justify-center md:hidden ml-2">
-            <Image src="/logo.png" alt="Kaarya OS" fill className="object-cover" />
-        </div>
+          <div className="relative w-8 h-8 rounded-lg overflow-hidden shadow-lg border border-primary/20">
+            <Image src="/kaarya-logo-main.png" alt="Kaarya OS" fill className="object-cover" />
+          </div>
         <span className="ml-2 text-xl font-black tracking-tighter text-primary hidden md:inline">Kaarya.OS</span>
         
         <div className="hidden md:flex ml-8 items-center space-x-2">

@@ -157,7 +157,7 @@ export default function SignupPage() {
           <Link href="/" className="inline-flex flex-col items-center mb-6 group">
             <div className="flex justify-center mb-6">
               <div className="relative w-24 h-24 rounded-[2rem] overflow-hidden shadow-2xl">
-                <Image src="/logo.png" alt="Kaarya OS Logo" fill className="object-contain" />
+                <Image src="/kaarya-logo-main.png" alt="Kaarya OS Logo" fill className="object-contain" />
               </div>
             </div>
             <h1 className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-400 tracking-tighter group-hover:scale-105 transition-transform">
