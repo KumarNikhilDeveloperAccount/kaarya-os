@@ -1,0 +1,10 @@
+{
+  "name": "kaarya-os-monorepo",
+  "version": "1.0.0",
+  "dependencies": {
+    "next": "14.0.0"
+  },
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build"
+  }
+}
