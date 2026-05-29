@@ -7,6 +7,7 @@ import {
   Users, Building, GraduationCap, Briefcase, BarChart,
   ShieldCheck, Zap, Bell, CreditCard, HelpCircle
 } from 'lucide-react';
+import Image from 'next/image';
 import PerspectiveSwitcher from './PerspectiveSwitcher';
 import { motion } from 'framer-motion';
 
@@ -68,8 +69,8 @@ export default function Sidebar({ role = 'candidate', onPersonaSwitch = () => {}
     <aside className="w-72 h-screen bg-card border-r border-border flex flex-col hidden md:flex sticky top-0 transition-colors duration-500">
       <div className="h-16 flex items-center px-8 border-b border-border/50 mb-6">
         <Link href="/" className="group flex items-center space-x-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white ring-4 ring-primary/10 group-hover:scale-110 transition-transform">
-             <Zap className="h-4 w-4 fill-current" />
+          <div className="w-8 h-8 relative rounded-lg overflow-hidden flex items-center justify-center ring-4 ring-primary/10 group-hover:scale-110 transition-transform">
+             <Image src="/logo.png" alt="Kaarya OS Logo" fill className="object-cover" />
           </div>
           <h1 className="text-xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/80">Kaarya.OS</h1>
         </Link>

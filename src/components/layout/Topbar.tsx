@@ -8,6 +8,7 @@ import { openRit } from '../rit/RitPanel';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function Topbar() {
   const [profileOpen, setProfileOpen] = useState(false);
@@ -31,7 +32,10 @@ export default function Topbar() {
         <button className="p-2 -ml-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors md:hidden">
           <Menu className="h-5 w-5" />
         </button>
-        <span className="ml-2 text-xl font-black tracking-tighter text-primary">Kaarya.OS</span>
+        <div className="w-8 h-8 relative rounded-lg overflow-hidden flex items-center justify-center md:hidden ml-2">
+            <Image src="/logo.png" alt="Kaarya OS" fill className="object-cover" />
+        </div>
+        <span className="ml-2 text-xl font-black tracking-tighter text-primary hidden md:inline">Kaarya.OS</span>
         
         <div className="hidden md:flex ml-8 items-center space-x-2">
            <div className={`h-2 w-2 rounded-full animate-pulse ${persona === 'guest' ? 'bg-muted-foreground' : 'bg-primary'}`} />

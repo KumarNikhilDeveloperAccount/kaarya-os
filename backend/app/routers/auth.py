@@ -194,14 +194,27 @@ def firebase_login(data: dict, db: Session = Depends(database.get_db)):
 
 @router.get("/linkedin/start")
 def linkedin_start(request: Request):
-    logger.warning("Forcing local mock bypass for LinkedIn testing.")
-    state = "mock_state_123"
-    url = f"https://kaarya-os.vercel.app/api/auth/linkedin/callback?code=mock_linkedin_code_123&state={state}"
-    
-    base_url = str(request.base_url).rstrip('/')
-    url = f"{base_url}/api/auth/linkedin/callback?code=mock_linkedin_code_123&state={state}"
+    if not settings.LINKEDIN_CLIENT_ID or not settings.LINKEDIN_REDIRECT_URL:
+        # Fallback for when env vars aren't set
+        logger.warning("LinkedIn Client ID not set. Falling back to mock.")
+        state = "mock_state_123"
+        base_url = str(request.base_url).rstrip('/')
+        url = f"{base_url}/api/auth/linkedin/callback?code=mock_linkedin_code_123&state={state}"
+        resp = RedirectResponse(url=url, status_code=302)
+        resp.set_cookie("li_oauth_state", state)
+        return resp
+        
+    state = secrets.token_urlsafe(16)
+    params = {
+        "response_type": "code",
+        "client_id": settings.LINKEDIN_CLIENT_ID,
+        "redirect_uri": settings.LINKEDIN_REDIRECT_URL,
+        "state": state,
+        "scope": "openid profile email",
+    }
+    url = f"https://www.linkedin.com/oauth/v2/authorization?{urlencode(params)}"
     resp = RedirectResponse(url=url, status_code=302)
-    resp.set_cookie("li_oauth_state", state)
+    resp.set_cookie("li_oauth_state", state, max_age=600, secure=True, httponly=True)
     return resp
 
 
@@ -219,7 +232,7 @@ async def linkedin_callback(request: Request, code: Optional[str] = None, state:
 
     if code == "mock_linkedin_code_123":
         email = "nkashyapnikhilnk+linkedin@gmail.com"
-        me = {"localizedFirstName": "Nikhil", "localizedLastName": "Mock"}
+        me = {"name": "Nikhil Mock"}
         linkedin_id = "mock_li_999"
     else:
         if not settings.LINKEDIN_CLIENT_ID or not settings.LINKEDIN_CLIENT_SECRET or not settings.LINKEDIN_REDIRECT_URL:
@@ -244,34 +257,44 @@ async def linkedin_callback(request: Request, code: Optional[str] = None, state:
             if not access_token:
                 raise HTTPException(status_code=400, detail="LinkedIn token exchange returned no access_token")
 
-            # Fetch basic profile
-            me_resp = await client.get(
-                "https://api.linkedin.com/v2/me",
+            # Fetch profile using OIDC userinfo endpoint (new standard)
+            userinfo_resp = await client.get(
+                "https://api.linkedin.com/v2/userinfo",
                 headers={"Authorization": f"Bearer {access_token}"},
             )
-            if me_resp.status_code != 200:
-                logger.error(f"LinkedIn /me failed: {me_resp.status_code} {me_resp.text}")
-                raise HTTPException(status_code=400, detail="LinkedIn profile fetch failed")
-            me = me_resp.json()
+            
+            if userinfo_resp.status_code == 200:
+                me = userinfo_resp.json()
+                linkedin_id = me.get("sub")
+                email = me.get("email")
+            else:
+                # Fallback to legacy v2 endpoints if old app
+                me_resp = await client.get(
+                    "https://api.linkedin.com/v2/me",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                if me_resp.status_code != 200:
+                    logger.error(f"LinkedIn profile fetch failed: {me_resp.status_code} {me_resp.text}")
+                    raise HTTPException(status_code=400, detail="LinkedIn profile fetch failed")
+                me = me_resp.json()
 
-            # Fetch email
-            email_resp = await client.get(
-                "https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))",
-                headers={"Authorization": f"Bearer {access_token}"},
-            )
-            if email_resp.status_code != 200:
-                logger.error(f"LinkedIn email fetch failed: {email_resp.status_code} {email_resp.text}")
-                raise HTTPException(status_code=400, detail="LinkedIn email fetch failed")
-            email_payload = email_resp.json()
-
-        linkedin_id = me.get("id")
-        email = None
-        try:
-            elements = email_payload.get("elements") or []
-            if elements:
-                email = (elements[0].get("handle~") or {}).get("emailAddress")
-        except Exception:
-            email = None
+                email_resp = await client.get(
+                    "https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                if email_resp.status_code != 200:
+                    logger.error(f"LinkedIn email fetch failed: {email_resp.status_code} {email_resp.text}")
+                    raise HTTPException(status_code=400, detail="LinkedIn email fetch failed")
+                
+                email_payload = email_resp.json()
+                linkedin_id = me.get("id")
+                email = None
+                try:
+                    elements = email_payload.get("elements") or []
+                    if elements:
+                        email = (elements[0].get("handle~") or {}).get("emailAddress")
+                except Exception:
+                    email = None
 
         if not email:
             raise HTTPException(status_code=400, detail="LinkedIn did not return an email address")
