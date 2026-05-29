@@ -91,8 +91,12 @@ function LoginPageInner() {
     setIsLoading(true);
     try {
       setOtpSent(true);
-      await api.post('/api/auth/otp/request', { email });
+      const response = await api.post('/api/auth/otp/request', { email });
       toast.success('OTP sent to your email.');
+      if (response.data.debug_code) {
+        setOtp(response.data.debug_code);
+        toast.info(`[Test Mode] OTP Auto-filled: ${response.data.debug_code}`);
+      }
     } catch (err) {
       toast.error('Failed to send OTP');
     } finally {

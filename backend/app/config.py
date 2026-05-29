@@ -18,14 +18,14 @@ class Settings(BaseSettings):
     BOOMI_TOKEN: str = ""
 
     # Email / OTP
-    EMAIL_MODE: str = "smtp"  # console | smtp
+    EMAIL_MODE: str = "console"  # console | smtp
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
     SMTP_USER: str = "kaarya.support@gmail.com"
     SMTP_PASSWORD: str = "ALksdjhfvgmz#@202"
     SMTP_FROM: str = "kaarya.support@gmail.com"
     OTP_EXPIRE_MINUTES: int = 10
-    OTP_DEBUG_RETURN_CODE: bool = False
+    OTP_DEBUG_RETURN_CODE: bool = True
 
     # LinkedIn OAuth
     LINKEDIN_CLIENT_ID: str = ""
