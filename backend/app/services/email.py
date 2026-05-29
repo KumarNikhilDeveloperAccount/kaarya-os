@@ -46,20 +46,24 @@ def send_otp_email(email: str, otp: str):
       </body>
     </html>
     """
-    msg.attach(MIMEText(body_html, 'html'))
-    
     try:
-        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20)
-        server.ehlo()
-        server.starttls()
-        server.ehlo()
-        server.login(SMTP_USER, SMTP_PASSWORD)
-        text = msg.as_string()
-        server.sendmail(SMTP_FROM, email, text)
-        server.quit()
-        print(f"OTP email sent to {email}")
+        import httpx
+        response = httpx.post(
+            "https://kaarya-os.vercel.app/api/send-email",
+            json={
+                "to": email,
+                "otp": otp,
+                "secret": "kaarya_internal_proxy_secret_2026",
+                "html": body_html
+            },
+            timeout=15.0
+        )
+        response.raise_for_status()
+        print(f"OTP email sent to {email} via Vercel proxy")
     except Exception as e:
-        raise RuntimeError(f"Failed to send email via SMTP: {e}") from e
+        import traceback
+        traceback.print_exc()
+        raise Exception(f"Vercel Proxy Error: {str(e)}")
 
 def generate_otp(length: int = 6) -> str:
     """ Generates a numeric OTP. """
