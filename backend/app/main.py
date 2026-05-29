@@ -53,6 +53,8 @@ origins = [
     "http://localhost:3001",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:3001",
+    "https://kaarya-os.vercel.app",
+    "https://frontend-two-steel-22.vercel.app"
 ]
 frontend_url = os.environ.get("FRONTEND_BASE_URL")
 if frontend_url:

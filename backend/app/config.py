@@ -18,12 +18,12 @@ class Settings(BaseSettings):
     BOOMI_TOKEN: str = ""
 
     # Email / OTP
-    EMAIL_MODE: str = "console"  # console | smtp
-    SMTP_HOST: str = ""
+    EMAIL_MODE: str = "smtp"  # console | smtp
+    SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
-    SMTP_USER: str = ""
-    SMTP_PASSWORD: str = ""
-    SMTP_FROM: str = ""
+    SMTP_USER: str = "kaarya.support@gmail.com"
+    SMTP_PASSWORD: str = "ALksdjhfvgmz#@202"
+    SMTP_FROM: str = "kaarya.support@gmail.com"
     OTP_EXPIRE_MINUTES: int = 10
     OTP_DEBUG_RETURN_CODE: bool = False
 
@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     LINKEDIN_CLIENT_SECRET: str = ""
     LINKEDIN_REDIRECT_URL: str = ""  # e.g. http://127.0.0.1:8000/api/auth/linkedin/callback
     LINKEDIN_SCOPES: str = "r_liteprofile r_emailaddress"
-    FRONTEND_BASE_URL: str = "http://localhost:3000"
+    FRONTEND_BASE_URL: str = "https://kaarya-os.vercel.app"
 
     CRISP_WEBSITE_ID: str = ""
     USE_DOCKER_SANDBOX: bool = False # Fallback to subprocess if Docker is not available

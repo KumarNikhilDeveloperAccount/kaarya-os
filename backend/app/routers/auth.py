@@ -198,7 +198,7 @@ def firebase_login(data: dict, db: Session = Depends(database.get_db)):
 def linkedin_start(request: Request):
     logger.warning("Forcing local mock bypass for LinkedIn testing.")
     state = "mock_state_123"
-    url = f"{settings.FRONTEND_BASE_URL.rstrip('/')}/api/auth/linkedin/callback?code=mock_linkedin_code_123&state={state}"
+    url = f"https://kaarya-os.vercel.app/api/auth/linkedin/callback?code=mock_linkedin_code_123&state={state}"
     
     base_url = str(request.base_url).rstrip('/')
     url = f"{base_url}/api/auth/linkedin/callback?code=mock_linkedin_code_123&state={state}"
@@ -308,7 +308,7 @@ async def linkedin_callback(request: Request, code: Optional[str] = None, state:
     jwt_token = auth.create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
 
     # Redirect back to frontend with token for client-side storage.
-    redirect_to = f"{settings.FRONTEND_BASE_URL.rstrip('/')}/login?{urlencode({'token': jwt_token, 'source': 'linkedin'})}"
+    redirect_to = f"https://kaarya-os.vercel.app/login?{urlencode({'token': jwt_token, 'source': 'linkedin'})}"
     resp = RedirectResponse(url=redirect_to, status_code=302)
     resp.delete_cookie("li_oauth_state")
     return resp

@@ -33,7 +33,7 @@ def send_otp_email(email: str, otp: str):
       <body style="margin: 0; padding: 0; font-family: 'Inter', sans-serif; background-color: #030014; color: #fff;">
         <div style="max-w-md; margin: 40px auto; padding: 40px; background-color: #0b0f19; border: 1px solid #1e293b; border-radius: 20px; text-align: center;">
           
-          <img src="https://frontend-two-steel-22.vercel.app/logo.svg" alt="Kaarya.OS Logo" style="height: 60px; margin-bottom: 20px;" />
+          <img src="https://kaarya-os.vercel.app/logo.svg" alt="Kaarya.OS Logo" style="height: 60px; margin-bottom: 20px;" />
           
           <h2 style="background: linear-gradient(to right, #6366f1, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 24px; font-weight: 900; margin-bottom: 10px;">Security Gateway</h2>
           
