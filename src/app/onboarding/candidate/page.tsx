@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, Upload, CheckCircle2, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { TagInput } from '@/components/ui/TagInput';
+import { ProfileUpload } from '@/components/ui/ProfileUpload';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
@@ -122,16 +123,10 @@ export default function CandidateOnboarding() {
                   <input type="text" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="City, Country" />
                 </div>
               </div>
-              <div>
-                <label className="text-sm font-semibold">Profile Picture (optional)</label>
-                <div className="mt-1 w-full border-2 border-dashed border-border hover:border-primary/50 bg-background/50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors group">
-                   <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                     <Upload className="w-5 h-5" />
-                   </div>
-                   <span className="text-sm font-medium">Click to upload or drag and drop</span>
-                   <span className="text-xs text-muted-foreground mt-1">SVG, PNG, JPG or GIF (max. 5MB)</span>
-                </div>
-              </div>
+              <ProfileUpload 
+                value={formData.profilePic} 
+                onChange={file => setFormData({...formData, profilePic: file})} 
+              />
             </div>
           </motion.div>
         );
