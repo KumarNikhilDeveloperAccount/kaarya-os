@@ -4,6 +4,9 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app import models
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 # --- Business Pricing Constants (MANDATORY) ---
 PRICES = {

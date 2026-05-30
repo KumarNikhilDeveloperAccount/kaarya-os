@@ -3,7 +3,7 @@ import requests
 BASE_URL = "https://kaarya-os-backend.onrender.com"
 
 def test_otp_flow():
-    email = "test.otp@kaarya.os"
+    email = "TEST.UPPERCASE@KAARYA.OS"
     
     # 1. Request OTP
     print("Requesting OTP...")
