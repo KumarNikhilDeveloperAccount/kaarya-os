@@ -52,7 +52,11 @@ export default function RoleSelectionPage() {
     setIsLoading(true);
     try {
       await api.post(`/api/auth/switch-persona?persona=${selectedRole}`);
-      window.location.href = '/'; // Hard reload to refresh context
+      if (selectedRole === 'candidate') {
+        window.location.href = '/onboarding/candidate';
+      } else {
+        window.location.href = '/'; // Hard reload to refresh context
+      }
     } catch (err: any) {
       console.error(err);
       toast.error(err.response?.data?.detail || 'Failed to assign role');
