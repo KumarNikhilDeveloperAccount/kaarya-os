@@ -100,12 +100,20 @@ export default function SignupPage() {
     if (!phone || !fullName) return toast.error('Phone and name required');
     setIsLoading(true);
     try {
-      const confirmation = await signInWithPhone(phone);
+      // Firebase requires E.164 format (e.g., +919315600875)
+      let formattedPhone = phone.trim();
+      if (!formattedPhone.startsWith('+')) {
+        // Assume India (+91) or US (+1) as default if they just type 10 digits
+        formattedPhone = formattedPhone.length === 10 ? `+91${formattedPhone}` : `+${formattedPhone}`;
+      }
+      
+      const confirmation = await signInWithPhone(formattedPhone);
       setConfirmationResult(confirmation);
       setPhoneOtpSent(true);
       toast.success('Phone OTP sent!');
-    } catch (error) {
-      toast.error('Failed to send phone OTP');
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || 'Failed to send phone OTP');
     } finally {
       setIsLoading(false);
     }
