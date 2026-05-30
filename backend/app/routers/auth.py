@@ -143,21 +143,26 @@ def firebase_login(data: dict, db: Session = Depends(database.get_db)):
     if not id_token:
         raise HTTPException(status_code=400, detail="ID token required")
 
-    if not firebase_admin._apps:
-        # Fallback for testing: If Admin SDK isn't configured, we trust the client for now so you can test the OTP UI.
-        logger.warning("Firebase Admin not configured. Bypassing strict verification for testing.")
+    try:
         import jwt
-        try:
-            decoded_token = jwt.decode(id_token, options={"verify_signature": False}, algorithms=["RS256"])
-        except Exception as e:
-            logger.error(f"PyJWT Decode Error: {e}")
-            raise HTTPException(status_code=400, detail="Invalid Firebase token format")
-    else:
-        try:
-            decoded_token = firebase_auth.verify_id_token(id_token)
-        except Exception as e:
-            logger.error(f"Firebase token verification failed: {e}")
-            raise HTTPException(status_code=400, detail="Invalid Firebase token")
+        from jwt import PyJWKClient
+        
+        # Fetch Google's public keys
+        url = "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
+        jwks_client = PyJWKClient(url)
+        signing_key = jwks_client.get_signing_key_from_jwt(id_token)
+        
+        # Verify the token natively without requiring a Service Account JSON
+        decoded_token = jwt.decode(
+            id_token,
+            signing_key.key,
+            algorithms=["RS256"],
+            audience="kaarya-os",
+            issuer="https://securetoken.google.com/kaarya-os"
+        )
+    except Exception as e:
+        logger.error(f"Native Firebase token verification failed: {e}")
+        raise HTTPException(status_code=400, detail="Invalid Firebase token")
 
     email = decoded_token.get("email")
     phone = decoded_token.get("phone_number")
