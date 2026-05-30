@@ -108,15 +108,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
-      // Mocking Firebase Auth for seamless experience
-      const mockUser = {
-        id: Math.floor(Math.random() * 10000),
-        email: "google.user@kaarya.os",
-        full_name: "Google Authenticated User",
-        roles: "user",
-        active_persona: ""
-      };
-      login("mock_google_token_" + Date.now(), mockUser);
+      const email = `google.user.${Math.floor(Math.random() * 10000)}@kaarya.os`;
+      const password = "mock_google_password";
+      
+      try {
+         await api.post('/api/auth/signup', {
+            email: email,
+            password: password,
+            full_name: "Google Authenticated User"
+         });
+      } catch (e) { /* ignore if already exists */ }
+      
+      const formData = new URLSearchParams();
+      formData.append('username', email);
+      formData.append('password', password);
+      
+      const response = await api.post('/api/auth/login', formData, {
+         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+      
+      const token = response.data.access_token;
+      
+      const userResponse = await api.get('/api/auth/me', {
+         headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      login(token, userResponse.data);
     } catch (error) {
       console.error('Mock sign in error:', error);
       throw error;
