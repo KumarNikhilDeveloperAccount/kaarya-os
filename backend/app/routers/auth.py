@@ -148,8 +148,9 @@ def firebase_login(data: dict, db: Session = Depends(database.get_db)):
         logger.warning("Firebase Admin not configured. Bypassing strict verification for testing.")
         import jwt
         try:
-            decoded_token = jwt.decode(id_token, options={"verify_signature": False})
-        except:
+            decoded_token = jwt.decode(id_token, options={"verify_signature": False}, algorithms=["RS256"])
+        except Exception as e:
+            logger.error(f"PyJWT Decode Error: {e}")
             raise HTTPException(status_code=400, detail="Invalid Firebase token format")
     else:
         try:
