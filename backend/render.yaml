@@ -1,3 +1,9 @@
+databases:
+  - name: kaarya-os-db
+    databaseName: kaarya_os
+    user: kaarya_admin
+    plan: free
+
 services:
   - type: web
     name: kaarya-os-backend
@@ -10,7 +16,9 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: DATABASE_URL
-        value: sqlite:///./kaarya_os.db
+        fromDatabase:
+          name: kaarya-os-db
+          property: connectionString
       - key: SECRET_KEY
         generateValue: true
       - key: ALGORITHM
