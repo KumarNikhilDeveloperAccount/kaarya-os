@@ -4,7 +4,8 @@ import uuid
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from app.database import engine, Base
+from app.database import engine, Base, SessionLocal
+from app.models import User
 from app.routers import auth, jobs, sandbox, interviews, payments, admin, support, ai, dashboard, boomi
 
 # Configure logging
@@ -86,3 +87,20 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+@app.on_event("startup")
+def startup_db_migration():
+    """Migrate existing emails to lowercase to prevent duplicates and login issues."""
+    try:
+        db = SessionLocal()
+        users_list = db.query(User).all()
+        migrated_count = 0
+        for u in users_list:
+            if u.email and u.email != u.email.lower().strip():
+                u.email = u.email.lower().strip()
+                migrated_count += 1
+        db.commit()
+        db.close()
+        logger.info(f"Successfully migrated {migrated_count} emails to lowercase.")
+    except Exception as e:
+        logger.error(f"Migration error: {e}")
