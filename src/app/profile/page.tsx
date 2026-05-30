@@ -1,16 +1,65 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   User, Mail, Phone, MapPin, 
   Linkedin, Github, Globe, 
   Briefcase, GraduationCap, Code2, 
   Award, CheckCircle2, Star, Zap,
-  Camera, Edit3, Share2
+  Camera, Edit3, Share2, Building2
 } from 'lucide-react';
+import { getProfileData, getActiveRole } from '@/lib/store';
 
 export default function ProfilePage() {
+  const [role, setRole] = useState('candidate');
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    const activeRole = getActiveRole();
+    setRole(activeRole);
+    const data = getProfileData(activeRole);
+    
+    // Set default fallback data if nothing is in local storage
+    if (data) {
+      setProfile(data);
+    } else {
+      setProfile({
+        fullName: 'Kumar Nikhil',
+        location: 'San Francisco, CA',
+        bio: 'Architecting autonomous, high-resilient systems that redefine human-machine collaboration.',
+        jobTitle: 'Elite Solutions Architect',
+        currentCompany: 'Kaarya.OS',
+        linkedin: 'linkedin.com/in/nikhil',
+        github: 'github.com/nikhil',
+        skills: ['Distributed Systems', 'FastAPI', 'Next.js', 'PostgreSQL', 'Kubernetes'],
+      });
+    }
+  }, []);
+
+  if (!profile) return null;
+
+  // Derive display values based on role
+  let displayName = profile.fullName || profile.companyName || profile.collegeName || 'Unknown User';
+  let displayTitle = profile.jobTitle || profile.industry || profile.affiliation || 'Kaarya User';
+  let displayBio = profile.bio || 'No bio provided.';
+  let displayPic = profile.profilePic || profile.logo;
+  let displayLocation = profile.location || 'Unknown Location';
+  let displayTags = profile.skills || profile.techStack || profile.expertise || profile.degrees || [];
+  
+  if (role === 'company' && profile.companySize) {
+    displayTitle = `${profile.industry} • ${profile.companySize} employees`;
+  } else if (role === 'college' && profile.placementOfficer) {
+    displayTitle = `${profile.affiliation || 'University'} • Placements: ${profile.placementOfficer}`;
+  } else if (role === 'trainer' && profile.yearsExperience) {
+    displayTitle = `${profile.jobTitle} • ${profile.yearsExperience} yrs exp`;
+  }
+
+  // Get initials for fallback image
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  };
+
   return (
     <div className="max-w-7xl mx-auto py-10 px-6 space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
       {/* Profile Header */}
@@ -25,10 +74,14 @@ export default function ProfilePage() {
 
          <div className="px-12 -mt-24 relative z-10 flex flex-col md:flex-row items-end gap-10">
             <div className="relative group">
-               <div className="w-48 h-48 rounded-[3rem] bg-card border-[6px] border-background shadow-2xl overflow-hidden flex items-center justify-center">
-                  <div className="w-full h-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-white text-6xl font-black">
-                     KN
-                  </div>
+               <div className="w-48 h-48 rounded-[3rem] bg-card border-[6px] border-background shadow-2xl overflow-hidden flex items-center justify-center relative">
+                  {displayPic ? (
+                    <img src={displayPic} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-white text-6xl font-black">
+                       {getInitials(displayName)}
+                    </div>
+                  )}
                </div>
                <button className="absolute bottom-4 right-4 p-3 bg-primary text-white rounded-2xl shadow-xl hover:scale-110 active:scale-95 transition-all">
                   <Edit3 className="h-5 w-5" />
@@ -39,11 +92,11 @@ export default function ProfilePage() {
                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div>
                      <h1 className="text-5xl font-black tracking-tight flex items-center gap-4 uppercase">
-                        Kumar Nikhil
+                        {displayName}
                         <CheckCircle2 className="h-8 w-8 text-blue-500" />
                      </h1>
                      <p className="text-xl font-bold text-muted-foreground mt-2 uppercase tracking-widest flex items-center opacity-80">
-                        Elite Solutions Architect • Founding Engineer
+                        {displayTitle} {profile.currentCompany ? `• ${profile.currentCompany}` : ''}
                      </p>
                   </div>
                   <div className="flex gap-4">
@@ -55,10 +108,11 @@ export default function ProfilePage() {
                </div>
                
                <div className="flex flex-wrap gap-6 mt-8">
-                  <ContactItem icon={Mail} value="nikhil@kaarya.os" />
-                  <ContactItem icon={MapPin} value="San Francisco, CA" />
-                  <ContactItem icon={Linkedin} value="linkedin.com/in/nikhil" />
-                  <ContactItem icon={Github} value="github.com/nikhil" />
+                  <ContactItem icon={Mail} value={`${displayName.split(' ')[0].toLowerCase()}@kaarya.os`} />
+                  <ContactItem icon={MapPin} value={displayLocation} />
+                  {profile.linkedin && <ContactItem icon={Linkedin} value={profile.linkedin} />}
+                  {profile.github && <ContactItem icon={Github} value={profile.github} />}
+                  {profile.website && <ContactItem icon={Globe} value={profile.website} />}
                </div>
             </div>
          </div>
@@ -71,30 +125,42 @@ export default function ProfilePage() {
             <div className="bg-card border border-border rounded-[2.5rem] shadow-xl p-8 space-y-8">
                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary flex items-center">
                   <Zap className="h-4 w-4 mr-2" />
-                  Elite Performance Matrix
+                  {role === 'company' ? 'Company Metrics' : 'Elite Performance Matrix'}
                </h3>
                <div className="grid grid-cols-2 gap-4">
-                  <StatCard label="Hireability" value="94.8%" color="text-primary" />
-                  <StatCard label="Technical" value="Elite" color="text-emerald-500" />
-                  <StatCard label="Comms" value="96/100" color="text-blue-500" />
-                  <StatCard label="Labs" value="Top 1%" color="text-amber-500" />
+                  {role === 'company' ? (
+                    <>
+                      <StatCard label="Hired" value="24" color="text-primary" />
+                      <StatCard label="Response Rate" value="98%" color="text-emerald-500" />
+                      <StatCard label="Rating" value="4.9/5" color="text-amber-500" />
+                    </>
+                  ) : (
+                    <>
+                      <StatCard label="Hireability" value="94.8%" color="text-primary" />
+                      <StatCard label="Technical" value="Elite" color="text-emerald-500" />
+                      <StatCard label="Comms" value="96/100" color="text-blue-500" />
+                      <StatCard label="Labs" value="Top 1%" color="text-amber-500" />
+                    </>
+                  )}
                </div>
             </div>
 
             {/* Specialties */}
-            <div className="bg-card border border-border rounded-[2.5rem] shadow-xl p-8 space-y-6">
-               <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center">
-                  <Code2 className="h-4 w-4 mr-2" />
-                  Core Specialties
-               </h3>
-               <div className="flex flex-wrap gap-2">
-                  {['Distributed Systems', 'FastAPI', 'Next.js', 'PostgreSQL', 'Rit.AI Architecture', 'Kubernetes', 'Real-time Signals'].map(s => (
-                    <span key={s} className="px-4 py-2 bg-secondary/60 border border-border rounded-xl text-xs font-bold tracking-tight hover:bg-primary/5 hover:border-primary/20 transition-all cursor-default">
-                       {s}
-                    </span>
-                  ))}
-               </div>
-            </div>
+            {displayTags.length > 0 && (
+              <div className="bg-card border border-border rounded-[2.5rem] shadow-xl p-8 space-y-6">
+                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center">
+                    <Code2 className="h-4 w-4 mr-2" />
+                    Core Specialties / Tags
+                 </h3>
+                 <div className="flex flex-wrap gap-2">
+                    {displayTags.map((s: string) => (
+                      <span key={s} className="px-4 py-2 bg-secondary/60 border border-border rounded-xl text-xs font-bold tracking-tight hover:bg-primary/5 hover:border-primary/20 transition-all cursor-default">
+                         {s}
+                      </span>
+                    ))}
+                 </div>
+              </div>
+            )}
          </div>
 
          {/* Center/Right: Experience & Legacy */}
@@ -104,50 +170,75 @@ export default function ProfilePage() {
                <div className="absolute top-0 right-0 p-8 opacity-5">
                   <Star className="h-32 w-32" />
                </div>
-               <h3 className="text-xl font-black tracking-tight mb-4 uppercase">Mission Statement</h3>
+               <h3 className="text-xl font-black tracking-tight mb-4 uppercase">
+                 {role === 'company' ? 'Company Vision' : 'Mission Statement'}
+               </h3>
                <p className="text-lg font-medium leading-relaxed italic text-muted-foreground/80">
-                 "Architecting autonomous, high-resilient systems that redefine human-machine collaboration. My focus is on elite-scale infrastructure and the ethical deployment of agentic intelligence."
+                 "{displayBio}"
                </p>
             </div>
 
-            {/* Workforce Legacy */}
-            <div className="space-y-8">
-               <div className="flex items-center justify-between px-4">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Workforce Legacy</h3>
-                  <button className="text-[10px] font-black text-primary hover:underline uppercase tracking-widest">Update Records</button>
-               </div>
-               <div className="space-y-6">
-                  <LegacyItem 
-                    role="Founding Engineer" 
-                    company="NikVerse AI" 
-                    period="2024 - Present" 
-                    desc="Leading the development of a decentralized agent orchestrator using Yukon-level encryption and real-time mesh networking." 
-                  />
-                  <LegacyItem 
-                    role="Senior System Architect" 
-                    company="Global FinCore" 
-                    period="2020 - 2024" 
-                    desc="Engineered the primary settlement layer for cross-border transactions, reducing latency by 45% using a custom consensus protocol." 
-                  />
-               </div>
-            </div>
+            {/* Workforce Legacy / Details based on role */}
+            {role === 'candidate' || role === 'trainer' ? (
+              <div className="space-y-8">
+                 <div className="flex items-center justify-between px-4">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Workforce Legacy</h3>
+                    <button className="text-[10px] font-black text-primary hover:underline uppercase tracking-widest">Update Records</button>
+                 </div>
+                 <div className="space-y-6">
+                    <LegacyItem 
+                      role={profile.jobTitle || 'Founding Engineer'} 
+                      company={profile.currentCompany || 'NikVerse AI'} 
+                      period={profile.yearsExperience ? `${profile.yearsExperience} years` : '2024 - Present'} 
+                      desc="Leading the development of complex architectures and systems." 
+                    />
+                 </div>
+              </div>
+            ) : role === 'company' ? (
+              <div className="space-y-8">
+                 <div className="flex items-center justify-between px-4">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Active Roles</h3>
+                 </div>
+                 <div className="space-y-6">
+                    {profile.rolesHired && profile.rolesHired.map((roleTitle: string, idx: number) => (
+                      <LegacyItem 
+                        key={idx}
+                        role={roleTitle} 
+                        company={profile.companyName} 
+                        period="Actively Hiring" 
+                        desc="Looking for top talent in this domain. Connect with us to learn more." 
+                      />
+                    ))}
+                 </div>
+              </div>
+            ) : null}
 
             {/* Foundation */}
-            <div className="space-y-8">
-               <div className="flex items-center justify-between px-4">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Educational Foundation</h3>
-               </div>
-               <div className="bg-card border border-border rounded-[2rem] p-8 flex items-center space-x-6 hover:bg-secondary/20 transition-all cursor-default">
-                  <div className="h-16 w-16 bg-blue-500/10 text-blue-500 rounded-[1.5rem] flex items-center justify-center flex-shrink-0">
-                     <GraduationCap className="h-8 w-8" />
-                  </div>
-                  <div>
-                     <h4 className="text-xl font-black uppercase tracking-tight">Computer Science & Engineering</h4>
-                     <p className="text-sm font-bold opacity-70">Stanford Academy of Emerging Tech • Honors Cluster</p>
-                     <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-1">Class of 2018-2022</p>
-                  </div>
-               </div>
-            </div>
+            {(role === 'candidate' || role === 'college') && (
+              <div className="space-y-8">
+                 <div className="flex items-center justify-between px-4">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">
+                      {role === 'college' ? 'Institution Highlights' : 'Educational Foundation'}
+                    </h3>
+                 </div>
+                 <div className="bg-card border border-border rounded-[2rem] p-8 flex items-center space-x-6 hover:bg-secondary/20 transition-all cursor-default">
+                    <div className="h-16 w-16 bg-blue-500/10 text-blue-500 rounded-[1.5rem] flex items-center justify-center flex-shrink-0">
+                       <GraduationCap className="h-8 w-8" />
+                    </div>
+                    <div>
+                       <h4 className="text-xl font-black uppercase tracking-tight">
+                         {role === 'college' ? (profile.streams?.[0] || 'Engineering') : (profile.degree || 'Computer Science')}
+                       </h4>
+                       <p className="text-sm font-bold opacity-70">
+                         {role === 'college' ? profile.collegeName : (profile.college || 'Stanford Academy')}
+                       </p>
+                       <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-1">
+                         {profile.gradYear ? `Class of ${profile.gradYear}` : 'Alumni'}
+                       </p>
+                    </div>
+                 </div>
+              </div>
+            )}
          </div>
       </div>
     </div>

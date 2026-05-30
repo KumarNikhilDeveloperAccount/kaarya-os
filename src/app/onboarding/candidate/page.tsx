@@ -6,6 +6,7 @@ import { ArrowRight, ArrowLeft, Upload, CheckCircle2, Sparkles } from 'lucide-re
 import { useRouter } from 'next/navigation';
 import { TagInput } from '@/components/ui/TagInput';
 import { ProfileUpload } from '@/components/ui/ProfileUpload';
+import { saveProfileData, fileToBase64 } from '@/lib/store';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
@@ -61,19 +62,41 @@ export default function CandidateOnboarding() {
 
   const handleComplete = async () => {
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSubmitting(false);
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#8b5cf6', '#3b82f6', '#10b981']
-    });
-    toast.success("Profile created successfully!");
-    setTimeout(() => {
-      router.push('/');
-    }, 2000);
+    
+    try {
+      // Process profile picture to base64 if it exists
+      let profilePicBase64 = null;
+      if (formData.profilePic) {
+        profilePicBase64 = await fileToBase64(formData.profilePic);
+      }
+      
+      // We don't save the actual resume file to localStorage due to size limits,
+      // but we record the filename to show it was uploaded.
+      const finalData = {
+        ...formData,
+        profilePic: profilePicBase64,
+        resume: formData.resume ? formData.resume.name : null
+      };
+
+      saveProfileData('candidate', finalData);
+      
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setIsSubmitting(false);
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#8b5cf6', '#3b82f6', '#10b981']
+      });
+      toast.success("Profile created successfully!");
+      setTimeout(() => {
+        router.push('/');
+      }, 2000);
+    } catch (error) {
+      console.error(error);
+      setIsSubmitting(false);
+      toast.error("Failed to save profile data.");
+    }
   };
 
   const slideVariants = {
@@ -187,12 +210,28 @@ export default function CandidateOnboarding() {
             <div className="space-y-6">
               <div>
                 <label className="text-sm font-semibold">Upload Resume (PDF/DOC)</label>
-                <div className="mt-1 w-full border-2 border-dashed border-border hover:border-primary/50 bg-background/50 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-colors group">
-                   <div className="w-16 h-16 bg-blue-500/10 text-blue-500 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                     <Upload className="w-6 h-6" />
+                <div 
+                  className="mt-1 w-full border-2 border-dashed border-border hover:border-primary/50 bg-background/50 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-colors group relative"
+                  onClick={() => document.getElementById('resume-upload')?.click()}
+                >
+                   <input 
+                     id="resume-upload" 
+                     type="file" 
+                     className="hidden" 
+                     accept=".pdf,.doc,.docx"
+                     onChange={(e) => {
+                       if (e.target.files && e.target.files.length > 0) {
+                         setFormData({...formData, resume: e.target.files[0]});
+                       }
+                     }}
+                   />
+                   <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-transform ${formData.resume ? 'bg-emerald-500/10 text-emerald-500 group-hover:scale-110' : 'bg-blue-500/10 text-blue-500 group-hover:scale-110'}`}>
+                     {formData.resume ? <CheckCircle2 className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
                    </div>
-                   <span className="text-base font-bold">Upload Resume</span>
-                   <span className="text-sm text-muted-foreground mt-1">Make sure it's up to date</span>
+                   <span className="text-base font-bold">{formData.resume ? 'Resume Uploaded' : 'Upload Resume'}</span>
+                   <span className="text-sm text-muted-foreground mt-1">
+                     {formData.resume ? formData.resume.name : "Make sure it's up to date"}
+                   </span>
                 </div>
               </div>
 

@@ -6,6 +6,7 @@ import { ArrowRight, ArrowLeft, CheckCircle2, GraduationCap } from 'lucide-react
 import { useRouter } from 'next/navigation';
 import { TagInput } from '@/components/ui/TagInput';
 import { ProfileUpload } from '@/components/ui/ProfileUpload';
+import { saveProfileData, fileToBase64 } from '@/lib/store';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
@@ -41,18 +42,37 @@ export default function CollegeOnboarding() {
 
   const handleComplete = async () => {
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSubmitting(false);
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#a855f7', '#3b82f6', '#10b981']
-    });
-    toast.success("Institution profile created successfully!");
-    setTimeout(() => {
-      router.push('/');
-    }, 2000);
+
+    try {
+      let logoBase64 = null;
+      if (formData.logo) {
+        logoBase64 = await fileToBase64(formData.logo);
+      }
+
+      const finalData = {
+        ...formData,
+        logo: logoBase64
+      };
+
+      saveProfileData('college', finalData);
+
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setIsSubmitting(false);
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#a855f7', '#3b82f6', '#10b981']
+      });
+      toast.success("Institution profile created successfully!");
+      setTimeout(() => {
+        router.push('/');
+      }, 2000);
+    } catch (error) {
+      console.error(error);
+      setIsSubmitting(false);
+      toast.error("Failed to save profile data.");
+    }
   };
 
   const slideVariants = {
