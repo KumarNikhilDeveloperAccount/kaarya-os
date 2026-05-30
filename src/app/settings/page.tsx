@@ -10,6 +10,7 @@ import {
 import { useTheme } from '@/components/layout/ThemeProvider';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { clearAllData } from '@/lib/store';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -186,6 +187,16 @@ function ProfileSettings() {
 function SecuritySettings() {
   const [isUpdating, setIsUpdating] = useState(false);
 
+  const handleDecommission = () => {
+    if (confirm("Are you sure you want to permanently decommission your global account and erase all local data?")) {
+      clearAllData();
+      toast.success("Account Decommissioned.");
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
+    }
+  };
+
   return (
     <div className="space-y-10">
        <div>
@@ -220,7 +231,10 @@ function SecuritySettings() {
        </div>
 
        <div className="pt-12 border-t border-border/50 mt-auto">
-          <button className="flex items-center text-red-500/60 hover:text-red-500 group transition-all">
+          <button 
+            onClick={handleDecommission}
+            className="flex items-center text-red-500/60 hover:text-red-500 group transition-all"
+          >
              <Trash2 className="h-5 w-5 mr-3 group-hover:animate-bounce" />
              <span className="text-[10px] font-black uppercase tracking-[0.3em]">Decommission Global Account</span>
           </button>

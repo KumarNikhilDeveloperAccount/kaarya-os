@@ -33,7 +33,15 @@ export default function TrainerOnboarding() {
   const totalSteps = 4;
 
   const handleNext = () => {
-    if (step < totalSteps) setStep(step + 1);
+    if (step === 1 && (!formData.fullName || !formData.jobTitle)) {
+      toast.error('Full Name and Job Title are mandatory.');
+      return;
+    }
+    if (step === 2 && (!formData.yearsExperience)) {
+      toast.error('Years of Experience is mandatory.');
+      return;
+    }
+    setStep(s => Math.min(4, s + 1));
   };
 
   const handleBack = () => {
@@ -41,6 +49,10 @@ export default function TrainerOnboarding() {
   };
 
   const handleComplete = async () => {
+    if (formData.expertise.length === 0) {
+      toast.error('Please add at least one area of expertise.');
+      return;
+    }
     setIsSubmitting(true);
 
     try {

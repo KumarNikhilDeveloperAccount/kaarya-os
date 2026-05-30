@@ -138,6 +138,14 @@ export default function InterviewPage() {
     }
   }, [isRecording, step, timeLeft]);
 
+  // Crucial fix: React unmounts the video element between steps.
+  // We must re-attach the MediaStream to the new videoRef once it mounts.
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [step, stream]);
+
   return (
     <div className="h-[calc(100vh-120px)] flex flex-col items-center justify-center animate-in fade-in duration-1000">
       <AnimatePresence mode="wait">

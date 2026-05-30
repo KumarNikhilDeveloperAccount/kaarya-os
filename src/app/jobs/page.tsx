@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Search, Filter, Sparkles, LayoutGrid, List as ListIcon } from 'lucide-react';
 import JobCard from '@/components/jobs/JobCard';
+import { getJobs, applyToJob, getProfileData, getActiveRole, hasAppliedToJob } from '@/lib/store';
+import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function JobBoard() {
@@ -11,42 +13,65 @@ export default function JobBoard() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
+  const [role, setRole] = useState('candidate');
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
+    setRole(getActiveRole());
+    setProfile(getProfileData('candidate'));
     fetchJobs();
   }, []);
 
   const fetchJobs = async () => {
     try {
-      // In a real app, use the backend URL
-      const response = await axios.get('http://localhost:8000/api/jobs/');
-      setJobs(response.data);
-    } catch (error) {
-      console.error('Error fetching jobs:', error);
-      // Fallback for demo if backend is not reachable
-      setJobs([
+      const localJobs = getJobs();
+      const fallbackJobs = [
         {
-          id: 1,
+          id: 'fb1',
           title: "Senior AI Backend Engineer",
           description: "We are looking for a Python expert with Experience in FastAPI and Vertex AI to build Rit.ai infrastructure.",
           location: "Remote / Hyderabad",
           salary_range: "₹40L - ₹60L",
           created_at: new Date().toISOString(),
-          company: { full_name: "Google Recruitment" }
+          company: { companyName: "Google Recruitment", logo: null }
         },
         {
-          id: 2,
+          id: 'fb2',
           title: "Fullstack Product Designer",
           description: "Join our team to build premium, dark-mode first dashboards for Kaarya.OS. Proficiency in Tailwind and Framer Motion required.",
           location: "Bangalore",
           salary_range: "₹25L - ₹35L",
           created_at: new Date().toISOString(),
-          company: { full_name: "Google Recruitment" }
+          company: { companyName: "Kaarya Labs", logo: null }
         }
-      ]);
+      ];
+      setJobs([...localJobs, ...fallbackJobs]);
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleApply = (jobId: string) => {
+    if (role !== 'candidate') {
+      toast.error('Only candidates can apply to jobs.');
+      return;
+    }
+    if (!profile || !profile.fullName) {
+      toast.error('Please complete your candidate profile first.');
+      return;
+    }
+    
+    if (hasAppliedToJob(jobId, profile.fullName)) {
+      toast.info('You have already applied to this job.');
+      return;
+    }
+
+    applyToJob(jobId, profile);
+    toast.success('Application submitted successfully!');
+    // Trigger re-render to update UI (JobCard will need to check applied status)
+    fetchJobs();
   };
 
   const filteredJobs = jobs.filter(job => 
@@ -117,7 +142,8 @@ export default function JobBoard() {
                 <JobCard 
                   key={job.id} 
                   job={job} 
-                  onApply={(id) => console.log(`Applying to job ${id}`)} 
+                  onApply={() => handleApply(job.id)} 
+                  hasApplied={profile ? hasAppliedToJob(job.id, profile.fullName) : false}
                 />
               ))
             ) : (

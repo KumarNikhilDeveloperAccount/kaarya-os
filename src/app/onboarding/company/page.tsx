@@ -33,14 +33,23 @@ export default function CompanyOnboarding() {
   const totalSteps = 4;
 
   const handleNext = () => {
-    if (step < totalSteps) setStep(step + 1);
+    if (step === 1 && (!formData.companyName)) {
+      toast.error('Company Name is mandatory.');
+      return;
+    }
+    if (step === 2 && (!formData.industry || !formData.companySize)) {
+      toast.error('Industry and Company Size are mandatory.');
+      return;
+    }
+    setStep(s => Math.min(4, s + 1));
   };
-
-  const handleBack = () => {
-    if (step > 1) setStep(step - 1);
-  };
+  const handleBack = () => setStep(s => Math.max(1, s - 1));
 
   const handleComplete = async () => {
+    if (formData.rolesHired.length === 0) {
+      toast.error('Please specify at least one role you hire for.');
+      return;
+    }
     setIsSubmitting(true);
 
     try {

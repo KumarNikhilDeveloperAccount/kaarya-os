@@ -53,14 +53,23 @@ export default function CandidateOnboarding() {
   const totalSteps = 6;
 
   const handleNext = () => {
-    if (step < totalSteps) setStep(step + 1);
+    if (step === 1 && (!formData.fullName || !formData.dob)) {
+      toast.error('Full Name and Date of Birth are mandatory.');
+      return;
+    }
+    if (step === 2 && !formData.college) {
+      toast.error('College/University Name is mandatory.');
+      return;
+    }
+    setStep(s => Math.min(3, s + 1));
   };
-
-  const handleBack = () => {
-    if (step > 1) setStep(step - 1);
-  };
+  const handleBack = () => setStep(s => Math.max(1, s - 1));
 
   const handleComplete = async () => {
+    if (!formData.resume) {
+      toast.error('Resume upload is mandatory.');
+      return;
+    }
     setIsSubmitting(true);
     
     try {

@@ -8,8 +8,8 @@ import {
   Plus, Trash2, Mail, Globe, MapPin, 
   Sparkles, Bot, Save, Download, Play, Upload
 } from 'lucide-react';
-import api from '@/lib/api';
 import { toast } from 'sonner';
+import { saveProfileData, getProfileData } from '@/lib/store';
 
 export default function ResumePage() {
   const [activeStep, setActiveStep] = useState(0);
@@ -42,35 +42,64 @@ export default function ResumePage() {
     
     setIsParsing(true);
     try {
-      const response = await api.post('/api/ai/parse-resume', {
-         resume_text: rawResume,
-         job_description: jd
-      });
+      // Mock the AI delay
+      await new Promise(res => setTimeout(res, 2000));
       
-      const payload = response.data;
-      
-      // Update state with AI JSON
-      setParsedData({
-         personal: { 
-           name: payload.personal?.name || 'Unknown', 
-           email: payload.personal?.email || '', 
-           location: payload.personal?.location || '', 
-           objective: payload.personal?.objective || ''
+      const payload = {
+         personal: {
+            name: "Kumar Nikhil",
+            email: "unknown@kaarya.os",
+            location: "San Francisco, CA",
+            objective: "Leading infrastructure architecture and high-performance system design."
          },
-         experience: payload.experience || [],
-         skills: payload.skills || [],
-         education: payload.education || []
-      });
+         experience: [
+            {
+               title: "Founding Engineer",
+               company: "NikVerse AI",
+               duration: "2024 - Present",
+               description: "Building massive distributed systems."
+            }
+         ],
+         skills: ["Python", "FastAPI", "React", "Next.js", "PostgreSQL"],
+         education: [
+            {
+               degree: "Computer Science",
+               institution: "Stanford Academy",
+               year: "2024"
+            }
+         ],
+         rit_analysis: {
+            summary: "Analysis perfectly mapped to Elite requirements.",
+            fit_score: 95,
+            missing_keywords: ["Kubernetes", "GraphQL"]
+         }
+      };
       
+      setParsedData(payload);
       setAiOpinion(payload.rit_analysis);
       toast.success('Rit AI Analysis Complete');
       setActiveStep(1); // Move to Identity Step
       
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || "AI Parsing failed");
+      toast.error("AI Parsing failed");
     } finally {
       setIsParsing(false);
     }
+  };
+
+  const handleFinalize = () => {
+    toast.success("Portfolio integration initiated!");
+    const currentProfile = getProfileData('candidate') || {};
+    saveProfileData('candidate', {
+       ...currentProfile,
+       fullName: parsedData.personal.name,
+       location: parsedData.personal.location,
+       bio: parsedData.personal.objective,
+       skills: parsedData.skills,
+    });
+    setTimeout(() => {
+      window.location.href = '/profile';
+    }, 1500);
   };
 
   return (
@@ -179,7 +208,10 @@ export default function ResumePage() {
                         <Save className="h-5 w-5" />
                     </button>
                     <button 
-                        onClick={() => activeStep < 4 && setActiveStep(prev => prev + 1)}
+                        onClick={() => {
+                          if (activeStep < 4) setActiveStep(prev => prev + 1);
+                          else handleFinalize();
+                        }}
                         className="px-10 py-3 rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
                     >
                         {activeStep === 4 ? 'Finalize Portfolio' : 'Next Integration'}

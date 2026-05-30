@@ -9,7 +9,7 @@ import {
   Award, CheckCircle2, Star, Zap,
   Camera, Edit3, Share2, Building2
 } from 'lucide-react';
-import { getProfileData, getActiveRole } from '@/lib/store';
+import { getProfileData, getActiveRole, fileToBase64, saveProfileData } from '@/lib/store';
 
 export default function ProfilePage() {
   const [role, setRole] = useState('candidate');
@@ -36,6 +36,15 @@ export default function ProfilePage() {
       });
     }
   }, []);
+
+  const handleCoverUpload = async (e: any) => {
+    if (e.target.files && e.target.files[0]) {
+      const base64 = await fileToBase64(e.target.files[0]);
+      const updatedProfile = { ...profile, coverPic: base64 };
+      setProfile(updatedProfile);
+      if (role) saveProfileData(role, updatedProfile);
+    }
+  };
 
   if (!profile) return null;
 
@@ -64,9 +73,23 @@ export default function ProfilePage() {
     <div className="max-w-7xl mx-auto py-10 px-6 space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
       {/* Profile Header */}
       <div className="relative">
-         <div className="h-64 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-primary rounded-[3rem] shadow-2xl relative overflow-hidden group">
-            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent animate-pulse" />
-            <button className="absolute bottom-6 right-8 p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/20 transition-all flex items-center space-x-2">
+         <div 
+           className="h-64 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-primary rounded-[3rem] shadow-2xl relative overflow-hidden group bg-cover bg-center"
+           style={profile.coverPic ? { backgroundImage: `url(${profile.coverPic})` } : {}}
+         >
+            {!profile.coverPic && <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent animate-pulse" />}
+            
+            <input 
+              id="cover-upload" 
+              type="file" 
+              className="hidden" 
+              accept="image/*"
+              onChange={handleCoverUpload}
+            />
+            <button 
+              onClick={() => document.getElementById('cover-upload')?.click()}
+              className="absolute bottom-6 right-8 p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/20 transition-all flex items-center space-x-2"
+            >
                <Camera className="h-4 w-4" />
                <span>Update Cover</span>
             </button>

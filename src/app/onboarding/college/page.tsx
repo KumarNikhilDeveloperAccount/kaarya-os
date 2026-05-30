@@ -33,14 +33,25 @@ export default function CollegeOnboarding() {
   const totalSteps = 4;
 
   const handleNext = () => {
-    if (step < totalSteps) setStep(step + 1);
+    if (step === 1 && (!formData.collegeName || !formData.affiliation)) {
+      toast.error('Institution Name and Affiliation are mandatory.');
+      return;
+    }
+    if (step === 2 && (!formData.placementOfficer)) {
+      toast.error('Placement Officer Name is mandatory.');
+      return;
+    }
+    setStep(s => Math.min(4, s + 1));
   };
-
   const handleBack = () => {
     if (step > 1) setStep(step - 1);
   };
 
   const handleComplete = async () => {
+    if (formData.streams.length === 0) {
+      toast.error('Please specify at least one stream/degree.');
+      return;
+    }
     setIsSubmitting(true);
 
     try {
