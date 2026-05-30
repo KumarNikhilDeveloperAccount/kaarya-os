@@ -49,12 +49,13 @@ router = APIRouter()
 
 @router.post("/signup", response_model=schemas.Token, status_code=status.HTTP_201_CREATED)
 def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    email = user.email.lower().strip() if user.email else None
+    db_user = db.query(models.User).filter(models.User.email == email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     hashed_password = auth.get_password_hash(user.password)
-    new_user = models.User(email=user.email, hashed_password=hashed_password, full_name=user.full_name)
+    new_user = models.User(email=email, hashed_password=hashed_password, full_name=user.full_name)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -66,7 +67,8 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)
 
 @router.post("/login", response_model=schemas.Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
-    user = db.query(models.User).filter(models.User.email == form_data.username).first()
+    email = form_data.username.lower().strip() if form_data.username else None
+    user = db.query(models.User).filter(models.User.email == email).first()
     if not user or not auth.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -83,11 +85,12 @@ def request_email_otp(data: schemas.OTPRequest, db: Session = Depends(database.g
     if not data.email:
         raise HTTPException(status_code=400, detail="Email required")
 
-    user = db.query(models.User).filter(models.User.email == data.email).first()
+    email = data.email.lower().strip()
+    user = db.query(models.User).filter(models.User.email == email).first()
     if not user:
         user = models.User(
-            email=data.email,
-            full_name=(data.email.split("@")[0] if data.email else None),
+            email=email,
+            full_name=(email.split("@")[0] if email else None),
             hashed_password="otp_managed",
             roles="",
             active_persona="",
@@ -118,7 +121,8 @@ def verify_email_otp(data: schemas.OTPVerify, db: Session = Depends(database.get
     if not data.email:
         raise HTTPException(status_code=400, detail="Email required")
 
-    user = db.query(models.User).filter(models.User.email == data.email).first()
+    email = data.email.lower().strip()
+    user = db.query(models.User).filter(models.User.email == email).first()
     if not user or not user.otp_code or not user.otp_expiry:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
@@ -152,6 +156,10 @@ def firebase_login(data: dict, db: Session = Depends(database.get_db)):
         import jwt
         from jwt import PyJWKClient
         
+        # Extract audience dynamically to support any Firebase project ID
+        unverified_claims = jwt.decode(id_token, options={"verify_signature": False})
+        audience = unverified_claims.get("aud")
+
         # Fetch Google's public keys
         url = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
         jwks_client = PyJWKClient(url)
@@ -162,8 +170,8 @@ def firebase_login(data: dict, db: Session = Depends(database.get_db)):
             id_token,
             signing_key.key,
             algorithms=["RS256"],
-            audience="kaarya-os",
-            issuer="https://securetoken.google.com/kaarya-os"
+            audience=audience,
+            issuer=f"https://securetoken.google.com/{audience}"
         )
     except Exception as e:
         logger.error(f"Native Firebase token verification failed: {e}")

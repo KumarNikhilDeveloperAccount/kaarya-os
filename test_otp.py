@@ -1,38 +1,21 @@
-import requests
-import json
-import time
+import bcrypt
 
-BASE_URL = "https://kaarya-os-backend.onrender.com"
+def get_password_hash(password: str) -> str:
+    password_bytes = password.encode('utf-8')
+    hashed_bytes = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
+    return hashed_bytes.decode('utf-8')
 
-print("1. Requesting OTP...")
-email = "test1234@kaarya.os"
-r = requests.post(f"{BASE_URL}/api/auth/otp/request", json={"email": email, "full_name": "Test User"})
-print(f"Status: {r.status_code}")
-try:
-    data = r.json()
-    print(f"Data: {data}")
-    otp_code = data.get("debug_code")
-except Exception as e:
-    print(f"JSON Error: {e}, Text: {r.text}")
-    otp_code = None
-
-if otp_code:
-    print(f"\n2. Verifying OTP: {otp_code}...")
-    # wait 1 second
-    time.sleep(1)
-    v = requests.post(f"{BASE_URL}/api/auth/otp/verify", json={"email": email, "code": otp_code})
-    print(f"Verify Status: {v.status_code}")
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    password_bytes = plain_password.encode('utf-8')
+    hash_bytes = hashed_password.encode('utf-8') if isinstance(hashed_password, str) else hashed_password
     try:
-        v_data = v.json()
-        print(f"Verify Data: {v_data}")
-        token = v_data.get("access_token")
+        return bcrypt.checkpw(password_bytes, hash_bytes)
     except Exception as e:
-        print(f"JSON Error: {e}, Text: {v.text}")
-        token = None
-        
-    if token:
-        print("\n3. Testing /me endpoint...")
-        headers = {"Authorization": f"Bearer {token}"}
-        m = requests.get(f"{BASE_URL}/api/auth/me", headers=headers)
-        print(f"Me Status: {m.status_code}")
-        print(f"Me Data: {m.text}")
+        print("Bcrypt Error:", e)
+        return False
+
+otp = "123456"
+hash_str = get_password_hash(otp)
+print("Hash:", hash_str)
+print("Verify True:", verify_password(otp, hash_str))
+print("Verify False:", verify_password("123455", hash_str))
