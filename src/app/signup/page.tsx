@@ -76,21 +76,12 @@ export default function SignupPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const password = "otp_mock_password";
-      try {
-         await api.post('/api/auth/signup', { email, password, full_name: fullName });
-      } catch (err) {}
-      
-      const formData = new URLSearchParams();
-      formData.append('username', email);
-      formData.append('password', password);
-      
-      const response = await api.post('/api/auth/login', formData, {
-         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-      });
-      
+      const response = await api.post('/api/auth/otp/verify', { email, code: otp });
       const token = response.data.access_token;
-      const userResponse = await api.get('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+      
+      const userResponse = await api.get('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       
       login(token, userResponse.data);
       setIsSuccess(true);
@@ -108,39 +99,29 @@ export default function SignupPage() {
   const handleRequestPhoneOtp = async () => {
     if (!phone || !fullName) return toast.error('Phone and name required');
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const confirmation = await signInWithPhone(phone);
+      setConfirmationResult(confirmation);
       setPhoneOtpSent(true);
-      setPhoneOtp('123456');
       toast.success('Phone OTP sent!');
+    } catch (error) {
+      toast.error('Failed to send phone OTP');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleVerifyPhoneOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!confirmationResult) return toast.error('Please request OTP first');
     setIsLoading(true);
     try {
-      if (phoneOtp.length !== 6) throw new Error("Invalid phone OTP");
+      const result = await confirmationResult.confirm(phoneOtp);
+      const idToken = await result.user.getIdToken();
+      const response = await api.post('/api/auth/firebase-login', { idToken });
+      const { access_token, user: userData } = response.data;
       
-      const sanitizedPhone = phone.replace(/\D/g, '');
-      const email = `phone.${sanitizedPhone}@kaarya.os`;
-      const password = "phone_mock_password";
-      
-      try {
-        await api.post('/api/auth/signup', { email, password, full_name: fullName });
-      } catch (err) {}
-      
-      const formData = new URLSearchParams();
-      formData.append('username', email);
-      formData.append('password', password);
-      const response = await api.post('/api/auth/login', formData, {
-         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-      });
-      
-      const token = response.data.access_token;
-      const userResponse = await api.get('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
-      
-      login(token, userResponse.data);
+      login(access_token, userData);
       setIsSuccess(true);
       toast.success('Phone Verified Successfully');
       setTimeout(() => {

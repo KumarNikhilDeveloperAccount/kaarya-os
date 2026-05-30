@@ -108,53 +108,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
-      const email = `google.user.${Math.floor(Math.random() * 10000)}@kaarya.os`;
-      const password = "mock_google_password";
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
       
-      try {
-         await api.post('/api/auth/signup', {
-            email: email,
-            password: password,
-            full_name: "Google Authenticated User"
-         });
-      } catch (e) { /* ignore if already exists */ }
+      const response = await api.post('/api/auth/firebase-login', { idToken });
+      const { access_token, user: userData } = response.data;
       
-      const formData = new URLSearchParams();
-      formData.append('username', email);
-      formData.append('password', password);
-      
-      const response = await api.post('/api/auth/login', formData, {
-         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-      });
-      
-      const token = response.data.access_token;
-      
-      const userResponse = await api.get('/api/auth/me', {
-         headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      login(token, userResponse.data);
+      login(access_token, userData);
     } catch (error) {
-      console.error('Mock sign in error:', error);
+      console.error('Google sign in error:', error);
       throw error;
     }
   };
 
   const signInWithPhone = async (phoneNumber: string) => {
     try {
-      // Mocking Phone Auth
-      return {
-        confirm: async (otp: string) => {
-           if (otp === "123456" || otp.length === 6) {
-             return {
-                user: {
-                   getIdToken: async () => "mock_phone_token_" + Date.now()
-                }
-             };
-           }
-           throw new Error("Invalid OTP");
-        }
-      } as any;
+      if (typeof window === 'undefined' || !window.recaptchaVerifier) {
+        throw new Error('Recaptcha not initialized');
+      }
+      return await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
     } catch (error) {
       console.error('Phone sign-in error:', error);
       throw error;
