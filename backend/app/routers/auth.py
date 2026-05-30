@@ -150,7 +150,7 @@ def firebase_login(data: dict, db: Session = Depends(database.get_db)):
         from jwt import PyJWKClient
         
         # Fetch Google's public keys
-        url = "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
+        url = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
         jwks_client = PyJWKClient(url)
         signing_key = jwks_client.get_signing_key_from_jwt(id_token)
         
