@@ -88,7 +88,7 @@ export default function ProfilePage() {
             />
             <button 
               onClick={() => document.getElementById('cover-upload')?.click()}
-              className="absolute bottom-6 right-8 p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/20 transition-all flex items-center space-x-2"
+              className="absolute bottom-6 right-8 p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 text-white font-black text-[10px] uppercase tracking-widest hover:bg-white/20 transition-all flex items-center space-x-2 z-50 cursor-pointer"
             >
                <Camera className="h-4 w-4" />
                <span>Update Cover</span>
@@ -210,10 +210,10 @@ export default function ProfilePage() {
                  </div>
                  <div className="space-y-6">
                     <LegacyItem 
-                      role={profile.jobTitle || 'Founding Engineer'} 
-                      company={profile.currentCompany || 'NikVerse AI'} 
+                      role={profile.jobTitle || 'Elite Solutions Architect'} 
+                      company={profile.currentCompany || 'Kaarya.OS'} 
                       period={profile.yearsExperience ? `${profile.yearsExperience} years` : '2024 - Present'} 
-                      desc="Leading the development of complex architectures and systems." 
+                      desc={profile.bio || "Leading the development of complex architectures and systems."} 
                     />
                  </div>
               </div>

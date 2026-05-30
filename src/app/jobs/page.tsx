@@ -7,6 +7,7 @@ import JobCard from '@/components/jobs/JobCard';
 import { getJobs, applyToJob, getProfileData, getActiveRole, hasAppliedToJob } from '@/lib/store';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function JobBoard() {
   const [jobs, setJobs] = useState<any[]>([]);
@@ -15,6 +16,7 @@ export default function JobBoard() {
   const [filter, setFilter] = useState('all');
   const [role, setRole] = useState('candidate');
   const [profile, setProfile] = useState<any>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     setRole(getActiveRole());
@@ -58,17 +60,19 @@ export default function JobBoard() {
       toast.error('Only candidates can apply to jobs.');
       return;
     }
-    if (!profile || !profile.fullName) {
+    const candidateName = profile?.fullName || user?.full_name;
+    if (!candidateName) {
       toast.error('Please complete your candidate profile first.');
       return;
     }
     
-    if (hasAppliedToJob(jobId, profile.fullName)) {
+    if (hasAppliedToJob(jobId, candidateName)) {
       toast.info('You have already applied to this job.');
       return;
     }
 
-    applyToJob(jobId, profile);
+    const applicationProfile = profile || { fullName: candidateName, email: user?.email };
+    applyToJob(jobId, applicationProfile);
     toast.success('Application submitted successfully!');
     // Trigger re-render to update UI (JobCard will need to check applied status)
     fetchJobs();
@@ -143,7 +147,7 @@ export default function JobBoard() {
                   key={job.id} 
                   job={job} 
                   onApply={() => handleApply(job.id)} 
-                  hasApplied={profile ? hasAppliedToJob(job.id, profile.fullName) : false}
+                  hasApplied={(profile || user) ? hasAppliedToJob(job.id, profile?.fullName || user?.full_name) : false}
                 />
               ))
             ) : (

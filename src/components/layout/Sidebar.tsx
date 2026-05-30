@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { 
   Home, User, FileText, Code, CheckSquare, Settings, 
   Users, Building, GraduationCap, Briefcase, BarChart,
-  ShieldCheck, Zap, Bell, CreditCard, HelpCircle
+  ShieldCheck, Zap, Bell, CreditCard, HelpCircle, X
 } from 'lucide-react';
 import Image from 'next/image';
 import PerspectiveSwitcher from './PerspectiveSwitcher';
@@ -14,9 +14,11 @@ import { motion } from 'framer-motion';
 interface SidebarProps {
   role?: string;
   onPersonaSwitch?: (role: string) => void;
+  mobileOpen?: boolean;
+  setMobileOpen?: (open: boolean) => void;
 }
 
-export default function Sidebar({ role = 'candidate', onPersonaSwitch = () => {} }: SidebarProps) {
+export default function Sidebar({ role = 'candidate', onPersonaSwitch = () => {}, mobileOpen = false, setMobileOpen = () => {} }: SidebarProps) {
   const pathname = usePathname();
 
   const getNavItems = () => {
@@ -65,18 +67,30 @@ export default function Sidebar({ role = 'candidate', onPersonaSwitch = () => {}
 
   const navItems = getNavItems();
 
+  const navItems = getNavItems();
+
   return (
-    <aside className="w-72 h-screen bg-card border-r border-border flex flex-col hidden md:flex sticky top-0 transition-colors duration-500">
-      <div className="h-16 flex items-center px-8 border-b border-border/50 mb-6">
-        <Link href="/" className="group flex items-center space-x-3">
-            <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-xl border border-white/10 group-hover:scale-110 transition-transform duration-300">
-             <Image src="/kaarya-logo-final.png" alt="Kaarya OS Logo" fill className="object-cover" />
-            </div>
-          <h1 className="text-xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/80">Kaarya.OS</h1>
-        </Link>
-      </div>
-      
-      <div className="px-8 mb-8 text-left">
+    <>
+      {mobileOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 h-screen bg-card border-r border-border flex flex-col transform transition-transform duration-300 md:relative md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="h-16 flex items-center justify-between px-8 border-b border-border/50 mb-6">
+          <Link href="/" className="group flex items-center space-x-3" onClick={() => setMobileOpen(false)}>
+              <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-xl border border-white/10 group-hover:scale-110 transition-transform duration-300">
+               <Image src="/kaarya-logo-final.png" alt="Kaarya OS Logo" fill className="object-cover" />
+              </div>
+            <h1 className="text-xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/80">Kaarya.OS</h1>
+          </Link>
+          <button className="md:hidden p-2 text-muted-foreground hover:text-foreground" onClick={() => setMobileOpen(false)}>
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        
+        <div className="px-8 mb-8 text-left">
         <div className="p-3 bg-secondary/50 border border-border/50 rounded-xl">
            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-black mb-1">Active Role</p>
            <p className="text-sm font-black capitalize">{role || 'Unassigned'}</p>
@@ -127,5 +141,6 @@ export default function Sidebar({ role = 'candidate', onPersonaSwitch = () => {}
         <div className="text-[9px] text-center text-muted-foreground/30 mt-6 uppercase font-bold tracking-widest">© 2026 Kaarya Operating System</div>
       </div>
     </aside>
+    </>
   );
 }

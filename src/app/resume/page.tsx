@@ -287,9 +287,12 @@ export default function ResumePage() {
                        <div className="h-1.5 w-full bg-zinc-100 rounded" />
                     </div>
                  </div>
-                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 p-3 bg-black text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+                 <button 
+                    onClick={() => window.print()}
+                    className="absolute bottom-6 left-1/2 -translate-x-1/2 p-3 bg-black text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 active:scale-95"
+                 >
                     <Download className="h-5 w-5" />
-                 </div>
+                 </button>
               </div>
            </div>
         </div>

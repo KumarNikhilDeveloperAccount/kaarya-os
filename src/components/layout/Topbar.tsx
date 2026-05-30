@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
-export default function Topbar() {
+export default function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const { user } = useAuth();
   const persona = user?.active_persona || 'guest';
@@ -29,7 +29,7 @@ export default function Topbar() {
   return (
     <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 z-10 sticky top-0">
       <div className="flex items-center">
-        <button className="p-2 -ml-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors md:hidden">
+        <button onClick={onMenuClick} className="p-2 -ml-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors md:hidden">
           <Menu className="h-5 w-5" />
         </button>
           <div className="relative w-8 h-8 rounded-lg overflow-hidden shadow-lg border border-primary/20">

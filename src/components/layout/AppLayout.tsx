@@ -14,6 +14,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const [activePersona, setActivePersona] = useState('candidate'); 
   const [showIntro, setShowIntro] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -36,10 +37,10 @@ function AppContent({ children }: { children: React.ReactNode }) {
       </AnimatePresence>
       
       <div className={`flex h-screen bg-background text-foreground overflow-hidden transition-opacity duration-1000 ${showIntro ? 'opacity-0' : 'opacity-100'}`}>
-        <Sidebar role={activePersona} onPersonaSwitch={setActivePersona} />
-        <div className="flex-1 flex flex-col w-full">
+        <Sidebar role={activePersona} onPersonaSwitch={setActivePersona} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
+        <div className="flex-1 flex flex-col w-full relative">
           {!showIntro && <BackendStatusBanner />}
-          <Topbar />
+          <Topbar onMenuClick={() => setMobileOpen(true)} />
           <main className="flex-1 overflow-x-hidden overflow-y-auto bg-muted/20">
             <div className="container mx-auto px-4 py-8">
               {children}

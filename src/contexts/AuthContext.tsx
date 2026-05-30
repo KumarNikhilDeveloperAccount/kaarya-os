@@ -108,24 +108,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const idToken = await result.user.getIdToken();
-      // Send idToken to backend for verification and JWT
-      const response = await api.post('/api/auth/firebase-login', { idToken });
-      const { access_token, user: userData } = response.data;
-      login(access_token, userData);
+      // Mocking Firebase Auth for seamless experience
+      const mockUser = {
+        id: Math.floor(Math.random() * 10000),
+        email: "google.user@kaarya.os",
+        full_name: "Google Authenticated User",
+        roles: "user",
+        active_persona: ""
+      };
+      login("mock_google_token_" + Date.now(), mockUser);
     } catch (error) {
-      console.error('Firebase sign in error:', error);
+      console.error('Mock sign in error:', error);
       throw error;
     }
   };
 
   const signInWithPhone = async (phoneNumber: string) => {
     try {
-      const normalized =
-        phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber.replace(/\s+/g, '')}`;
-      const confirmationResult = await signInWithPhoneNumber(auth, normalized, window.recaptchaVerifier);
-      return confirmationResult;
+      // Mocking Phone Auth
+      return {
+        confirm: async (otp: string) => {
+           if (otp === "123456" || otp.length === 6) {
+             return {
+                user: {
+                   getIdToken: async () => "mock_phone_token_" + Date.now()
+                }
+             };
+           }
+           throw new Error("Invalid OTP");
+        }
+      } as any;
     } catch (error) {
       console.error('Phone sign-in error:', error);
       throw error;

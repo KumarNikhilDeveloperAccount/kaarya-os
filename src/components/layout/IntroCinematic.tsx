@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
+import Image from 'next/image';
 
 export default function IntroCinematic({ onComplete }: { onComplete: () => void }) {
   const [stage, setStage] = useState(0);
@@ -41,8 +42,8 @@ export default function IntroCinematic({ onComplete }: { onComplete: () => void 
             transition={{ duration: 0.5, ease: 'easeOut' }}
             className="relative"
           >
-             <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-2xl shadow-primary/20">
-                <Sparkles className="text-white h-12 w-12" />
+             <div className="w-24 h-24 rounded-3xl bg-white flex items-center justify-center shadow-2xl shadow-primary/20 overflow-hidden relative">
+                <Image src="/kaarya-logo-final.png" alt="Kaarya OS Logo" fill className="object-contain p-2" />
              </div>
              <motion.div 
                className="absolute -inset-4 rounded-full border-2 border-primary/20"

@@ -10,7 +10,7 @@ import {
 import { useTheme } from '@/components/layout/ThemeProvider';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { clearAllData } from '@/lib/store';
+import { clearAllData, getProfileData, getActiveRole } from '@/lib/store';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -27,7 +27,8 @@ export default function SettingsPage() {
     { id: 'security', name: 'Security', icon: Shield },
     { id: 'notifications', name: 'Notifications', icon: Bell },
     { id: 'ui', name: 'UI & Theme', icon: Layout },
-    { id: 'privacy', name: 'Privacy', icon: Eye }
+    { id: 'privacy', name: 'Privacy', icon: Eye },
+    { id: 'danger', name: 'Danger Zone', icon: Trash2 }
   ];
 
 
@@ -83,6 +84,7 @@ export default function SettingsPage() {
                 {activeTab === 'notifications' && <NotificationPreferences />}
                 {activeTab === 'ui' && <UISettings theme={theme} setTheme={setTheme} />}
                 {activeTab === 'privacy' && <PrivacySettings />}
+                {activeTab === 'danger' && <DangerZone />}
              </motion.div>
            </AnimatePresence>
         </div>
@@ -95,8 +97,29 @@ function ProfileSettings() {
   const { user, login } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [name, setName] = useState(user?.full_name || 'Kumar Nikhil');
-  const [bio, setBio] = useState(user?.bio || "Building the world's most intelligent hiring OS.");
+  
+  const [localProfile, setLocalProfile] = useState<any>(null);
+  const [name, setName] = useState('');
+  const [bio, setBio] = useState('');
+  const [title, setTitle] = useState('');
+  const [pic, setPic] = useState('');
+  
+  useEffect(() => {
+    const activeRole = getActiveRole();
+    const data = getProfileData(activeRole);
+    if (data) {
+      setLocalProfile(data);
+      setName(data.fullName || data.companyName || user?.full_name || 'Kaarya User');
+      setBio(data.bio || user?.bio || "Building the world's most intelligent hiring OS.");
+      setTitle(data.jobTitle || data.industry || 'Professional');
+      setPic(data.profilePic || data.logo || '');
+    } else {
+      setName(user?.full_name || 'Kaarya User');
+      setBio(user?.bio || "Building the world's most intelligent hiring OS.");
+      setTitle('Professional');
+    }
+  }, [user]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
@@ -131,8 +154,12 @@ function ProfileSettings() {
     <div className="space-y-10">
       <div className="flex items-center space-x-8 pb-10 border-b border-border/50">
          <div className="relative group">
-            <div className="w-28 h-28 rounded-[2rem] bg-secondary flex items-center justify-center border-2 border-dashed border-border overflow-hidden transition-all group-hover:border-primary/50">
-               <User className="h-12 w-12 text-muted-foreground group-hover:text-primary transition-colors" />
+            <div className="w-28 h-28 rounded-[2rem] bg-secondary flex items-center justify-center border-2 border-dashed border-border overflow-hidden transition-all group-hover:border-primary/50 relative">
+               {pic ? (
+                 <img src={pic} alt="Profile" className="w-full h-full object-cover" />
+               ) : (
+                 <User className="h-12 w-12 text-muted-foreground group-hover:text-primary transition-colors" />
+               )}
             </div>
             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
             <button onClick={handlePhotoClick} className="absolute -bottom-2 -right-2 p-3 bg-primary text-white rounded-2xl shadow-xl hover:scale-110 active:scale-95 transition-all">
@@ -155,7 +182,7 @@ function ProfileSettings() {
          </div>
          <div className="space-y-3">
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Professional Title</label>
-            <input className="w-full bg-secondary border border-transparent focus:border-primary/30 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-4 focus:ring-primary/5 outline-none transition-all" defaultValue="Founding Engineer" disabled />
+            <input className="w-full bg-secondary border border-transparent focus:border-primary/30 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-4 focus:ring-primary/5 outline-none transition-all" value={title} disabled />
          </div>
          <div className="space-y-3 sm:col-span-2">
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Bio / Mission Statement</label>
@@ -229,14 +256,40 @@ function SecuritySettings() {
              </button>
           </div>
        </div>
+    </div>
+  );
+}
 
-       <div className="pt-12 border-t border-border/50 mt-auto">
+function DangerZone() {
+  const handleDecommission = () => {
+    if (confirm("Are you sure you want to permanently decommission your global account and erase all local data?")) {
+      clearAllData();
+      toast.success("Account Decommissioned.");
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
+    }
+  };
+
+  return (
+    <div className="space-y-10">
+       <div>
+          <h3 className="text-2xl font-black tracking-tight mb-2 text-red-500 flex items-center">
+             <Trash2 className="h-6 w-6 mr-3" /> Danger Zone
+          </h3>
+          <p className="text-sm text-muted-foreground font-medium">Irreversible actions for your Kaarya.OS account.</p>
+       </div>
+       
+       <div className="p-8 border border-red-500/30 bg-red-500/5 rounded-3xl">
+          <h4 className="text-xl font-bold mb-2">Decommission Global Account</h4>
+          <p className="text-sm text-muted-foreground mb-6">
+            This will permanently delete your account, wipe your profiles, delete your resume, and clear all local storage.
+          </p>
           <button 
             onClick={handleDecommission}
-            className="flex items-center text-red-500/60 hover:text-red-500 group transition-all"
+            className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-red-500/20"
           >
-             <Trash2 className="h-5 w-5 mr-3 group-hover:animate-bounce" />
-             <span className="text-[10px] font-black uppercase tracking-[0.3em]">Decommission Global Account</span>
+             Yes, Decommission Account
           </button>
        </div>
     </div>

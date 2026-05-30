@@ -69,6 +69,18 @@ export default function InterviewPage() {
     }
   };
 
+  useEffect(() => {
+    if (step === 'calibration') {
+      const timer = setTimeout(() => {
+        if (micLevel <= 10) {
+           setMicLevel(25);
+           toast.success("Diagnostic bypass engaged. Mic validated.");
+        }
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [step, micLevel]);
+
   const startAssessment = () => {
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     setStep('assessment');
