@@ -35,7 +35,7 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      await api.post('/api/auth/signup', {
+      const response = await api.post('/api/auth/signup', {
         email,
         password,
         full_name: fullName
@@ -43,9 +43,17 @@ export default function SignupPage() {
 
       setIsSuccess(true);
       toast.success('Identity Created Successfully');
-      setTimeout(() => {
-        router.push('/role-selection');
-      }, 2000);
+      
+      const { access_token, user } = response.data;
+      if (access_token && user) {
+        setTimeout(() => {
+          login(access_token, user);
+        }, 1000);
+      } else {
+        setTimeout(() => {
+          router.push('/login');
+        }, 2000);
+      }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Signup failed. Please try again.');
       toast.error('Signup Failed');

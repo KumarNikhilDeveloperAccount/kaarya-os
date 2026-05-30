@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { X, CheckCircle2, IndianRupee, Sparkles, CreditCard, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRazorpay } from '@/hooks/useRazorpay';
-import axios from 'axios';
+import { api } from '@/lib/api';
+import { toast } from 'sonner';
 
 interface HireModalProps {
   candidate: any;
@@ -27,18 +28,32 @@ export default function HireModal({ candidate, isOpen, onClose, onSuccess }: Hir
     setLoading(true);
     try {
       // Step 1: Create Order locally or on backend
-      const response = await axios.post('http://localhost:8000/api/payments/create-order', {
+      const response = await api.post('/api/payments/create-order', {
         item_type: 'hire_standard',
         custom_amount: platformFee
-      }, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
 
       const orderData = response.data;
 
+      // If backend is in mock mode due to missing keys, bypass Razorpay UI
+      if (orderData.id && orderData.id.startsWith("order_mock_")) {
+          await api.post('/api/payments/verify', {
+              order_id: orderData.id,
+              payment_id: "pay_mock_123456",
+              signature: "mock_signature",
+              item_type: 'hire_standard',
+              amount: platformFee
+          });
+          toast.success('Mock Transaction Successful.');
+          onSuccess();
+          onClose();
+          setLoading(false);
+          return;
+      }
+
       // Step 2: Open Razorpay
       await openCheckout({
-        key: 'rzp_test_SXSIL5pBjkGpta', // Should come from config
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_placeholder',
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Kaarya.OS',
@@ -46,16 +61,21 @@ export default function HireModal({ candidate, isOpen, onClose, onSuccess }: Hir
         order_id: orderData.id,
         handler: async (paymentResponse: any) => {
            // Step 3: Verify and Mark Hired
-           await axios.post('http://localhost:8000/api/payments/verify', {
-             ...paymentResponse,
-             item_type: 'hire_standard',
-             amount: platformFee
-           }, {
-             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-           });
-           
-           onSuccess();
-           onClose();
+           try {
+             await api.post('/api/payments/verify', {
+               order_id: paymentResponse.razorpay_order_id,
+               payment_id: paymentResponse.razorpay_payment_id,
+               signature: paymentResponse.razorpay_signature,
+               item_type: 'hire_standard',
+               amount: platformFee
+             });
+             
+             toast.success('Payment Successful!');
+             onSuccess();
+             onClose();
+           } catch (err) {
+             toast.error('Payment Verification Failed');
+           }
         },
         prefill: {
           name: 'Company Admin',

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { saveProfileData, getProfileData } from '@/lib/store';
+import { api } from '@/lib/api';
 
 export default function ResumePage() {
   const [activeStep, setActiveStep] = useState(0);
@@ -42,38 +43,12 @@ export default function ResumePage() {
     
     setIsParsing(true);
     try {
-      // Mock the AI delay
-      await new Promise(res => setTimeout(res, 2000));
+      const response = await api.post('/api/ai/parse-resume', {
+        resume_text: rawResume,
+        job_description: jd
+      });
       
-      const payload = {
-         personal: {
-            name: "Kumar Nikhil",
-            email: "unknown@kaarya.os",
-            location: "San Francisco, CA",
-            objective: "Leading infrastructure architecture and high-performance system design."
-         },
-         experience: [
-            {
-               title: "Founding Engineer",
-               company: "NikVerse AI",
-               duration: "2024 - Present",
-               description: "Building massive distributed systems."
-            }
-         ],
-         skills: ["Python", "FastAPI", "React", "Next.js", "PostgreSQL"],
-         education: [
-            {
-               degree: "Computer Science",
-               institution: "Stanford Academy",
-               year: "2024"
-            }
-         ],
-         rit_analysis: {
-            summary: "Analysis perfectly mapped to Elite requirements.",
-            fit_score: 95,
-            missing_keywords: ["Kubernetes", "GraphQL"]
-         }
-      };
+      const payload = response.data;
       
       setParsedData(payload);
       setAiOpinion(payload.rit_analysis);
@@ -269,8 +244,8 @@ export default function ResumePage() {
            )}
 
            <div className="relative group cursor-zoom-in">
-              <div className="absolute inset-0 bg-primary/20 rounded-[2.5rem] blur-2xl group-hover:blur-3xl transition-all" />
-              <div className="relative bg-white text-black p-8 rounded-[2rem] aspect-[1/1.4] shadow-2xl scale-95 group-hover:scale-100 transition-all duration-700">
+              <div className="absolute inset-0 bg-primary/20 rounded-[2.5rem] blur-2xl group-hover:blur-3xl transition-all print:hidden" />
+              <div id="resume-preview" className="relative bg-white text-black p-8 rounded-[2rem] aspect-[1/1.4] shadow-2xl scale-95 group-hover:scale-100 transition-all duration-700">
                  <div className="border-b-2 border-primary pb-4 mb-6">
                     <h4 className="text-xl font-black uppercase tracking-tight">{parsedData.personal.name || 'Candidate Name'}</h4>
                     <p className="text-[8px] font-black text-primary uppercase tracking-[0.2em] mt-1">AI Structured Format</p>

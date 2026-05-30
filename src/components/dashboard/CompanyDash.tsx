@@ -78,6 +78,20 @@ export default function CompanyDashboard() {
       
       const order = orderRes.data;
 
+      // If backend is in mock mode due to missing keys, bypass Razorpay UI
+      if (order.id.startsWith("order_mock_")) {
+          await api.post('/api/payments/verify', {
+              order_id: order.id,
+              payment_id: "pay_mock_123456",
+              signature: "mock_signature",
+              item_type: 'hire_standard_entry',
+              amount: order.amount / 100
+          });
+          toast.success('Mock Transaction Successful. Candidate Unlocked.');
+          setIsPurchasing(false);
+          return;
+      }
+
       // 2. Open Razorpay Checkout Modal
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_placeholder', 

@@ -39,29 +39,15 @@ CRITICAL DIRECTIVES:
 4. JSON Output: When asked for an evaluation or assessment, you MUST output valid JSON if the prompt specifies a JSON structure.
 """
 
-# Refactor to route AI calls to Ollama and Hugging Face endpoints
-OLLAMA_URL = "http://localhost:11434"
-HUGGING_FACE_URL = "http://localhost:9999"
-
-def route_to_ollama(payload: dict) -> dict:
-    """Route AI calls to Ollama."""
-    try:
-        response = requests.post(f"{OLLAMA_URL}/api/v1/generate", json=payload)
-        response.raise_for_status()
-        return response.json()
-    except requests.RequestException as e:
-        logger.error(f"Ollama request failed: {e}")
-        return {"error": "Ollama request failed."}
-
-def route_to_hugging_face(payload: dict) -> dict:
-    """Route AI calls to Hugging Face."""
-    try:
-        response = requests.post(f"{HUGGING_FACE_URL}/api/v1/analyze", json=payload)
-        response.raise_for_status()
-        return response.json()
-    except requests.RequestException as e:
-        logger.error(f"Hugging Face request failed: {e}")
-        return {"error": "Hugging Face request failed."}
+def clean_json(text: str) -> str:
+    text = text.strip()
+    if text.startswith("```json"):
+        text = text[7:]
+    if text.startswith("```"):
+        text = text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    return text.strip()
 
 def evaluate_resume(resume_text: str, job_description: str) -> dict:
     """
@@ -78,11 +64,37 @@ def evaluate_resume(resume_text: str, job_description: str) -> dict:
             "hire_recommendation": "No"
         }
         
-    payload = {
-        "resume_text": resume_text,
-        "job_description": job_description
-    }
-    return route_to_ollama(payload)
+    prompt = f"""
+    You are Rit.ai. Analyze this resume against the job description.
+    Job Description: {job_description}
+    Resume: {resume_text}
+    
+    You MUST respond with ONLY a valid JSON object matching this structure EXACTLY (no markdown, no quotes):
+    {{
+       "personal": {{ "name": "...", "email": "...", "location": "...", "objective": "..." }},
+       "experience": [ {{ "title": "...", "company": "...", "duration": "...", "description": "..." }} ],
+       "skills": ["...", "..."],
+       "education": [ {{ "degree": "...", "institution": "...", "year": "..." }} ],
+       "rit_analysis": {{
+          "summary": "...",
+          "fit_score": 95,
+          "missing_keywords": ["...", "..."]
+       }}
+    }}
+    """
+    try:
+        response = client.models.generate_content(
+            model="gemini-1.5-pro",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_INSTRUCTION,
+                temperature=0.2
+            )
+        )
+        return json.loads(clean_json(response.text))
+    except Exception as e:
+        logger.error(f"Gemini resume evaluation failed: {e}")
+        raise
 
 def ask_rit(question: str, context: str = "") -> str:
     """
@@ -141,9 +153,16 @@ def conduct_interview_turn(job_description: str, candidate_resume: str, history:
         "final_score": <optional float 0-100, only if is_complete is true>
     }
     """
-    payload = {
-        "job_description": job_description,
-        "candidate_resume": candidate_resume,
-        "history": history
-    }
-    return route_to_hugging_face(payload)
+    try:
+        response = client.models.generate_content(
+            model="gemini-1.5-pro",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_INSTRUCTION,
+                temperature=0.7
+            )
+        )
+        return json.loads(clean_json(response.text))
+    except Exception as e:
+        logger.error(f"Gemini interview evaluation failed: {e}")
+        raise

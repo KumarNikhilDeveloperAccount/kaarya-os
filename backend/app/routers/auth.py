@@ -47,7 +47,7 @@ _init_firebase_admin()
 router = APIRouter()
 
 
-@router.post("/signup", response_model=schemas.UserOut, status_code=status.HTTP_201_CREATED)
+@router.post("/signup", response_model=schemas.Token, status_code=status.HTTP_201_CREATED)
 def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
@@ -58,7 +58,10 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user
+    
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = auth.create_access_token(data={"sub": new_user.email}, expires_delta=access_token_expires)
+    return {"access_token": access_token, "token_type": "bearer", "user": new_user}
 
 
 @router.post("/login", response_model=schemas.Token)
@@ -127,7 +130,7 @@ def verify_email_otp(data: schemas.OTPVerify, db: Session = Depends(database.get
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
     # otp_code is a bcrypt hash (see /otp/request)
-    if not auth.verify_password(data.code, user.otp_code):
+    if not auth.verify_password(data.code.strip(), user.otp_code):
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
     user.otp_code = None

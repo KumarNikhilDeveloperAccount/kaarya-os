@@ -9,7 +9,7 @@ import {
   Timer, AlertCircle, CheckCircle2, RotateCcw,
   Volume2, Loader2
 } from 'lucide-react';
-import { superNodeApi } from '@/lib/api';
+import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
 export default function InterviewPage() {
@@ -99,7 +99,7 @@ export default function InterviewPage() {
     const newHistory = [...history, { role: 'user', content: answer }];
 
     try {
-      const response = await superNodeApi.post('/api/ai/assess-interview', {
+      const response = await api.post('/api/ai/assess-interview', {
         job_description: "Senior Software Engineer focusing on Backend Architecture.",
         candidate_resume: "Candidate has 5 years of experience building mission-critical systems in Python and React.",
         history: newHistory

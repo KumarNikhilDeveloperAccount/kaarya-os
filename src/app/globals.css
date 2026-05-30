@@ -98,3 +98,26 @@
     @apply antialiased;
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #resume-preview, #resume-preview * {
+    visibility: visible;
+  }
+  #resume-preview {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    box-shadow: none !important;
+    transform: none !important;
+    border: none !important;
+  }
+  #resume-preview button {
+    display: none !important;
+  }
+}
