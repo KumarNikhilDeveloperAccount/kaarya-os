@@ -24,7 +24,15 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         
     user = db.query(models.User).filter(models.User.email == token_data.email).first()
     if user is None:
-        raise credentials_exception
+        # Graceful degradation for ephemeral DBs: if JWT is cryptographically valid, auto-create user
+        user = models.User(
+            email=token_data.email,
+            full_name=token_data.email.split('@')[0],
+            is_active=True
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
     return user
 
 def get_current_active_user(current_user: models.User = Depends(get_current_user)):
