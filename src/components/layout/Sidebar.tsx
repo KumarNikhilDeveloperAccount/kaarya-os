@@ -67,8 +67,6 @@ export default function Sidebar({ role = 'candidate', onPersonaSwitch = () => {}
 
   const navItems = getNavItems();
 
-  const navItems = getNavItems();
-
   return (
     <>
       {mobileOpen && (
