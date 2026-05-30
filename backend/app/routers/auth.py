@@ -196,7 +196,8 @@ def firebase_login(data: dict, db: Session = Depends(database.get_db)):
         db.commit()
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = auth.create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
+    sub = user.email or user.phone_number
+    access_token = auth.create_access_token(data={"sub": sub}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer", "user": user}
 
 

@@ -15,20 +15,24 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     )
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
+        sub: str = payload.get("sub")
+        if sub is None:
             raise credentials_exception
-        token_data = schemas.TokenData(email=email)
     except JWTError:
         raise credentials_exception
         
-    user = db.query(models.User).filter(models.User.email == token_data.email).first()
+    user = db.query(models.User).filter(
+        (models.User.email == sub) | (models.User.phone_number == sub)
+    ).first()
+    
     if user is None:
         try:
             # Graceful degradation for ephemeral DBs: if JWT is cryptographically valid, auto-create user
+            is_email = "@" in sub
             user = models.User(
-                email=token_data.email,
-                full_name=token_data.email.split('@')[0],
+                email=sub if is_email else None,
+                phone_number=sub if not is_email else None,
+                full_name=sub.split('@')[0] if is_email else f"User {sub}",
                 is_active=True,
                 hashed_password="ephemeral_recreated",
                 active_persona="",
