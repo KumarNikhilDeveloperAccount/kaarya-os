@@ -62,7 +62,7 @@ export default function ResumePage() {
     }
   };
 
-  const handleFinalize = () => {
+  const handleFinalize = async () => {
     toast.success("Portfolio integration initiated!");
     const currentProfile = getProfileData('candidate') || {};
     saveProfileData('candidate', {
@@ -72,6 +72,15 @@ export default function ResumePage() {
        bio: parsedData.personal.objective,
        skills: parsedData.skills,
     });
+    
+    try {
+      await api.put('/api/auth/me', {
+        full_name: parsedData.personal.name,
+        bio: parsedData.personal.objective
+      });
+    } catch (err) {
+      console.error("Backend sync skipped.", err);
+    }
     setTimeout(() => {
       window.location.href = '/profile';
     }, 1500);

@@ -65,7 +65,10 @@ export default function InterviewPage() {
       updateMicLevel();
 
     } catch (err) {
-      toast.error("Hardware access is required for AI Assessment. Please allow camera and microphone permissions.");
+      toast.error("Hardware access denied. Falling back to text-only mode.");
+      setStep('calibration');
+      setMicLevel(15); // Artificial mic level to bypass check
+      setIsBypassed(true);
     }
   };
 
@@ -242,13 +245,26 @@ export default function InterviewPage() {
                    This session uses real-time semantic analysis. Ensure you are in a quiet, well-lit environment.
                 </p>
              </div>
-             <button 
-               onClick={requestPermissions}
-               className="w-full h-16 bg-primary text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center space-x-3"
-             >
-                <Camera className="h-5 w-5" />
-                <span>Initialize Hardware</span>
-             </button>
+             <div className="flex flex-col space-y-3">
+               <button 
+                 onClick={requestPermissions}
+                 className="w-full h-16 bg-primary text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center space-x-3"
+               >
+                  <Camera className="h-5 w-5" />
+                  <span>Initialize Hardware</span>
+               </button>
+               <button 
+                 onClick={() => {
+                    toast.info("Entering text-only mode.");
+                    setStep('calibration');
+                    setMicLevel(15);
+                    setIsBypassed(true);
+                 }}
+                 className="w-full py-4 text-xs font-bold text-muted-foreground hover:text-primary transition-colors underline underline-offset-4"
+               >
+                  Proceed without Camera/Mic (Text Mode)
+               </button>
+             </div>
           </motion.div>
         )}
 
