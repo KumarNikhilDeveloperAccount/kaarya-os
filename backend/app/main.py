@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.database import engine, Base, SessionLocal
 from app.models import User
-from app.routers import auth, jobs, sandbox, interviews, payments, admin, support, ai, dashboard, boomi
+from app.routers import auth, jobs, sandbox, interviews, payments, admin, support, ai, dashboard, boomi, ecosystem
 
 # Configure logging
 logging.basicConfig(
@@ -80,6 +80,7 @@ app.include_router(support.router, prefix="/api/support", tags=["support"])
 app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])
 app.include_router(boomi.router, prefix="/api/boomi", tags=["boomi"])
+app.include_router(ecosystem.router, prefix="/api/ecosystem", tags=["ecosystem"])
 
 @app.get("/")
 def read_root():

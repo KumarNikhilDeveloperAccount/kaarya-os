@@ -56,12 +56,15 @@ def evaluate_resume(resume_text: str, job_description: str) -> dict:
     """
     if not client:
         return {
-            "score": 0, 
-            "feedback": "Rit.ai engine is currently offline. Verify API configuration.", 
-            "matched_skills": [], 
-            "missing_skills": [],
-            "seniority_alignment": "Unknown",
-            "hire_recommendation": "No"
+           "personal": { "name": "Jane Doe", "email": "jane@example.com", "location": "San Francisco", "objective": "Senior Engineer" },
+           "experience": [ { "title": "Senior Dev", "company": "Tech Corp", "duration": "3 years", "description": "Backend dev" } ],
+           "skills": ["Python", "React", "Node.js"],
+           "education": [ { "degree": "BS CS", "institution": "University", "year": "2020" } ],
+           "rit_analysis": {
+              "summary": "Rit.ai engine is currently offline. Using mock data.",
+              "fit_score": 85,
+              "missing_keywords": ["Docker", "AWS"]
+           }
         }
         
     prompt = f"""

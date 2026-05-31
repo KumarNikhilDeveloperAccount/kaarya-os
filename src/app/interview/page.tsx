@@ -150,13 +150,57 @@ export default function InterviewPage() {
     }
   }, [isRecording, step, timeLeft]);
 
-  // Crucial fix: React unmounts the video element between steps.
-  // We must re-attach the MediaStream to the new videoRef once it mounts.
-  useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
+  // Crucial fix: Attach the stream properly and start playing
+  const attachVideo = (el: HTMLVideoElement | null) => {
+    if (el && stream) {
+      el.srcObject = stream;
+      el.play().catch(() => {}); // Ensure play is called
     }
-  }, [step, stream]);
+  };
+
+  // Web Speech API Integration
+  useEffect(() => {
+    if (!isRecording || step !== 'assessment') return;
+
+    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("Voice transcription is not supported in this browser. Please type your answer.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    let finalTranscript = '';
+
+    recognition.onresult = (event: any) => {
+      let interimTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + ' ';
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
+      }
+      setTranscript((finalTranscript + interimTranscript).trim());
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error", event.error);
+    };
+
+    try {
+      recognition.start();
+    } catch (e) {}
+
+    return () => {
+      try {
+        recognition.stop();
+      } catch (e) {}
+    };
+  }, [isRecording, step, currentQuestion]);
 
   return (
     <div className="h-[calc(100vh-120px)] flex flex-col items-center justify-center animate-in fade-in duration-1000">
@@ -208,7 +252,7 @@ export default function InterviewPage() {
              <div className="flex-1 space-y-8">
                 <div className="aspect-video bg-black rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-card relative">
                    <video 
-                     ref={(el) => { if (el && stream) el.srcObject = stream; }}
+                     ref={attachVideo}
                      autoPlay 
                      muted 
                      className="w-full h-full object-cover brightness-125" 
@@ -320,7 +364,7 @@ export default function InterviewPage() {
              <div className="w-80 space-y-6">
                 <div className="aspect-video bg-black rounded-3xl overflow-hidden shadow-xl border-2 border-card relative group">
                    <video 
-                     ref={(el) => { if (el && stream) el.srcObject = stream; }}
+                     ref={attachVideo}
                      autoPlay 
                      muted 
                      className="w-full h-full object-cover brightness-125" 

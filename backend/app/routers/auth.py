@@ -408,3 +408,13 @@ def switch_user_persona(
 @router.get("/me", response_model=schemas.UserOut)
 def get_current_user_info(current_user: models.User = Depends(deps.get_current_user)):
     return current_user
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_current_user(
+    current_user: models.User = Depends(deps.get_current_user),
+    db: Session = Depends(database.get_db),
+):
+    db.delete(current_user)
+    db.commit()
+    return None

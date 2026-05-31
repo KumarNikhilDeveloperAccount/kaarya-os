@@ -55,11 +55,13 @@ export default function Sidebar({ role = 'candidate', onPersonaSwitch = () => {}
       default: // candidate
         return [
           { name: 'Journey', href: '/', icon: Home },
+          { name: 'Network Feed', href: '/feed', icon: Users },
+          { name: 'Talent Reels', href: '/reels', icon: Zap },
+          { name: 'Opp Orbit', href: '/orbit', icon: Briefcase },
           { name: 'Personal Profile', href: '/profile', icon: User },
           { name: 'Resume Parser', href: '/resume', icon: FileText },
           { name: 'AI Assessment', href: '/interview', icon: ShieldCheck },
           { name: 'Engineering Lab', href: '/coding', icon: Code },
-          { name: 'Help & Support', href: '/support', icon: HelpCircle },
           { name: 'Settings', href: '/settings', icon: Settings },
         ];
     }

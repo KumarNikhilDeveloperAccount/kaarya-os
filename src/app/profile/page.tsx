@@ -201,6 +201,64 @@ export default function ProfilePage() {
                </p>
             </div>
 
+            {/* Career Reels / Media (Living Identity) */}
+            {role === 'candidate' && (
+               <div className="space-y-6">
+                  <div className="flex items-center justify-between px-4">
+                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Professional Reels</h3>
+                     <button className="text-[10px] font-black text-primary hover:underline uppercase tracking-widest flex items-center">
+                       <Camera className="h-3 w-3 mr-1" /> Add Media
+                     </button>
+                  </div>
+                  <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-4 snap-x">
+                     {[1, 2, 3].map(i => (
+                        <div key={i} className="w-48 h-72 rounded-3xl bg-zinc-900 border border-border shrink-0 snap-start relative overflow-hidden group cursor-pointer">
+                           <img src={`https://picsum.photos/400/600?random=${i}`} className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-700" alt="Reel" />
+                           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                           <div className="absolute bottom-4 left-4 right-4">
+                              <p className="text-white text-xs font-bold leading-tight">System Design Architecture overview</p>
+                              <p className="text-primary text-[8px] font-black uppercase tracking-widest mt-2">1.2k views</p>
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+               </div>
+            )}
+
+            {/* Endorsements & Skill Graph */}
+            {role === 'candidate' && (
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="bg-card border border-border rounded-[2.5rem] p-8 shadow-xl">
+                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-6">Verified Endorsements</h3>
+                     <div className="space-y-4">
+                        {displayTags.slice(0, 3).map((tag: string, idx: number) => (
+                           <div key={idx} className="flex items-center justify-between p-3 bg-secondary rounded-2xl border border-border">
+                              <span className="text-xs font-bold">{tag}</span>
+                              <div className="flex items-center">
+                                 <div className="flex -space-x-2 mr-3">
+                                    {[1, 2, 3].map(j => (
+                                       <div key={j} className="w-6 h-6 rounded-full border-2 border-card bg-primary text-[8px] flex items-center justify-center text-white font-bold z-10">
+                                          U{j}
+                                       </div>
+                                    ))}
+                                 </div>
+                                 <span className="text-[10px] font-black text-primary">+12</span>
+                              </div>
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-primary/10 to-indigo-600/10 border border-primary/20 rounded-[2.5rem] p-8 shadow-xl flex flex-col justify-center items-center text-center">
+                     <div className="w-24 h-24 rounded-full border-4 border-dashed border-primary/50 flex items-center justify-center mb-4 relative">
+                        <div className="absolute inset-0 border-4 border-primary rounded-full" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 50%)' }} />
+                        <CheckCircle2 className="h-8 w-8 text-primary" />
+                     </div>
+                     <h4 className="font-black text-lg">Skill Graph Synchronized</h4>
+                     <p className="text-xs font-medium text-muted-foreground mt-2">Rit.ai has verified your technical depth against 4,200 peer profiles in your tier.</p>
+                  </div>
+               </div>
+            )}
+
             {/* Workforce Legacy / Details based on role */}
             {role === 'candidate' || role === 'trainer' ? (
               <div className="space-y-8">

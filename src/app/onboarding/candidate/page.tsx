@@ -305,10 +305,12 @@ export default function CandidateOnboarding() {
                  </div>
                </div>
 
-               <div>
-                 <label className="text-sm font-semibold">Desired Job Role(s)</label>
-                 <input type="text" placeholder="e.g. Frontend Engineer, Product Manager" className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
-               </div>
+               <TagInput 
+                 label="Desired Job Role(s)" 
+                 placeholder="Type a role and press enter (e.g. Frontend Engineer)" 
+                 tags={formData.desiredRoles} 
+                 setTags={(tags) => setFormData({...formData, desiredRoles: tags})} 
+               />
 
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                  <div>
@@ -469,7 +471,10 @@ export default function CandidateOnboarding() {
                  className="px-8 py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center shadow-lg shadow-primary/20 ml-auto disabled:opacity-70 disabled:hover:scale-100"
                >
                  {isSubmitting ? (
-                   <span className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                   <>
+                     <span className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin mr-3" />
+                     Saving Profile...
+                   </>
                  ) : (
                    <>Complete Profile <CheckCircle2 className="w-4 h-4 ml-2" /></>
                  )}
