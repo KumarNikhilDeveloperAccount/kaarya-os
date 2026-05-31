@@ -13,6 +13,7 @@ interface User {
   roles: string;
   active_persona: string;
   bio?: string;
+  profile_picture?: string;
 }
 
 interface AuthContextType {

@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Briefcase, Star, MapPin, DollarSign, Hexagon, 
   Target, Rocket, ShieldCheck, UserPlus, FileText,
-  ChevronRight, Compass, X
+  ChevronRight, Compass, X,
+  CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 

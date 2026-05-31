@@ -6,35 +6,21 @@ async def main():
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
         
-        # Capture console logs
-        page.on("console", lambda msg: print(f"Browser Console: {msg.type} {msg.text}"))
-        page.on("pageerror", lambda err: print(f"Browser Page Error: {err}"))
+        # Listen for console events
+        page.on("console", lambda msg: print(f"Browser Console ({msg.type}): {msg.text}"))
+        page.on("pageerror", lambda err: print(f"Browser Error: {err.message}"))
         
-        try:
-            print("Navigating to http://localhost:3000")
-            await page.goto("http://localhost:3000", timeout=15000)
-            await page.wait_for_load_state("networkidle", timeout=10000)
-            
-            content = await page.content()
-            if "<div id=\"__next\"></div>" in content or "<body></body>" in content:
-                print("Warning: Page appears empty.")
-            else:
-                print("Page loaded successfully.")
-                
-            await page.screenshot(path="screenshot_3000.png")
-            print("Screenshot saved to screenshot_3000.png")
-            
-        except Exception as e:
-            print(f"Failed to load port 3000: {e}")
-            
-        try:
-            print("\nNavigating to http://localhost:3001")
-            await page.goto("http://localhost:3001", timeout=15000)
-            await page.wait_for_load_state("networkidle", timeout=10000)
-            await page.screenshot(path="screenshot_3001.png")
-            print("Screenshot saved to screenshot_3001.png")
-        except Exception as e:
-            print(f"Failed to load port 3001: {e}")
+        print("Navigating to http://localhost:3000/onboarding/company ...")
+        await page.goto("http://localhost:3000/onboarding/company", wait_until="networkidle")
+        
+        print("Navigating to http://localhost:3000/interview ...")
+        await page.goto("http://localhost:3000/interview", wait_until="networkidle")
+        
+        print("Navigating to http://localhost:3000/reels ...")
+        await page.goto("http://localhost:3000/reels", wait_until="networkidle")
+        
+        print("Navigating to http://localhost:3000/resume ...")
+        await page.goto("http://localhost:3000/resume", wait_until="networkidle")
 
         await browser.close()
 

@@ -64,6 +64,7 @@ export default function FeedPage() {
           <div className="bg-card border border-border rounded-[2.5rem] p-6 shadow-xl flex flex-col space-y-4">
              <div className="flex space-x-4">
                 <div className="w-12 h-12 rounded-full bg-secondary overflow-hidden border border-border shrink-0">
+                   {/* @ts-ignore */}
                    {user?.profile_picture ? (
                       <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
                    ) : (

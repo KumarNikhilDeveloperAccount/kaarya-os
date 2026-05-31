@@ -171,8 +171,9 @@ export default function InterviewPage() {
   // Web Speech API Integration
   useEffect(() => {
     if (!isRecording || step !== 'assessment') return;
-
-    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    
+    // @ts-ignore
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       toast.error("Voice transcription is not supported in this browser. Please type your answer.");
       return;

@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
   const { theme, setTheme } = useTheme();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -213,6 +213,7 @@ function ProfileSettings() {
 
 function SecuritySettings() {
   const [isUpdating, setIsUpdating] = useState(false);
+  const { logout } = useAuth();
 
   const handleDecommission = async () => {
     if (confirm("Are you sure you want to permanently decommission your global account and erase all local data?")) {

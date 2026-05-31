@@ -37,7 +37,7 @@ export default function CandidateOnboarding() {
     portfolio: '',
     github: '',
     // Step 4
-    desiredRoles: [],
+    desiredRoles: [] as string[],
     industry: '',
     employmentType: '',
     workMode: '',
