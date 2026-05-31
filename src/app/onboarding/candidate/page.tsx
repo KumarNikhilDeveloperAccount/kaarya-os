@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { TagInput } from '@/components/ui/TagInput';
 import { ProfileUpload } from '@/components/ui/ProfileUpload';
 import { saveProfileData, fileToBase64 } from '@/lib/store';
+import api from '@/lib/api';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
@@ -88,6 +89,17 @@ export default function CandidateOnboarding() {
       };
 
       saveProfileData('candidate', finalData);
+      
+      try {
+        await api.patch('/api/auth/me', {
+          full_name: formData.fullName,
+          bio: formData.bio || null,
+          profile_picture: profilePicBase64 || null,
+          skills: formData.skills.length > 0 ? formData.skills.join(',') : null
+        });
+      } catch (err) {
+        console.error("Failed to update profile on backend", err);
+      }
       
       await new Promise(resolve => setTimeout(resolve, 1500));
       setIsSubmitting(false);

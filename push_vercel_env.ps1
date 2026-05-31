@@ -1,4 +1,5 @@
 $envVars = @{
+    "NEXT_PUBLIC_API_BASE_URL" = "https://kaarya-os-backend.onrender.com"
     "NEXT_PUBLIC_FIREBASE_API_KEY" = "AIzaSyBIOlRVzimAdMotWYumnbeL9JjUXp39r3Q"
     "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" = "kaarya-os.firebaseapp.com"
     "NEXT_PUBLIC_FIREBASE_PROJECT_ID" = "kaarya-os"

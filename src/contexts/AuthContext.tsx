@@ -80,7 +80,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchUser = async (tokenStr: string) => {
     try {
       const response = await api.get('/api/auth/me'); 
-      setUser(response.data);
+      const userData = response.data;
+      setUser(userData);
+      
+      // Hydrate local storage for profile data
+      if (userData.active_persona) {
+        localStorage.setItem('kaarya_active_role', userData.active_persona);
+        const dbProfile = {
+          fullName: userData.full_name,
+          bio: userData.bio,
+          profilePic: userData.profile_picture,
+          skills: userData.skills ? userData.skills.split(',') : [],
+        };
+        const existingStr = localStorage.getItem(`kaarya_profile_${userData.active_persona}`);
+        let existing = {};
+        if (existingStr) {
+           try { existing = JSON.parse(existingStr); } catch (e) {}
+        }
+        // DB fields overwrite local fields
+        localStorage.setItem(`kaarya_profile_${userData.active_persona}`, JSON.stringify({ ...existing, ...dbProfile }));
+      }
     } catch (err) {
       console.error('Failed to validate token', err);
       // If backend is temporarily unavailable, keep the token and allow UI to render;
