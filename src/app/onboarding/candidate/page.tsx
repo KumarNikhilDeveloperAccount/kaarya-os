@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, Upload, CheckCircle2, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -52,6 +52,11 @@ export default function CandidateOnboarding() {
   });
 
   const totalSteps = 6;
+  
+  const formDataRef = useRef(formData);
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
 
   const handleNext = () => {
     if (step === 1 && (!formData.fullName || !formData.dob)) {
@@ -62,12 +67,19 @@ export default function CandidateOnboarding() {
       toast.error('College/University Name is mandatory.');
       return;
     }
+    if (step === 3 && !formData.resume) {
+      toast.error('Resume upload is mandatory.');
+      return;
+    }
     setStep(s => Math.min(6, s + 1));
   };
   const handleBack = () => setStep(s => Math.max(1, s - 1));
 
   const handleComplete = async () => {
-    if (!formData.resume) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    const currentData = formDataRef.current;
+
+    if (!currentData.resume) {
       toast.error('Resume upload is mandatory.');
       return;
     }
@@ -76,26 +88,26 @@ export default function CandidateOnboarding() {
     try {
       // Process profile picture to base64 if it exists
       let profilePicBase64 = null;
-      if (formData.profilePic) {
-        profilePicBase64 = await fileToBase64(formData.profilePic);
+      if (currentData.profilePic) {
+        profilePicBase64 = await fileToBase64(currentData.profilePic);
       }
       
       // We don't save the actual resume file to localStorage due to size limits,
       // but we record the filename to show it was uploaded.
       const finalData = {
-        ...formData,
+        ...currentData,
         profilePic: profilePicBase64,
-        resume: formData.resume ? formData.resume.name : null
+        resume: currentData.resume ? currentData.resume.name : null
       };
 
       saveProfileData('candidate', finalData);
       
       try {
         await api.patch('/api/auth/me', {
-          full_name: formData.fullName,
-          bio: formData.bio || null,
+          full_name: currentData.fullName,
+          bio: currentData.bio || null,
           profile_picture: profilePicBase64 || null,
-          skills: formData.skills.length > 0 ? formData.skills.join(',') : null
+          skills: currentData.skills.length > 0 ? currentData.skills.join(',') : null
         });
       } catch (err) {
         console.error("Failed to update profile on backend", err);

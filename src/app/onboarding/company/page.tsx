@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, CheckCircle2, Building2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -32,6 +32,11 @@ export default function CompanyOnboarding() {
 
   const totalSteps = 4;
 
+  const formDataRef = useRef(formData);
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
+
   const handleNext = () => {
     if (step === 1 && (!formData.companyName)) {
       toast.error('Company Name is mandatory.');
@@ -46,20 +51,25 @@ export default function CompanyOnboarding() {
   const handleBack = () => setStep(s => Math.max(1, s - 1));
 
   const handleComplete = async () => {
-    if (formData.rolesHired.length === 0) {
-      toast.error('Please specify at least one role you hire for.');
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    if (formDataRef.current.rolesHired.length === 0) {
+      toast.error('Please specify at least one role you hire for (Press Enter to add tag).');
       return;
     }
+    
+    // We need to use formDataRef.current for submission to capture the latest state
+    const currentData = formDataRef.current;
     setIsSubmitting(true);
 
     try {
       let logoBase64 = null;
-      if (formData.logo) {
-        logoBase64 = await fileToBase64(formData.logo);
+      if (currentData.logo) {
+        logoBase64 = await fileToBase64(currentData.logo);
       }
 
       const finalData = {
-        ...formData,
+        ...currentData,
         logo: logoBase64
       };
 

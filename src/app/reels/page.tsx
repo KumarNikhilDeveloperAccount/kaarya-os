@@ -16,6 +16,7 @@ export default function ReelsPage() {
   const [loading, setLoading] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadTitle, setUploadTitle] = useState('');
+  const [isPublishing, setIsPublishing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -76,6 +77,31 @@ export default function ReelsPage() {
   const prevReel = () => {
     if (!containerRef.current) return;
     containerRef.current.scrollBy({ top: -window.innerHeight, behavior: 'smooth' });
+  };
+
+  const handlePublish = async () => {
+    if (!uploadTitle.trim()) {
+      alert('Please add a caption for your reel.');
+      return;
+    }
+    setIsPublishing(true);
+    try {
+      // We use a mock URL for the demo as the backend does not have a blob storage endpoint yet
+      const dummyUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4";
+      const response = await api.post('/api/ecosystem/reels', {
+        video_url: dummyUrl,
+        caption: uploadTitle,
+        tags: "Engineering,Updates"
+      });
+      setReels([response.data, ...reels]);
+      setShowUploadModal(false);
+      setUploadTitle('');
+    } catch (e) {
+      console.error("Failed to publish reel", e);
+      alert('Failed to publish reel. Please try again.');
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   if (loading) {
@@ -164,13 +190,11 @@ export default function ReelsPage() {
                     Cancel
                  </button>
                  <button 
-                   onClick={() => {
-                     setShowUploadModal(false);
-                     alert('Reel queued for compression and integration!');
-                   }}
-                   className="flex-1 py-4 bg-primary text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-primary/90 transition-colors"
+                   onClick={handlePublish}
+                   disabled={isPublishing || !uploadTitle.trim()}
+                   className="flex-1 py-4 bg-primary text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-primary/90 transition-colors disabled:opacity-50"
                  >
-                    Publish
+                    {isPublishing ? 'Publishing...' : 'Publish'}
                  </button>
               </div>
             </motion.div>
