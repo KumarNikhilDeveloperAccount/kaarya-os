@@ -13,7 +13,7 @@ import BackendStatusBanner from '@/components/system/BackendStatusBanner';
 function AppContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const [activePersona, setActivePersona] = useState('candidate'); 
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
@@ -32,10 +32,6 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <AnimatePresence>
-        {showIntro && <IntroCinematic onComplete={() => setShowIntro(false)} />}
-      </AnimatePresence>
-      
       <div className={`flex h-screen bg-background text-foreground overflow-hidden transition-opacity duration-1000 ${showIntro ? 'opacity-0' : 'opacity-100'}`}>
         <Sidebar role={activePersona} onPersonaSwitch={setActivePersona} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
         <div className="flex-1 flex flex-col w-full relative">

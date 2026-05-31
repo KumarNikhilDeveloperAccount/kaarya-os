@@ -10,7 +10,7 @@ router = APIRouter()
 def parse_resume_content(
     resume_text: str = Body(..., embed=True),
     job_description: str = Body(..., embed=True),
-    current_user: models.User = Depends(deps.get_current_user),
+    current_user: models.User = Depends(deps.get_current_user_optional),
     db: Session = Depends(database.get_db)
 ):
     """
@@ -36,8 +36,8 @@ def parse_resume_content(
 def assess_interview_response(
     job_description: str = Body(..., embed=True),
     candidate_resume: str = Body(..., embed=True),
-    history: list = Body(..., embed=True),
-    current_user: models.User = Depends(deps.get_current_user),
+    history: list = Body([], embed=True),
+    current_user: models.User = Depends(deps.get_current_user_optional),
     db: Session = Depends(database.get_db)
 ):
     """
