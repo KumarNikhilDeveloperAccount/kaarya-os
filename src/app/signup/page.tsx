@@ -41,19 +41,19 @@ export default function SignupPage() {
         full_name: fullName
       });
 
+      const token = response.data.access_token;
+      if (!token) throw new Error("No token received");
+
+      const userResponse = await api.get('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
       setIsSuccess(true);
       toast.success('Identity Created Successfully');
       
-      const { access_token, user } = response.data;
-      if (access_token && user) {
-        setTimeout(() => {
-          login(access_token, user);
-        }, 1000);
-      } else {
-        setTimeout(() => {
-          router.push('/login');
-        }, 2000);
-      }
+      setTimeout(() => {
+        login(token, userResponse.data);
+      }, 1000);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Signup failed. Please try again.');
       toast.error('Signup Failed');
