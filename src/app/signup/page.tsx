@@ -424,8 +424,9 @@ export default function SignupPage() {
                       setTimeout(() => {
                         router.push('/role-selection');
                       }, 2000);
-                    } catch (err) {
-                      toast.error('Google Sign In Failed');
+                    } catch (err: any) {
+                      const errMsg = err.response?.data?.detail || err.message || 'Google Sign In Failed';
+                      toast.error(`Google Auth Error: ${errMsg}`);
                     }
                   }}
                   className="flex items-center justify-center h-14 bg-white text-gray-800 border border-gray-200 hover:bg-gray-50 hover:shadow-lg rounded-2xl transition-all space-x-3 font-black text-sm uppercase tracking-widest"
