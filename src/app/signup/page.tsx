@@ -73,8 +73,9 @@ export default function SignupPage() {
         setOtp(response.data.debug_code);
         toast.info(`[Test Mode] OTP Auto-filled: ${response.data.debug_code}`);
       }
-    } catch (err) {
-      toast.error('Failed to send OTP');
+    } catch (err: any) {
+      const errMsg = err.response?.data?.detail || err.message || 'Failed to send OTP';
+      toast.error(`Send OTP Error: ${errMsg}`);
     } finally {
       setIsLoading(false);
     }
@@ -97,8 +98,9 @@ export default function SignupPage() {
       setTimeout(() => {
         router.push('/role-selection');
       }, 2000);
-    } catch (err) {
-      toast.error('Invalid OTP');
+    } catch (err: any) {
+      const errMsg = err.response?.data?.detail || err.message || 'Invalid OTP';
+      toast.error(`OTP Error: ${errMsg}`);
     } finally {
       setIsLoading(false);
     }
