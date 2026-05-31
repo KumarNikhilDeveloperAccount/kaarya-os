@@ -118,12 +118,17 @@ def request_email_otp(data: schemas.OTPRequest, db: Session = Depends(database.g
 
 @router.post("/otp/verify", response_model=schemas.Token)
 def verify_email_otp(data: schemas.OTPVerify, db: Session = Depends(database.get_db)):
+    with open("/tmp/otp_audit.log", "a") as f:
+        f.write(f"Attempt verify: {data.email} | Code: {data.code}\n")
+
     if not data.email:
         raise HTTPException(status_code=400, detail="Email required")
 
     email = data.email.lower().strip()
     user = db.query(models.User).filter(models.User.email == email).first()
     if not user or not user.otp_code or not user.otp_expiry:
+        with open("/tmp/otp_audit.log", "a") as f:
+            f.write(f"Failed: User not found or no OTP active for {email}\n")
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
     expiry = user.otp_expiry
@@ -131,11 +136,18 @@ def verify_email_otp(data: schemas.OTPVerify, db: Session = Depends(database.get
         expiry = expiry.replace(tzinfo=timezone.utc)
     
     if expiry < datetime.now(timezone.utc):
+        with open("/tmp/otp_audit.log", "a") as f:
+            f.write(f"Failed: OTP expired for {email}\n")
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
     # otp_code is a bcrypt hash (see /otp/request)
     if not auth.verify_password(data.code.strip(), user.otp_code):
+        with open("/tmp/otp_audit.log", "a") as f:
+            f.write(f"Failed: Bcrypt mismatch for {email}\n")
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+
+    with open("/tmp/otp_audit.log", "a") as f:
+        f.write(f"Success: OTP verified for {email}\n")
 
     user.otp_code = None
     user.otp_expiry = None
