@@ -37,7 +37,11 @@ export default function CollegeOnboarding() {
       toast.error('Institution Name and Affiliation are mandatory.');
       return;
     }
-    if (step === 2 && (!formData.placementOfficer)) {
+    if (step === 2 && formData.degrees.length === 0) {
+      toast.error('Degrees are mandatory.');
+      return;
+    }
+    if (step === 3 && !formData.placementOfficer) {
       toast.error('Placement Officer Name is mandatory.');
       return;
     }

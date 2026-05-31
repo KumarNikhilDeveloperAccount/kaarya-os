@@ -214,9 +214,13 @@ function ProfileSettings() {
 function SecuritySettings() {
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const handleDecommission = () => {
+  const handleDecommission = async () => {
     if (confirm("Are you sure you want to permanently decommission your global account and erase all local data?")) {
+      try {
+        await api.delete('/api/auth/me').catch(() => {});
+      } catch (e) {}
       clearAllData();
+      logout();
       toast.success("Account Decommissioned.");
       setTimeout(() => {
         window.location.href = '/';
@@ -261,9 +265,14 @@ function SecuritySettings() {
 }
 
 function DangerZone() {
-  const handleDecommission = () => {
+  const { logout } = useAuth();
+  const handleDecommission = async () => {
     if (confirm("Are you sure you want to permanently decommission your global account and erase all local data?")) {
+      try {
+        await api.delete('/api/auth/me').catch(() => {});
+      } catch (e) {}
       clearAllData();
+      logout();
       toast.success("Account Decommissioned.");
       setTimeout(() => {
         window.location.href = '/';

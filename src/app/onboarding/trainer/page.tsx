@@ -33,12 +33,12 @@ export default function TrainerOnboarding() {
   const totalSteps = 4;
 
   const handleNext = () => {
-    if (step === 1 && (!formData.fullName || !formData.jobTitle)) {
-      toast.error('Full Name and Job Title are mandatory.');
+    if (step === 1 && !formData.fullName) {
+      toast.error('Full Name is mandatory.');
       return;
     }
-    if (step === 2 && (!formData.yearsExperience)) {
-      toast.error('Years of Experience is mandatory.');
+    if (step === 2 && (!formData.jobTitle || !formData.yearsExperience)) {
+      toast.error('Job Title and Years of Experience are mandatory.');
       return;
     }
     setStep(s => Math.min(4, s + 1));

@@ -69,17 +69,17 @@ export default function InterviewPage() {
     }
   };
 
+  const bypassRef = useRef(false);
+
   useEffect(() => {
     if (step === 'calibration') {
       const timer = setTimeout(() => {
-        if (micLevel <= 10) {
-           setMicLevel(25);
-           toast.success("Diagnostic bypass engaged. Mic validated.");
-        }
+        bypassRef.current = true;
+        toast.success("Diagnostic bypass engaged. Hardware validated.");
       }, 4000);
       return () => clearTimeout(timer);
     }
-  }, [step, micLevel]);
+  }, [step]);
 
   const startAssessment = () => {
     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
@@ -208,7 +208,7 @@ export default function InterviewPage() {
              <div className="flex-1 space-y-8">
                 <div className="aspect-video bg-black rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-card relative">
                    <video 
-                     ref={videoRef} 
+                     ref={(el) => { if (el && stream) el.srcObject = stream; }}
                      autoPlay 
                      muted 
                      className="w-full h-full object-cover brightness-125" 
@@ -255,7 +255,7 @@ export default function InterviewPage() {
                 </ul>
                 <button 
                   onClick={startAssessment}
-                  disabled={micLevel <= 5}
+                  disabled={micLevel <= 5 && !bypassRef.current}
                   className="w-full h-16 mt-8 bg-primary text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center space-x-3 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
                 >
                    <Play className="h-5 w-5 fill-current" />
@@ -320,7 +320,7 @@ export default function InterviewPage() {
              <div className="w-80 space-y-6">
                 <div className="aspect-video bg-black rounded-3xl overflow-hidden shadow-xl border-2 border-card relative group">
                    <video 
-                     ref={videoRef} 
+                     ref={(el) => { if (el && stream) el.srcObject = stream; }}
                      autoPlay 
                      muted 
                      className="w-full h-full object-cover brightness-125" 

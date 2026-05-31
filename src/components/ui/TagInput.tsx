@@ -15,16 +15,26 @@ interface TagInputProps {
 export function TagInput({ tags, setTags, placeholder = "Type and press Enter...", label, maxTags = 10 }: TagInputProps) {
   const [inputValue, setInputValue] = useState('');
 
+  const addTag = (val: string) => {
+    const newTag = val.trim();
+    if (newTag && !tags.includes(newTag) && tags.length < maxTags) {
+      setTags([...tags, newTag]);
+      setInputValue('');
+    }
+  };
+
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      const newTag = inputValue.trim();
-      if (newTag && !tags.includes(newTag) && tags.length < maxTags) {
-        setTags([...tags, newTag]);
-        setInputValue('');
-      }
+      addTag(inputValue);
     } else if (e.key === 'Backspace' && !inputValue && tags.length > 0) {
       setTags(tags.slice(0, -1));
+    }
+  };
+
+  const handleBlur = () => {
+    if (inputValue) {
+      addTag(inputValue);
     }
   };
 
@@ -61,6 +71,7 @@ export function TagInput({ tags, setTags, placeholder = "Type and press Enter...
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
           placeholder={tags.length < maxTags ? placeholder : `Maximum ${maxTags} tags reached`}
           disabled={tags.length >= maxTags}
           className="flex-1 min-w-[120px] bg-transparent outline-none px-2 py-1 text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed"

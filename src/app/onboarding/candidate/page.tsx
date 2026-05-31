@@ -62,7 +62,7 @@ export default function CandidateOnboarding() {
       toast.error('College/University Name is mandatory.');
       return;
     }
-    setStep(s => Math.min(3, s + 1));
+    setStep(s => Math.min(6, s + 1));
   };
   const handleBack = () => setStep(s => Math.max(1, s - 1));
 
