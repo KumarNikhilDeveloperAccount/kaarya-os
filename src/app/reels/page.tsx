@@ -14,6 +14,8 @@ export default function ReelsPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadTitle, setUploadTitle] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -113,6 +115,68 @@ export default function ReelsPage() {
           />
         ))}
       </div>
+
+      {/* Upload FAB */}
+      <div className="absolute bottom-6 right-6 lg:right-12 z-50">
+        <button 
+          onClick={() => setShowUploadModal(true)}
+          className="p-4 bg-primary text-white rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center border-2 border-white/20"
+        >
+          <PlusCircle className="h-6 w-6" />
+        </button>
+      </div>
+
+      {/* Upload Modal Overlay */}
+      <AnimatePresence>
+        {showUploadModal && (
+          <div className="absolute inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-md bg-zinc-900 border border-white/10 rounded-[2.5rem] p-8 shadow-2xl space-y-6"
+            >
+              <h2 className="text-2xl font-black text-white uppercase tracking-tight">Upload Talent Reel</h2>
+              <p className="text-xs font-medium text-white/50">Showcase your technical capability via video. Maximum 60 seconds.</p>
+              
+              <div className="space-y-4">
+                 <div>
+                   <label className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 block">Reel Caption / Context</label>
+                   <textarea 
+                     value={uploadTitle}
+                     onChange={e => setUploadTitle(e.target.value)}
+                     className="w-full h-24 bg-black/50 border border-white/10 rounded-2xl p-4 text-white text-sm focus:border-primary outline-none resize-none"
+                     placeholder="e.g. Breaking down my recent migration to Kubernetes..."
+                   />
+                 </div>
+                 
+                 <div className="h-32 border-2 border-dashed border-white/20 rounded-2xl flex flex-col items-center justify-center text-white/50 hover:bg-white/5 hover:border-primary transition-colors cursor-pointer">
+                    <Volume2 className="h-8 w-8 mb-2 opacity-50" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Select Video File (.mp4, .mov)</span>
+                 </div>
+              </div>
+
+              <div className="flex space-x-4 pt-4">
+                 <button 
+                   onClick={() => setShowUploadModal(false)}
+                   className="flex-1 py-4 bg-white/5 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-colors"
+                 >
+                    Cancel
+                 </button>
+                 <button 
+                   onClick={() => {
+                     setShowUploadModal(false);
+                     alert('Reel queued for compression and integration!');
+                   }}
+                   className="flex-1 py-4 bg-primary text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-primary/90 transition-colors"
+                 >
+                    Publish
+                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

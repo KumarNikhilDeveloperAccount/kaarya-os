@@ -150,13 +150,15 @@ export default function InterviewPage() {
     }
   }, [isRecording, step, timeLeft]);
 
-  // Crucial fix: Attach the stream properly and start playing
-  const attachVideo = (el: HTMLVideoElement | null) => {
-    if (el && stream) {
-      el.srcObject = stream;
-      el.play().catch(() => {}); // Ensure play is called
+  // Stabilized Video Stream Mounting
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      if (videoRef.current.srcObject !== stream) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(() => {});
+      }
     }
-  };
+  }, [stream, step]);
 
   // Web Speech API Integration
   useEffect(() => {
@@ -252,9 +254,10 @@ export default function InterviewPage() {
              <div className="flex-1 space-y-8">
                 <div className="aspect-video bg-black rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-card relative">
                    <video 
-                     ref={attachVideo}
+                     ref={videoRef}
                      autoPlay 
                      muted 
+                     playsInline
                      className="w-full h-full object-cover brightness-125" 
                    />
                    <div className="absolute top-6 left-6 flex space-x-3">
@@ -364,9 +367,10 @@ export default function InterviewPage() {
              <div className="w-80 space-y-6">
                 <div className="aspect-video bg-black rounded-3xl overflow-hidden shadow-xl border-2 border-card relative group">
                    <video 
-                     ref={attachVideo}
+                     ref={videoRef}
                      autoPlay 
                      muted 
+                     playsInline
                      className="w-full h-full object-cover brightness-125" 
                    />
                    <ScanOverlay />
