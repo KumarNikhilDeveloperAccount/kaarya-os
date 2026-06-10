@@ -33,15 +33,36 @@ export default function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
           <Menu className="h-5 w-5" />
         </button>
           <div className="relative w-8 h-8 rounded-lg overflow-hidden shadow-lg border border-primary/20">
-            <Image src="/kaarya-logo-final.png" alt="Kaarya OS" fill className="object-cover" />
+            <Image src="/kaarya-logo-final.png" alt="Kaarya OS" fill sizes="32px" className="object-cover" />
           </div>
         <span className="ml-2 text-xl font-black tracking-tighter text-primary hidden md:inline">Kaarya.OS</span>
         
-        <div className="hidden md:flex ml-8 items-center space-x-2">
+        <div className="hidden md:flex ml-8 items-center space-x-2 relative group">
            <div className={`h-2 w-2 rounded-full animate-pulse ${persona === 'guest' ? 'bg-muted-foreground' : 'bg-primary'}`} />
-           <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${activeInfo.color}`}>
+           <button className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${activeInfo.color} flex items-center gap-2 cursor-pointer`}>
               {activeInfo.label}
-           </span>
+           </button>
+           
+           <div className="absolute top-full left-0 mt-2 w-48 bg-card border border-border rounded-xl shadow-2xl py-2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-50">
+             {Object.keys(personaMap).filter(k => k !== 'guest').map(p => (
+               <button
+                 key={p}
+                 onClick={async () => {
+                   try {
+                     const { api } = await import('@/lib/api');
+                     await api.post(`/api/auth/switch-persona?persona=${p}`);
+                     localStorage.setItem('kaarya_active_role', p);
+                     window.location.reload();
+                   } catch (err) {
+                     console.error(err);
+                   }
+                 }}
+                 className="w-full text-left px-4 py-2 text-xs font-bold hover:bg-secondary transition-colors uppercase tracking-wider"
+               >
+                 {personaMap[p].label}
+               </button>
+             ))}
+           </div>
         </div>
       </div>
       
@@ -62,9 +83,13 @@ export default function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
         <div className="relative">
           <div 
              onClick={() => setProfileOpen(!profileOpen)}
-             className="h-8 w-8 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-white font-medium text-sm shadow-sm hover:scale-110 transition-transform cursor-pointer"
+             className="h-8 w-8 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-white font-medium text-sm shadow-sm hover:scale-110 transition-transform cursor-pointer overflow-hidden"
           >
-            KN
+            {user?.profile_picture ? (
+              <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              user?.full_name ? user.full_name.substring(0,2).toUpperCase() : 'U'
+            )}
           </div>
           {profileOpen && (
             <div className="absolute top-10 right-0 mt-2 w-48 bg-card border border-border rounded-xl shadow-2xl py-2 animate-in fade-in slide-in-from-top-2 p-1">
@@ -79,7 +104,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
                  }}
                  className="w-full flex items-center px-4 py-2 text-sm font-bold text-red-500 hover:bg-red-500/10 rounded-md transition-colors"
                >
-                 <LogOut className="h-4 w-4 mr-2" /> Terminate Session
+                 <LogOut className="h-4 w-4 mr-2" /> Log Out
                </button>
             </div>
           )}

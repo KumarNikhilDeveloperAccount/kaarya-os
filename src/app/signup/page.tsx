@@ -66,9 +66,9 @@ export default function SignupPage() {
     if (!email || !fullName) return toast.error('Email and name required');
     setIsLoading(true);
     try {
-      const response = await api.post('/api/auth/otp/request', { email });
+      const response = await api.post('/api/auth/otp/request', { email, is_signup: true });
       setOtpSent(true);
-      toast.success('OTP sent to your email');
+      toast.success('Verification Code Sent!');
       if (response.data.debug_code) {
         setOtp(response.data.debug_code);
         toast.info(`[Test Mode] OTP Auto-filled: ${response.data.debug_code}`);

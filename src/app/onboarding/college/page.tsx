@@ -59,15 +59,31 @@ export default function CollegeOnboarding() {
     setIsSubmitting(true);
 
     try {
-      let logoBase64 = null;
+      let logoUrl = null;
       if (formData.logo) {
-        logoBase64 = await fileToBase64(formData.logo);
+        const uploadData = new FormData();
+        uploadData.append('file', formData.logo);
+        const { api } = await import('@/lib/api');
+        const uploadRes = await api.post('/api/upload', uploadData, {
+           headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        logoUrl = uploadRes.data.url;
       }
 
       const finalData = {
         ...formData,
-        logo: logoBase64
+        logo: logoUrl
       };
+
+      try {
+        const { api } = await import('@/lib/api');
+        await api.patch('/api/auth/me', {
+          full_name: formData.collegeName,
+          profile_picture: logoUrl || null
+        });
+      } catch (err) {
+        console.error("Failed to update college on backend", err);
+      }
 
       saveProfileData('college', finalData);
 
@@ -80,9 +96,7 @@ export default function CollegeOnboarding() {
         colors: ['#a855f7', '#3b82f6', '#10b981']
       });
       toast.success("Institution profile created successfully!");
-      setTimeout(() => {
-        router.push('/');
-      }, 2000);
+      setStep(4);
     } catch (error) {
       console.error(error);
       setIsSubmitting(false);
@@ -122,19 +136,19 @@ export default function CollegeOnboarding() {
               <p className="text-muted-foreground">Register your college to connect with top recruiters.</p>
             </div>
             
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-semibold">College / University Name</label>
-                <input type="text" value={formData.collegeName} onChange={e => setFormData({...formData, collegeName: e.target.value})} className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all" placeholder="National Institute of Technology" />
+            <div className="space-y-6">
+              <div className="relative group">
+                <input type="text" id="collegeName" required value={formData.collegeName} onChange={e => setFormData({...formData, collegeName: e.target.value})} className="peer w-full bg-background border border-border rounded-xl px-4 pt-6 pb-2 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all placeholder-transparent" placeholder="National Institute of Technology" />
+                <label htmlFor="collegeName" className="absolute left-4 top-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:font-normal peer-placeholder-shown:normal-case peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-black peer-focus:uppercase peer-focus:text-purple-500">College / University Name</label>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-semibold">Location</label>
-                  <input type="text" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all" placeholder="City, State" />
+              <div className="grid grid-cols-2 gap-6">
+                <div className="relative group">
+                  <input type="text" id="location" required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="peer w-full bg-background border border-border rounded-xl px-4 pt-6 pb-2 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all placeholder-transparent" placeholder="City, State" />
+                  <label htmlFor="location" className="absolute left-4 top-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:font-normal peer-placeholder-shown:normal-case peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-black peer-focus:uppercase peer-focus:text-purple-500">Location</label>
                 </div>
-                <div>
-                  <label className="text-sm font-semibold">University Affiliation</label>
-                  <input type="text" value={formData.affiliation} onChange={e => setFormData({...formData, affiliation: e.target.value})} className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all" placeholder="E.g. Autonomous, State Univ" />
+                <div className="relative group">
+                  <input type="text" id="affiliation" required value={formData.affiliation} onChange={e => setFormData({...formData, affiliation: e.target.value})} className="peer w-full bg-background border border-border rounded-xl px-4 pt-6 pb-2 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all placeholder-transparent" placeholder="E.g. Autonomous, State Univ" />
+                  <label htmlFor="affiliation" className="absolute left-4 top-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:font-normal peer-placeholder-shown:normal-case peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-black peer-focus:uppercase peer-focus:text-purple-500">University Affiliation</label>
                 </div>
               </div>
               <ProfileUpload 

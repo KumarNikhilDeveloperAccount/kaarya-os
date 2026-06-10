@@ -1,78 +1,160 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CreditCard, CheckCircle2, AlertCircle, Download, ExternalLink, Zap } from 'lucide-react';
+import { CreditCard, CheckCircle2, Zap, ShieldCheck, Download, ExternalLink, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
+import Script from 'next/script';
 
-const mockInvoices = [
-  { id: 'INV-2026-001', date: '2026-05-01', amount: '$499.00', status: 'Paid' },
-  { id: 'INV-2026-002', date: '2026-04-01', amount: '$499.00', status: 'Paid' },
-  { id: 'INV-2026-003', date: '2026-03-01', amount: '$499.00', status: 'Paid' },
+const PRODUCTS = [
+  { id: 'premium_access', name: 'Premium Candidate Access', price: '₹7,999/mo', amount: 7999, desc: 'Unlock unlimited candidate profiles and direct messaging.' },
+  { id: 'featured_post', name: 'Featured Job Post', price: '₹2,499/post', amount: 2499, desc: 'Highlight your job post at the top of Opp Orbit for 7 days.' },
+  { id: 'analytics_pro', name: 'Advanced Analytics', price: '₹14,999/mo', amount: 14999, desc: 'Deep AI insights into your hiring funnel and diversity metrics.' }
 ];
 
 export default function BillingPage() {
-  const [invoices, setInvoices] = useState(mockInvoices);
+  const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [plan, setPlan] = useState({ name: 'Enterprise Core', price: '$499/mo', billing_cycle: 'Monthly' });
+  const [purchased, setPurchased] = useState<string[]>([]);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
 
-  // In a real app, fetch from backend/Stripe:
-  // useEffect(() => { api.get('/api/payments/status').then(res => setPlan(res.data)) }, [])
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      try {
+        const { api } = await import('@/lib/api');
+        const res = await api.get('/api/ecosystem/invoices');
+        setInvoices(res.data);
+      } catch (err) {
+        console.error('Failed to fetch invoices:', err);
+      }
+    };
+    fetchInvoices();
+  }, []);
+
+  const handleCheckout = async (item: any) => {
+    if (!scriptLoaded) {
+        alert("Payment gateway is still loading. Please try again in a moment.");
+        return;
+    }
+    
+    try {
+        setLoading(true);
+        const { api } = await import('@/lib/api');
+        
+        // Step 1: Create Order on Backend
+        const orderRes = await api.post('/api/payments/create-order', {
+            item_type: item.id,
+            custom_amount: item.amount
+        });
+        
+        const orderData = orderRes.data;
+        if (!orderData || !orderData.id) throw new Error("Failed to create order");
+        
+        // Step 2: Initialize Razorpay
+        const options = {
+            key: "rzp_test_kaaryaos123456", // Test key, real one will be passed if available
+            amount: orderData.amount,
+            currency: orderData.currency,
+            name: "Kaarya.OS",
+            description: item.name,
+            image: "/kaarya-logo-final.png",
+            order_id: orderData.id,
+            handler: async function (response: any) {
+                // Step 3: Verify Payment Signature on Backend
+                try {
+                    const verifyRes = await api.post('/api/payments/verify', {
+                        order_id: response.razorpay_order_id,
+                        payment_id: response.razorpay_payment_id,
+                        signature: response.razorpay_signature,
+                        item_type: item.id,
+                        amount: item.amount
+                    });
+                    
+                    if (verifyRes.data.status === 'success') {
+                        setPurchased([...purchased, item.id]);
+                        // Refresh invoices
+                        const newInvoice = {
+                           id: `INV-2026-${Math.floor(Math.random() * 1000)}`,
+                           date: new Date().toISOString().split('T')[0],
+                           amount: item.price,
+                           status: 'Paid'
+                        };
+                        setInvoices([newInvoice, ...invoices]);
+                        alert("Payment successful! Premium feature unlocked.");
+                    }
+                } catch (verifyError) {
+                    alert("Payment verification failed. Please contact support.");
+                }
+            },
+            prefill: {
+                name: "Nikhil Kashyap",
+                email: "nkashyapnikhilnk@gmail.com",
+                contact: "9315600875"
+            },
+            theme: {
+                color: "#3b82f6"
+            }
+        };
+        
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', function (response: any){
+            alert("Payment failed: " + response.error.description);
+        });
+        rzp.open();
+        
+    } catch (err: any) {
+        console.error('Checkout error:', err);
+        alert(err.response?.data?.detail || "Checkout failed. Using mock system fallback? Configure Razorpay keys in backend.");
+    } finally {
+        setLoading(false);
+    }
+  };
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 animate-in fade-in duration-1000">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-4xl font-black tracking-tight uppercase flex items-center">
-            <CreditCard className="h-8 w-8 mr-3 text-primary" /> Billing & Usage
-          </h1>
-          <p className="text-muted-foreground mt-2 font-medium">Manage your Kaarya.OS subscription and payment history.</p>
-        </div>
+    <div className="max-w-6xl mx-auto py-8 px-4 animate-in fade-in duration-1000">
+      <Script 
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        onLoad={() => setScriptLoaded(true)}
+      />
+      <div className="mb-12">
+        <h1 className="text-4xl font-black tracking-tight uppercase flex items-center">
+          <CreditCard className="h-8 w-8 mr-3 text-primary" /> Billing & Upgrades
+        </h1>
+        <p className="text-muted-foreground mt-2 font-medium max-w-2xl">Manage your Kaarya.OS subscription and expand your capabilities with premium add-ons.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-        <div className="bg-card border border-border rounded-[2rem] p-8 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
-          <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-6">Current Plan</h2>
-          <div className="flex items-center space-x-4 mb-4">
-            <div className="p-4 bg-primary/20 text-primary rounded-2xl">
-              <Zap className="h-8 w-8" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-black">{plan.name}</h3>
-              <p className="text-muted-foreground font-medium">{plan.price} &bull; {plan.billing_cycle}</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2 text-emerald-500 mb-8 text-sm font-bold">
-            <CheckCircle2 className="h-4 w-4" />
-            <span>Active & in good standing</span>
-          </div>
-          <button className="w-full py-3 bg-secondary border border-border rounded-xl font-black text-xs uppercase tracking-widest hover:border-primary/50 transition-all">
-            Manage Subscription via Stripe
-          </button>
-        </div>
-
-        <div className="bg-card border border-border rounded-[2rem] p-8 shadow-xl">
-          <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-6">Payment Method</h2>
-          <div className="p-4 border border-border rounded-2xl bg-secondary/50 flex items-center justify-between mb-6">
-             <div className="flex items-center space-x-4">
-                <div className="w-12 h-8 bg-black rounded flex items-center justify-center text-white font-black text-xs italic tracking-tighter">VISA</div>
-                <div>
-                  <p className="font-bold text-foreground">•••• •••• •••• 4242</p>
-                  <p className="text-xs text-muted-foreground">Expires 12/28</p>
-                </div>
-             </div>
-          </div>
-          <button className="w-full py-3 bg-transparent text-primary border border-primary/20 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-primary/5 transition-all">
-            Update Payment Method
-          </button>
-        </div>
+      <div className="mb-12">
+         <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-6">Available Upgrades</h2>
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {PRODUCTS.map(product => {
+               const isOwned = purchased.includes(product.id);
+               return (
+                 <div key={product.id} className="bg-card border border-border rounded-[2rem] p-8 shadow-xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-primary/20 transition-colors" />
+                    <ShieldCheck className={`h-8 w-8 mb-6 ${isOwned ? 'text-emerald-500' : 'text-primary'}`} />
+                    <h3 className="text-xl font-black tracking-tight mb-2">{product.name}</h3>
+                    <p className="text-sm text-muted-foreground mb-6 h-10">{product.desc}</p>
+                    <div className="flex items-end justify-between mt-auto">
+                       <span className="text-2xl font-black">{product.price}</span>
+                       <button 
+                          disabled={isOwned || loading}
+                          onClick={() => handleCheckout(product)}
+                          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isOwned ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-primary text-white shadow-xl shadow-primary/20 hover:scale-105 active:scale-95'}`}
+                       >
+                          {isOwned ? 'Active' : loading ? 'Processing...' : 'Upgrade'}
+                       </button>
+                    </div>
+                 </div>
+               );
+            })}
+         </div>
       </div>
 
       <div className="bg-card border border-border rounded-[2rem] p-8 shadow-xl">
         <h2 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-6">Invoice History</h2>
         <div className="space-y-4">
-          {invoices.map(inv => (
-            <div key={inv.id} className="flex items-center justify-between p-4 border border-border rounded-2xl hover:bg-secondary/30 transition-colors">
+          {invoices.map((inv, idx) => (
+            <div key={idx} className="flex items-center justify-between p-4 border border-border rounded-2xl hover:bg-secondary/30 transition-colors">
               <div className="flex items-center space-x-4">
                 <div className="p-2 bg-secondary rounded-xl">
                   <CreditCard className="h-5 w-5 text-muted-foreground" />

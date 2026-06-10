@@ -12,23 +12,7 @@ import {
 } from 'recharts';
 import { api } from '@/lib/api';
 
-const mockChartData = [
-  { name: 'Mon', applicants: 120, simulated: 80, placed: 20 },
-  { name: 'Tue', applicants: 150, simulated: 110, placed: 35 },
-  { name: 'Wed', applicants: 200, simulated: 160, placed: 45 },
-  { name: 'Thu', applicants: 180, simulated: 140, placed: 40 },
-  { name: 'Fri', applicants: 250, simulated: 210, placed: 65 },
-  { name: 'Sat', applicants: 300, simulated: 260, placed: 90 },
-  { name: 'Sun', applicants: 280, simulated: 240, placed: 85 },
-];
-
-const mockSkillData = [
-  { name: 'System Design', score: 85 },
-  { name: 'React', score: 92 },
-  { name: 'Python', score: 78 },
-  { name: 'DevOps', score: 65 },
-  { name: 'Algorithms', score: 88 },
-];
+// Data fetched dynamically from backend
 
 export default function AnalyticsDashboard() {
   const [loading, setLoading] = useState(true);
@@ -39,12 +23,21 @@ export default function AnalyticsDashboard() {
     placements: 380,
   });
 
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [skillData, setSkillData] = useState<any[]>([]);
+
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
         const response = await api.get('/api/dashboard/analytics');
         if (response.data && response.data.stats) {
             setStats(response.data.stats);
+        }
+        if (response.data && response.data.chart_data) {
+            setChartData(response.data.chart_data);
+        }
+        if (response.data && response.data.skill_data) {
+            setSkillData(response.data.skill_data);
         }
       } catch (e) {
         console.error("Using fallback analytics data.");
@@ -103,7 +96,7 @@ export default function AnalyticsDashboard() {
           </div>
           <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={mockChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorApplicants" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
@@ -132,7 +125,7 @@ export default function AnalyticsDashboard() {
           <h2 className="text-lg font-black uppercase tracking-widest mb-8">Skill Proficiency</h2>
           <div className="flex-1 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={mockSkillData} layout="vertical" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+              <BarChart data={skillData} layout="vertical" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" horizontal={false} />
                 <XAxis type="number" hide />
                 <YAxis dataKey="name" type="category" stroke="#888" width={80} tick={{ fontSize: 12 }} />

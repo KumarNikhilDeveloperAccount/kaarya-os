@@ -28,6 +28,11 @@ class Application(Base):
     candidate_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     resume_path = Column(String, nullable=False)
     
+    # Extra Candidate Details
+    notice_period = Column(String, nullable=True)
+    expected_salary = Column(String, nullable=True)
+    cover_notes = Column(Text, nullable=True)
+    
     # AI Evaluation Fields
     ai_score = Column(Float, nullable=True) # 1-100
     ai_feedback = Column(JSON, nullable=True) # { "pros": [], "cons": [], "missing_skills": [] }

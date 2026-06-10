@@ -9,6 +9,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
 
 export default function OrbitPage() {
   const { user } = useAuth();
@@ -16,39 +17,48 @@ export default function OrbitPage() {
   const [nodes, setNodes] = useState<any[]>([]);
 
   useEffect(() => {
-     // Generate mock jobs orbiting the user
-     const generateOrbit = () => {
-        const orbitData = [];
-        const rings = 3;
-        const nodesPerRing = [4, 6, 8];
-        const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899'];
-        
-        let idCounter = 1;
-        for (let ring = 1; ring <= rings; ring++) {
-           const numNodes = nodesPerRing[ring - 1];
-           const radius = ring * 120 + 50; // pixels
-           const speed = 20 + ring * 10; // seconds for full rotation
+     const fetchJobsAndGenerateOrbit = async () => {
+        try {
+           const response = await api.get('/api/jobs');
+           const fetchedJobs = response.data;
            
-           for (let i = 0; i < numNodes; i++) {
-              const startAngle = (i / numNodes) * 360;
+           if (!fetchedJobs || fetchedJobs.length === 0) return;
+
+           const orbitData = [];
+           const rings = 3;
+           const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899'];
+           
+           for (let i = 0; i < fetchedJobs.length; i++) {
+              const job = fetchedJobs[i];
+              // distribute jobs evenly across rings
+              const ring = (i % rings) + 1;
+              const radius = ring * 120 + 50; // pixels
+              const speed = 20 + ring * 10 + Math.random() * 5; // seconds for full rotation
+              
+              const startAngle = (i / fetchedJobs.length) * 360 * ring; // scatter them around
+              
               orbitData.push({
-                 id: idCounter++,
+                 id: job.id,
+                 jobId: job.id, // Store actual job ID for later engagement
                  ring,
                  radius,
                  speed,
                  startAngle,
-                 color: colors[Math.floor(Math.random() * colors.length)],
-                 role: ["Senior Backend Eng", "Staff Prod Manager", "Lead Designer", "AI Architect", "Rust Dev"][Math.floor(Math.random() * 5)],
-                 company: ["TechCorp", "NikVerse AI", "GlobalSys", "FinTech Inc", "Kaarya Partner"][Math.floor(Math.random() * 5)],
-                 salary: ["$150k-$180k", "$200k+", "$120k-$150k", "Equity Heavy"][Math.floor(Math.random() * 4)],
-                 matchScore: Math.floor(Math.random() * 30) + 70, // 70-99
+                 color: colors[i % colors.length],
+                 role: job.title,
+                 company: job.company,
+                 salary: job.salary_range,
+                 description: job.description,
+                 matchScore: Math.floor(Math.random() * 20) + 80, // 80-99 (could be real ML score later)
               });
            }
+           setNodes(orbitData);
+        } catch (error) {
+           console.error("Failed to fetch orbit data:", error);
         }
-        setNodes(orbitData);
      };
      
-     generateOrbit();
+     fetchJobsAndGenerateOrbit();
   }, []);
 
   return (
@@ -227,9 +237,18 @@ export default function OrbitPage() {
                    </ul>
                 </div>
 
-                <div className="pt-6 border-t border-white/10 mt-auto">
-                   <button className="w-full py-4 bg-white text-black rounded-xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center">
+                <div className="pt-6 border-t border-white/10 mt-auto space-y-3">
+                   <button 
+                      onClick={() => window.location.href = '/jobs'}
+                      className="w-full py-4 bg-white text-black rounded-xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center"
+                   >
                       Engage Node <Rocket className="h-4 w-4 ml-2" />
+                   </button>
+                   <button 
+                      onClick={() => window.location.href = '/messages'}
+                      className="w-full py-4 bg-transparent border border-white/20 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-white/5 active:scale-95 transition-all flex items-center justify-center"
+                   >
+                      Direct Message <Target className="h-4 w-4 ml-2" />
                    </button>
                 </div>
              </motion.div>

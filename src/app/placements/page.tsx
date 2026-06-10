@@ -1,26 +1,51 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Target, Search, Filter, MoreHorizontal, Briefcase, Plus, UserCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const MOCK_STAGES = [
-  { id: 'sourced', title: 'Sourced', count: 12 },
-  { id: 'assessing', title: 'AI Assessment', count: 8 },
-  { id: 'interview', title: 'Interviewing', count: 5 },
-  { id: 'offer', title: 'Offer Extended', count: 2 },
-  { id: 'hired', title: 'Hired', count: 14 }
-];
-
-const MOCK_CANDIDATES = [
-  { id: 1, name: 'Alex Rivera', role: 'Frontend Engineer', stage: 'interview', score: 92, match: 'High' },
-  { id: 2, name: 'Sarah Chen', role: 'Backend Engineer', stage: 'assessing', score: null, match: 'Medium' },
-  { id: 3, name: 'Jordan Lee', role: 'DevOps Engineer', stage: 'offer', score: 95, match: 'High' },
-  { id: 4, name: 'Priya Patel', role: 'Data Scientist', stage: 'hired', score: 88, match: 'High' },
+  { id: 'sourced', title: 'Sourced', count: 0 },
+  { id: 'assessing', title: 'AI Assessment', count: 0 },
+  { id: 'interview', title: 'Interviewing', count: 0 },
+  { id: 'offer', title: 'Offer Extended', count: 0 },
+  { id: 'hired', title: 'Hired', count: 0 }
 ];
 
 export default function PlacementsPage() {
-  const [candidates, setCandidates] = useState(MOCK_CANDIDATES);
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [stages, setStages] = useState(MOCK_STAGES);
+
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        const { api } = await import('@/lib/api');
+        const res = await api.get('/api/jobs/applications');
+        const apps = res.data;
+        if (apps && apps.length > 0) {
+           const mappedApps = apps.map((a: any) => ({
+              id: a.id,
+              name: a.candidate?.full_name || 'Unknown Candidate',
+              role: a.job?.title || 'Applied Job',
+              stage: a.status || 'sourced',
+              score: a.match_score,
+              match: a.match_score > 85 ? 'High' : (a.match_score > 60 ? 'Medium' : 'Low')
+           }));
+           setCandidates(mappedApps);
+           
+           // Update counts
+           const newStages = [...MOCK_STAGES];
+           newStages.forEach(s => {
+              s.count = mappedApps.filter((a: any) => a.stage === s.id).length;
+           });
+           setStages(newStages);
+        }
+      } catch (err) {
+        console.error('Failed to fetch applications:', err);
+      }
+    };
+    fetchApplications();
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 animate-in fade-in duration-1000">
@@ -42,7 +67,7 @@ export default function PlacementsPage() {
       </div>
 
       <div className="flex gap-6 overflow-x-auto pb-8 snap-x">
-        {MOCK_STAGES.map((stage) => (
+        {stages.map((stage) => (
           <div key={stage.id} className="min-w-[320px] w-[320px] flex-shrink-0 snap-start flex flex-col h-[calc(100vh-250px)]">
             <div className="flex items-center justify-between mb-4 px-2">
               <h2 className="text-xs font-black uppercase tracking-widest flex items-center">

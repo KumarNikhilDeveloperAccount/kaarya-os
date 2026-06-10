@@ -68,3 +68,39 @@ def send_otp_email(email: str, otp: str):
 def generate_otp(length: int = 6) -> str:
     """ Generates a numeric OTP. """
     return ''.join(random.choices(string.digits, k=length))
+
+def send_notification_email(email: str, subject: str, body: str, button_text: str, button_url: str):
+    import httpx
+    body_html = f"""
+    <html>
+      <body style="margin: 0; padding: 0; font-family: 'Inter', sans-serif; background-color: #030014; color: #fff;">
+        <div style="max-width: 600px; margin: 40px auto; padding: 40px; background-color: #0b0f19; border: 1px solid #1e293b; border-radius: 20px; text-align: left;">
+          <img src="https://kaarya-os.vercel.app/logo.svg" alt="Kaarya.OS Logo" style="height: 40px; margin-bottom: 20px;" />
+          <h2 style="font-size: 20px; font-weight: 900; margin-bottom: 10px; color: #fff;">{subject}</h2>
+          <p style="color: #94a3b8; font-size: 14px; line-height: 1.6;">
+            {body}
+          </p>
+          <div style="margin-top: 30px;">
+            <a href="{button_url}" style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: #fff; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px;">
+              {button_text}
+            </a>
+          </div>
+        </div>
+      </body>
+    </html>
+    """
+    try:
+        response = httpx.post(
+            "https://kaarya-os.vercel.app/api/send-email",
+            json={
+                "to": email,
+                "subject": subject,
+                "secret": "kaarya_internal_proxy_secret_2026",
+                "html": body_html
+            },
+            timeout=15.0
+        )
+        response.raise_for_status()
+        print(f"Notification email sent to {email}")
+    except Exception as e:
+        print(f"Notification email failed: {e}")

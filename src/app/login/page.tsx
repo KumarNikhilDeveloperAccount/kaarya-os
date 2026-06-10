@@ -31,9 +31,6 @@ function LoginPageInner() {
       if (authEmail) {
         verifyEmailLink(authEmail, window.location.href).then((userData) => {
           toast.success('Magic Link Verified Successfully!');
-          if (!userData.roles) {
-            window.location.href = '/role-selection';
-          }
         }).catch((err) => {
           console.error(err);
           toast.error('Invalid or Expired Magic Link');
@@ -93,14 +90,17 @@ function LoginPageInner() {
     setIsLoading(true);
     try {
       setOtpSent(true);
-      const response = await api.post('/api/auth/otp/request', { email });
-      toast.success('OTP sent to your email.');
+      const response = await api.post('/api/auth/otp/request', { email, is_signup: false });
+      setOtpSent(true);
+      toast.success('Verification Code Sent!');
       if (response.data.debug_code) {
         setOtp(response.data.debug_code);
         toast.info(`[Test Mode] OTP Auto-filled: ${response.data.debug_code}`);
       }
-    } catch (err) {
-      toast.error('Failed to send OTP');
+    } catch (err: any) {
+      const errMsg = err.response?.data?.detail || 'Failed to send OTP';
+      toast.error(errMsg);
+      setError(errMsg);
     } finally {
       setIsLoading(false);
     }
@@ -117,9 +117,6 @@ function LoginPageInner() {
       });
       login(token, userResponse.data);
       toast.success('Identity Verified');
-      if (!userResponse.data.roles) {
-        window.location.href = '/role-selection';
-      }
     } catch (err) {
       toast.error('Invalid OTP');
     } finally {

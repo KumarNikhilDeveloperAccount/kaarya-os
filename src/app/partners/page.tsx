@@ -2,55 +2,30 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, MapPin, Building2, Users, Code2, Filter } from 'lucide-react';
+import { Search, MapPin, Building2, Users, Code2, Filter, MessageCircle } from 'lucide-react';
 import { getProfileData } from '@/lib/store';
 
-const MOCK_COMPANIES = [
-  {
-    id: '1',
-    companyName: 'Acme Corp',
-    industry: 'Technology & Software',
-    location: 'San Francisco, CA',
-    techStack: ['React', 'Node.js', 'AWS', 'PostgreSQL'],
-    bio: 'Building the next generation of cloud infrastructure and developer tools for the modern web.',
-    companySize: '51-200'
-  },
-  {
-    id: '2',
-    companyName: 'Global FinCore',
-    industry: 'Finance & Fintech',
-    location: 'New York, NY',
-    techStack: ['Python', 'Go', 'Kubernetes', 'Kafka'],
-    bio: 'Redefining global transaction settlements with ultra-low latency architectures.',
-    companySize: '201-500'
-  },
-  {
-    id: '3',
-    companyName: 'HealthAI',
-    industry: 'Healthcare',
-    location: 'Boston, MA',
-    techStack: ['PyTorch', 'TensorFlow', 'React', 'AWS'],
-    bio: 'Leveraging artificial intelligence to accelerate drug discovery and improve patient outcomes.',
-    companySize: '11-50'
-  }
-];
-
 export default function PartnersPage() {
-  const [companies, setCompanies] = useState<any[]>(MOCK_COMPANIES);
+  const [companies, setCompanies] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    // If the active user has a company profile in localStorage, prepend it to the mock list
-    const companyProfile = getProfileData('company');
-    if (companyProfile && companyProfile.companyName) {
-      setCompanies([
-        {
-          id: 'user',
-          ...companyProfile,
-        },
-        ...MOCK_COMPANIES
-      ]);
-    }
+    const fetchCompanies = async () => {
+       try {
+         const { api } = await import('@/lib/api');
+         const response = await api.get('/api/ecosystem/companies');
+         
+         const companyProfile = getProfileData('company');
+         if (companyProfile && companyProfile.companyName) {
+            setCompanies([{ id: 'user', ...companyProfile }, ...response.data]);
+         } else {
+            setCompanies(response.data);
+         }
+       } catch (error) {
+         console.error('Failed to fetch companies:', error);
+       }
+    };
+    fetchCompanies();
   }, []);
 
   const filteredCompanies = companies.filter(c => 
@@ -125,17 +100,26 @@ export default function PartnersPage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-border">
-              {company.techStack && company.techStack.slice(0, 3).map((tech: string) => (
-                <span key={tech} className="px-3 py-1 bg-primary/5 border border-primary/10 rounded-lg text-[10px] font-bold uppercase tracking-wider text-primary">
-                  {tech}
-                </span>
-              ))}
-              {company.techStack && company.techStack.length > 3 && (
-                <span className="px-3 py-1 bg-primary/5 border border-primary/10 rounded-lg text-[10px] font-bold uppercase tracking-wider text-primary">
-                  +{company.techStack.length - 3}
-                </span>
-              )}
+            <div className="flex items-center justify-between mt-auto pt-4 border-t border-border">
+              <div className="flex flex-wrap gap-2">
+                {company.techStack && company.techStack.slice(0, 3).map((tech: string) => (
+                  <span key={tech} className="px-3 py-1 bg-primary/5 border border-primary/10 rounded-lg text-[10px] font-bold uppercase tracking-wider text-primary">
+                    {tech}
+                  </span>
+                ))}
+                {company.techStack && company.techStack.length > 3 && (
+                  <span className="px-3 py-1 bg-primary/5 border border-primary/10 rounded-lg text-[10px] font-bold uppercase tracking-wider text-primary">
+                    +{company.techStack.length - 3}
+                  </span>
+                )}
+              </div>
+              <button 
+                onClick={(e) => { e.stopPropagation(); window.location.href = '/messages'; }}
+                className="ml-2 p-2 bg-primary/10 text-primary rounded-xl hover:bg-primary hover:text-white transition-colors"
+                title="Direct Message"
+              >
+                 <MessageCircle className="h-5 w-5" />
+              </button>
             </div>
           </motion.div>
         ))}

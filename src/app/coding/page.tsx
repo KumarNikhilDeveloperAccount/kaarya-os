@@ -23,22 +23,30 @@ export default function CodingPage() {
     { name: 'api_test.sh', icon: Terminal, color: 'text-purple-400' }
   ];
 
-  const runCode = () => {
+  const runCode = async () => {
     setIsRunning(true);
-    setOutput(prev => [...prev, `[${new Date().toLocaleTimeString()}] Initializing Engineering Lab environment...`]);
+    setOutput([`[${new Date().toLocaleTimeString()}] Initializing Engineering Lab environment...`]);
     
-    setTimeout(() => {
+    try {
+      const { api } = await import('@/lib/api');
       setOutput(prev => [...prev, `[${new Date().toLocaleTimeString()}] Executing main.py...`]);
-      setTimeout(() => {
-        setOutput(prev => [...prev, `Candidate Score: 89.9`, `[${new Date().toLocaleTimeString()}] Execution completed successfully.`]);
-        setIsRunning(false);
-      }, 1000);
-    }, 800);
+      const response = await api.post('/api/coding/execute', { code, language: 'python' });
+      const resultLines = response.data.output.split('\n');
+      setOutput(prev => [...prev, ...resultLines, `[${new Date().toLocaleTimeString()}] Execution completed.`]);
+    } catch (err: any) {
+      setOutput(prev => [...prev, `[${new Date().toLocaleTimeString()}] Error connecting to compute node.`]);
+    } finally {
+      setIsRunning(false);
+    }
   };
 
-  const saveFiles = () => {
+  const saveFiles = async () => {
     setIsSaving(true);
-    setTimeout(() => setIsSaving(false), 2000);
+    try {
+      const { api } = await import('@/lib/api');
+      await api.patch('/api/auth/me', { resume_data: { last_code: code } });
+    } catch (err) {}
+    setTimeout(() => setIsSaving(false), 500);
   };
 
   return (

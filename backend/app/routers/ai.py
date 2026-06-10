@@ -1,10 +1,39 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, UploadFile, File
 from sqlalchemy.orm import Session
 from app import database, models, schemas, deps
 from app.services.ai import evaluate_resume
 from typing import Dict, Any
+import pdfplumber
+import io
 
 router = APIRouter()
+
+@router.post("/parse-pdf", response_model=Dict[str, Any])
+async def parse_resume_pdf(
+    file: UploadFile = File(...),
+    job_description: str = "Software Engineer",
+    current_user: models.User = Depends(deps.get_current_user_optional)
+):
+    if not file.filename.endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+        
+    try:
+        contents = await file.read()
+        text = ""
+        with pdfplumber.open(io.BytesIO(contents)) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+                    
+        if not text.strip():
+             raise HTTPException(status_code=400, detail="Could not extract text from PDF.")
+             
+        result = evaluate_resume(text, job_description)
+        return result
+    except Exception as e:
+        print(f"PDF Parse Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to parse resume PDF.")
 
 @router.post("/parse-resume", response_model=Dict[str, Any])
 def parse_resume_content(
@@ -50,3 +79,17 @@ def assess_interview_response(
     except Exception as e:
         print(f"Rit.ai Interview Error: {e}")
         raise HTTPException(status_code=500, detail="Interview reasoning engine failed.")
+
+@router.post("/chat", response_model=Dict[str, Any])
+def rit_ai_chat(
+    message: str = Body(..., embed=True),
+    context: str = Body("", embed=True),
+    current_user: models.User = Depends(deps.get_current_user_optional)
+):
+    from app.services.ai import ask_rit
+    try:
+        response = ask_rit(message, context)
+        return {"response": response}
+    except Exception as e:
+        print(f"Rit Chat Error: {e}")
+        raise HTTPException(status_code=500, detail="Rit engine failed to process request.")

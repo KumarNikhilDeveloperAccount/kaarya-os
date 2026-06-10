@@ -4,19 +4,36 @@ import { useState, useEffect } from 'react';
 import { Users, GraduationCap, Building, Star, Search, Filter, MoreHorizontal } from 'lucide-react';
 import { api } from '@/lib/api';
 
-const mockBatches = [
-  { id: 'CS-2026', name: 'Computer Science 2026', students: 120, avgScore: 88, placed: 45, status: 'Active' },
-  { id: 'IT-2026', name: 'Information Tech 2026', students: 85, avgScore: 82, placed: 30, status: 'Active' },
-  { id: 'DS-2025', name: 'Data Science 2025', students: 60, avgScore: 91, placed: 58, status: 'Graduating' },
-  { id: 'CS-2024', name: 'Computer Science 2024', students: 110, avgScore: 85, placed: 105, status: 'Completed' },
-];
-
 export default function BatchesPage() {
-  const [batches, setBatches] = useState(mockBatches);
+  const [batches, setBatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [newBatch, setNewBatch] = useState({ id: '', name: '', students: 0, avgScore: 0, placed: 0, status: 'Active' });
 
-  // In a real app, we would fetch this:
-  // useEffect(() => { api.get('/api/batches').then(res => setBatches(res.data)) }, [])
+  const handleCreateBatch = async () => {
+    try {
+      const { api } = await import('@/lib/api');
+      const res = await api.post('/api/ecosystem/batches', newBatch);
+      setBatches([res.data, ...batches]);
+      setShowModal(false);
+      setNewBatch({ id: '', name: '', students: 0, avgScore: 0, placed: 0, status: 'Active' });
+    } catch (err) {
+      console.error('Failed to create batch', err);
+    }
+  };
+
+  useEffect(() => {
+    const fetchBatches = async () => {
+      try {
+        const { api } = await import('@/lib/api');
+        const res = await api.get('/api/ecosystem/batches');
+        setBatches(res.data);
+      } catch (err) {
+        console.error('Failed to fetch batches:', err);
+      }
+    };
+    fetchBatches();
+  }, []);
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 animate-in fade-in duration-1000">
@@ -34,11 +51,64 @@ export default function BatchesPage() {
           <button className="px-4 py-2 bg-secondary rounded-xl border border-border hover:border-primary/50 transition-all flex items-center">
             <Filter className="h-4 w-4 mr-2" /> Filter
           </button>
-          <button className="px-6 py-2 bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20">
+          <button 
+            onClick={() => setShowModal(true)}
+            className="px-6 py-2 bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20">
             + New Cohort
           </button>
         </div>
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-[2rem] p-8 max-w-md w-full shadow-2xl relative">
+            <h2 className="text-2xl font-black uppercase tracking-tight mb-4 text-foreground">Create New Cohort</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Batch ID</label>
+                <input 
+                  value={newBatch.id} onChange={e => setNewBatch({...newBatch, id: e.target.value})}
+                  placeholder="e.g. CS-2027"
+                  className="w-full bg-secondary border border-transparent focus:border-primary/30 rounded-xl px-4 py-3 text-sm font-medium outline-none transition-all mt-1" 
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Batch Name</label>
+                <input 
+                  value={newBatch.name} onChange={e => setNewBatch({...newBatch, name: e.target.value})}
+                  placeholder="e.g. Computer Science 2027"
+                  className="w-full bg-secondary border border-transparent focus:border-primary/30 rounded-xl px-4 py-3 text-sm font-medium outline-none transition-all mt-1" 
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Student Count</label>
+                <input 
+                  type="number"
+                  value={newBatch.students} onChange={e => setNewBatch({...newBatch, students: parseInt(e.target.value) || 0})}
+                  placeholder="0"
+                  className="w-full bg-secondary border border-transparent focus:border-primary/30 rounded-xl px-4 py-3 text-sm font-medium outline-none transition-all mt-1" 
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-8">
+              <button 
+                onClick={() => setShowModal(false)}
+                className="flex-1 py-3 bg-secondary text-foreground rounded-xl font-black text-xs uppercase tracking-widest hover:bg-secondary/80 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleCreateBatch}
+                className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-black text-xs uppercase tracking-widest hover:bg-primary/90 transition-colors"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-card border border-border rounded-[2rem] overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">

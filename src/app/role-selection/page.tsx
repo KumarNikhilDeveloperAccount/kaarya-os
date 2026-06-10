@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { User, Building, GraduationCap, Briefcase, Sparkles, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 const roles = [
   {
@@ -46,6 +48,14 @@ export default function RoleSelectionPage() {
   const [selectedRole, setSelectedRole] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && user?.active_persona) {
+      toast.info('You have already selected a persona.');
+      router.push('/');
+    }
+  }, [user, authLoading, router]);
 
   const handleSelection = async () => {
     if (!selectedRole) return;

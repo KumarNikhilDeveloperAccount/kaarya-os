@@ -30,6 +30,9 @@ class ApplicationOut(ApplicationBase):
     id: int
     candidate_id: int
     resume_path: str
+    notice_period: Optional[str] = None
+    expected_salary: Optional[str] = None
+    cover_notes: Optional[str] = None
     ai_score: Optional[float] = None
     ai_feedback: Optional[Dict[str, Any]] = None
     status: str

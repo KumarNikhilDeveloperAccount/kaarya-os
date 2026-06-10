@@ -30,17 +30,30 @@ export default function FeedPage() {
     fetchFeed();
   }, []);
 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const handlePost = async () => {
-    if (!newPost.trim()) return;
+    if (!newPost.trim() && !selectedFile) return;
     try {
+      let mediaUrl = null;
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        const uploadRes = await api.post('/api/upload', formData);
+        mediaUrl = uploadRes.data.url;
+      }
+
       const response = await api.post('/api/ecosystem/feed', {
         content: newPost,
+        media_url: mediaUrl,
         post_type: 'update'
       });
       setPosts([response.data, ...posts]);
       setNewPost('');
+      setSelectedFile(null);
     } catch (e) {
       console.error(e);
+      alert('Failed to post. Please try again.');
     }
   };
 
@@ -73,25 +86,42 @@ export default function FeedPage() {
                       </div>
                    )}
                 </div>
-                <textarea 
-                  value={newPost}
-                  onChange={e => setNewPost(e.target.value)}
-                  placeholder="Share an engineering milestone, an architectural decision, or a placement win..."
-                  className="w-full bg-transparent border-none resize-none focus:ring-0 text-sm font-medium pt-2 outline-none h-20 placeholder:text-muted-foreground/50"
-                />
+                <div className="flex-1">
+                   <textarea 
+                     value={newPost}
+                     onChange={e => setNewPost(e.target.value)}
+                     placeholder="Share an engineering milestone, an architectural decision, or a placement win..."
+                     className="w-full bg-transparent border-none resize-none focus:ring-0 text-sm font-medium pt-2 outline-none h-20 placeholder:text-muted-foreground/50"
+                   />
+                   {selectedFile && (
+                     <div className="mt-2 text-xs font-bold text-primary flex items-center">
+                        <ImageIcon className="h-3 w-3 mr-1" /> Attached: {selectedFile.name}
+                     </div>
+                   )}
+                </div>
              </div>
              <div className="flex items-center justify-between pt-4 border-t border-border/50">
                 <div className="flex space-x-2">
-                   <button className="p-2 text-muted-foreground hover:bg-secondary rounded-xl transition-colors">
+                   <label className="p-2 text-muted-foreground hover:bg-secondary rounded-xl transition-colors cursor-pointer">
+                     <input 
+                       type="file" 
+                       className="hidden" 
+                       accept="image/*,video/*"
+                       onChange={(e) => {
+                         if (e.target.files && e.target.files.length > 0) {
+                           setSelectedFile(e.target.files[0]);
+                         }
+                       }}
+                     />
                      <ImageIcon className="h-5 w-5" />
-                   </button>
+                   </label>
                    <button className="p-2 text-muted-foreground hover:bg-secondary rounded-xl transition-colors">
                      <Briefcase className="h-5 w-5" />
                    </button>
                 </div>
                 <button 
                   onClick={handlePost}
-                  disabled={!newPost.trim()}
+                  disabled={!newPost.trim() && !selectedFile}
                   className="px-6 py-2.5 bg-primary text-primary-foreground font-black text-xs uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:hover:scale-100"
                 >
                   <Send className="h-4 w-4" />
@@ -126,10 +156,10 @@ export default function FeedPage() {
                              )}
                           </div>
                           <div>
-                             <h4 className="font-bold">{post.author?.full_name || 'Kaarya User'}</h4>
-                             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-0.5">
-                               {new Date(post.created_at).toLocaleDateString()} • {post.post_type}
-                             </p>
+                              <h4 className="font-bold">{post.author?.full_name || 'Kaarya User'}</h4>
+                              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-0.5">
+                                {post.created_at ? new Date(post.created_at).toLocaleDateString() : 'Just now'} • {post.author?.active_persona || 'User'}
+                              </p>
                           </div>
                        </div>
                        <button className="p-2 hover:bg-secondary rounded-xl transition-colors"><MoreHorizontal className="h-5 w-5 text-muted-foreground" /></button>
@@ -139,7 +169,11 @@ export default function FeedPage() {
                     
                     {post.media_url && (
                       <div className="rounded-2xl overflow-hidden mb-6 border border-border">
-                         <img src={post.media_url} alt="Post media" className="w-full h-auto object-cover" />
+                         {post.media_url.match(/\.(mp4|webm|ogg|mov)$/i) ? (
+                            <video src={post.media_url} controls className="w-full h-auto object-cover" />
+                         ) : (
+                            <img src={post.media_url} alt="Post media" className="w-full h-auto object-cover" />
+                         )}
                       </div>
                     )}
 

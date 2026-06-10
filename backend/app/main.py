@@ -6,7 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.database import engine, Base, SessionLocal
 from app.models import User
-from app.routers import auth, jobs, sandbox, interviews, payments, admin, support, ai, dashboard, boomi, ecosystem
+from app.routers import auth, jobs, sandbox, interviews, payments, admin, support, ai, dashboard, boomi, ecosystem, upload, coding
+from fastapi.staticfiles import StaticFiles
 
 # Configure logging
 logging.basicConfig(
@@ -81,6 +82,14 @@ app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])
 app.include_router(boomi.router, prefix="/api/boomi", tags=["boomi"])
 app.include_router(ecosystem.router, prefix="/api/ecosystem", tags=["ecosystem"])
+app.include_router(upload.router, prefix="/api/upload", tags=["upload"])
+app.include_router(coding.router, prefix="/api/coding", tags=["coding"])
+app.include_router(payment.router, prefix="/api/payment", tags=["payment"])
+
+# Mount uploads directory to serve static files
+import os
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.get("/")
 def read_root():

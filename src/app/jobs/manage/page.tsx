@@ -3,14 +3,18 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Briefcase, Building2, Plus, MapPin, Search, Activity, Users, Send } from 'lucide-react';
-import { getProfileData, getActiveRole, saveJob, getJobs, getApplications } from '@/lib/store';
+import { getProfileData, getActiveRole } from '@/lib/store';
 import { toast } from 'sonner';
+import { api } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ManageJobsPage() {
   const [role, setRole] = useState('candidate');
   const [profile, setProfile] = useState<any>(null);
   const [myJobs, setMyJobs] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
+  const { user } = useAuth();
+  const [expandedJobId, setExpandedJobId] = useState<number | null>(null);
   
   const [isPosting, setIsPosting] = useState(false);
   const [formData, setFormData] = useState({
@@ -27,33 +31,40 @@ export default function ManageJobsPage() {
       const data = getProfileData('company');
       setProfile(data);
     }
-    refreshData();
-  }, []);
-
-  const refreshData = () => {
-    const allJobs = getJobs();
-    const data = getProfileData('company');
-    if (data && data.companyName) {
-      setMyJobs(allJobs.filter((j: any) => j.company?.companyName === data.companyName));
+    if (user) {
+      refreshData();
     }
-    setApplications(getApplications());
+  }, [user]);
+
+  const refreshData = async () => {
+    try {
+      if (!user) return;
+      const jobsRes = await api.get('/api/jobs');
+      const appsRes = await api.get('/api/jobs/applications');
+      setApplications(appsRes.data);
+      
+      const myCreatedJobs = jobsRes.data.filter((j: any) => j.company_id === user.id);
+      setMyJobs(myCreatedJobs);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const handlePostJob = () => {
+  const handlePostJob = async () => {
     if (!formData.title || !formData.description) {
       toast.error('Title and description are required.');
       return;
     }
     
-    saveJob({
-      ...formData,
-      company: profile
-    });
-    
-    toast.success('Job posted successfully!');
-    setFormData({ title: '', description: '', location: '', salary_range: '' });
-    setIsPosting(false);
-    refreshData();
+    try {
+      await api.post('/api/jobs', formData);
+      toast.success('Job posted successfully!');
+      setFormData({ title: '', description: '', location: '', salary_range: '' });
+      setIsPosting(false);
+      refreshData();
+    } catch (e: any) {
+      toast.error(e.response?.data?.detail || 'Failed to post job');
+    }
   };
 
   if (role !== 'company') {
@@ -161,10 +172,55 @@ export default function ManageJobsPage() {
                            <Users className="h-4 w-4" />
                            <span>{jobApps.length} Applications</span>
                         </div>
-                        <button className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline">
-                           View Pipeline
+                        <button 
+                          onClick={() => setExpandedJobId(expandedJobId === job.id ? null : job.id)}
+                          className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline"
+                        >
+                           {expandedJobId === job.id ? 'Hide Pipeline' : 'View Pipeline'}
                         </button>
                      </div>
+
+                     {expandedJobId === job.id && (
+                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="pt-4 border-t border-border space-y-4 overflow-hidden">
+                         <h5 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Applicant Pipeline</h5>
+                         {jobApps.length === 0 ? (
+                           <p className="text-xs text-muted-foreground italic">No applications yet.</p>
+                         ) : (
+                           jobApps.map((app: any) => (
+                             <div key={app.id} className="p-4 bg-secondary/50 border border-border rounded-xl flex items-center justify-between shadow-sm">
+                               <div>
+                                  <p className="text-sm font-bold uppercase tracking-tight">Candidate Profile #{app.candidate_id}</p>
+                                  <div className="flex items-center space-x-2 mt-1 text-[10px] font-black uppercase tracking-widest">
+                                    <span className="text-emerald-500">Rit Match: {app.ai_score}%</span>
+                                    <span className="text-muted-foreground">• Status: {app.status}</span>
+                                  </div>
+                                  <div className="mt-3 text-xs text-muted-foreground space-y-1">
+                                    {app.notice_period && <p><strong className="text-foreground">Notice Period:</strong> {app.notice_period}</p>}
+                                    {app.expected_salary && <p><strong className="text-foreground">Expected Salary:</strong> {app.expected_salary}</p>}
+                                    {app.cover_notes && <p><strong className="text-foreground">Notes:</strong> {app.cover_notes}</p>}
+                                  </div>
+                               </div>
+                               <button 
+                                  onClick={async () => {
+                                     try {
+                                        const token = localStorage.getItem('token');
+                                        const { api } = await import('@/lib/api');
+                                        const response = await api.get(`/api/auth/users/${app.candidate_id}/resume`, { responseType: 'blob' });
+                                        const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+                                        window.open(blobUrl, '_blank');
+                                     } catch (e) {
+                                        toast.error('Resume access denied or missing.');
+                                     }
+                                  }}
+                                  className="px-4 py-2 bg-primary/10 text-primary rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all shadow-sm"
+                               >
+                                 Review AI Profile
+                               </button>
+                             </div>
+                           ))
+                         )}
+                       </motion.div>
+                     )}
                   </div>
                 );
              })}

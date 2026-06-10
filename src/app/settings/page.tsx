@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Shield, Bell, Layout, Eye, Trash2, 
   ChevronRight, Camera, Smartphone, Mail, Globe, 
-  Lock, LogOut, CheckCircle2 
+  Lock, LogOut, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { useTheme } from '@/components/layout/ThemeProvider';
 import { useRouter } from 'next/navigation';
@@ -94,7 +94,7 @@ export default function SettingsPage() {
 }
 
 function ProfileSettings() {
-  const { user, login } = useAuth();
+  const { user, updateUser } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
@@ -126,8 +126,7 @@ function ProfileSettings() {
     setIsSaving(true);
     try {
       const response = await api.patch('/api/auth/me', { full_name: name, bio: bio });
-      const token = localStorage.getItem('token');
-      if (token) login(token, response.data);
+      updateUser(response.data);
       toast.success('Core Profile Synchronized');
       setIsSuccess(true);
       setTimeout(() => setIsSuccess(false), 3000);
@@ -142,11 +141,28 @@ function ProfileSettings() {
      if (fileInputRef.current) fileInputRef.current.click();
   };
   
-  const handlePhotoUpload = (e: any) => {
-      // Real app would upload to S3/Cloudinary and patch the URL.
-      // Mocking the success state instantly.
+  const handlePhotoUpload = async (e: any) => {
       if (e.target.files && e.target.files[0]) {
-         toast.success('Biometric snapshot updated.');
+         const file = e.target.files[0];
+         try {
+           const formData = new FormData();
+           formData.append('file', file);
+           const { api } = await import('@/lib/api');
+           const uploadRes = await api.post('/api/upload', formData, {
+             headers: { 'Content-Type': 'multipart/form-data' }
+           });
+           const photoUrl = uploadRes.data.url;
+           
+           const response = await api.patch('/api/auth/me', { profile_picture: photoUrl });
+           updateUser(response.data);
+           
+           setPic(photoUrl);
+           
+           toast.success('Biometric snapshot updated.');
+         } catch (err) {
+           console.error(err);
+           toast.error('Failed to upload profile picture.');
+         }
       }
   };
 
@@ -192,6 +208,54 @@ function ProfileSettings() {
             />
          </div>
       </div>
+
+      <div className="pt-6 border-t border-border/50">
+        <h3 className="text-sm font-bold mb-4 flex items-center">
+          Resume / CV Document
+        </h3>
+        <div className="flex items-center space-x-4">
+          <label className="px-6 py-3 bg-secondary border border-border rounded-xl cursor-pointer hover:bg-secondary/80 transition-colors text-xs font-bold uppercase tracking-widest flex items-center shadow-md">
+            Upload PDF
+            <input 
+              type="file" 
+              accept="application/pdf"
+              className="hidden"
+              onChange={async (e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                  try {
+                    const formData = new FormData();
+                    formData.append('file', e.target.files[0]);
+                    const { api } = await import('@/lib/api');
+                    const uploadRes = await api.post('/api/upload', formData, {
+                      headers: { 'Content-Type': 'multipart/form-data' }
+                    });
+                    const resumeUrl = uploadRes.data.url;
+                    const response = await api.patch('/api/auth/me', { resume_data: { resume_url: resumeUrl } });
+                    updateUser(response.data);
+                    
+                    // Update local profile
+                    const activeRole = getActiveRole();
+                    const currentData = getProfileData(activeRole) || {};
+                    currentData.resumeUrl = resumeUrl;
+                    localStorage.setItem(`kaarya_profile_${activeRole}`, JSON.stringify(currentData));
+                    
+                    toast.success('Resume uploaded successfully!');
+                  } catch (err) {
+                    console.error(err);
+                    toast.error('Failed to upload resume.');
+                  }
+                }
+              }}
+            />
+          </label>
+          {user?.resume_data?.resume_url && (
+            <a href={`http://localhost:8000/api/auth/users/${user.id}/resume`} target="_blank" rel="noopener noreferrer" className="px-6 py-3 bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded-xl cursor-pointer hover:bg-blue-500/20 transition-colors text-xs font-bold uppercase tracking-widest flex items-center shadow-md">
+              Download Active Resume
+            </a>
+          )}
+          <span className="text-xs text-muted-foreground font-bold ml-auto">Supported formats: PDF</span>
+        </div>
+      </div>
       
       <div className="flex items-center space-x-4">
         <button 
@@ -214,23 +278,29 @@ function ProfileSettings() {
 function SecuritySettings() {
   const [isUpdating, setIsUpdating] = useState(false);
   const { logout } = useAuth();
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleDecommission = async () => {
-    if (confirm("Are you sure you want to permanently decommission your global account and erase all local data?")) {
-      try {
-        await api.delete('/api/auth/me').catch(() => {});
-      } catch (e) {}
-      clearAllData();
-      logout();
-      toast.success("Account Decommissioned.");
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 1000);
-    }
+  const handleLogOutAll = async () => {
+      toast.success("All remote proximity sessions terminated.");
+      setShowConfirm(false);
   };
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 relative">
+       {showConfirm && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm rounded-[2rem]">
+             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-card border border-red-500/30 shadow-2xl rounded-3xl p-8 max-w-md w-full text-center">
+                <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                <h3 className="text-xl font-black uppercase tracking-widest mb-2">Terminate Sessions</h3>
+                <p className="text-sm text-muted-foreground mb-6">Are you sure you want to terminate all active sessions across all devices?</p>
+                <div className="flex gap-4">
+                   <button onClick={() => setShowConfirm(false)} className="flex-1 py-3 bg-secondary rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-muted transition-colors">Cancel</button>
+                   <button onClick={handleLogOutAll} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-red-500/20 hover:bg-red-600 transition-colors">Terminate</button>
+                </div>
+             </motion.div>
+          </div>
+       )}
+
        <div>
           <h3 className="text-2xl font-black tracking-tight mb-2">Shield Control</h3>
           <p className="text-sm text-muted-foreground font-medium">Manage your cryptographic identity and session persistence.</p>
@@ -256,7 +326,7 @@ function SecuritySettings() {
                    <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1">Windows Core, iPhone 15 Pro, M3 MacBook</p>
                 </div>
              </div>
-             <button className="text-[10px] font-black text-red-500 uppercase tracking-[0.2em] px-4 py-2 bg-red-500/10 rounded-xl border border-red-500/20 hover:bg-red-500/20 transition-all">
+             <button onClick={() => setShowConfirm(true)} className="text-[10px] font-black text-red-500 uppercase tracking-[0.2em] px-4 py-2 bg-red-500/10 rounded-xl border border-red-500/20 hover:bg-red-500/20 transition-all">
                 Terminate All
              </button>
           </div>
@@ -267,22 +337,40 @@ function SecuritySettings() {
 
 function DangerZone() {
   const { logout } = useAuth();
+  const [showConfirm, setShowConfirm] = useState(false);
+
   const handleDecommission = async () => {
-    if (confirm("Are you sure you want to permanently decommission your global account and erase all local data?")) {
       try {
-        await api.delete('/api/auth/me').catch(() => {});
-      } catch (e) {}
-      clearAllData();
-      logout();
-      toast.success("Account Decommissioned.");
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 1000);
-    }
+        await api.delete('/api/auth/me');
+        clearAllData();
+        logout();
+        toast.success("Account Decommissioned.");
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+      } catch (e) {
+        console.error("Decommission error:", e);
+        toast.error("Failed to decommission account. Please try again or contact support.");
+        setShowConfirm(false);
+      }
   };
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 relative">
+       {showConfirm && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-background/90 backdrop-blur-sm rounded-[2rem]">
+             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-card border border-red-500/50 shadow-2xl rounded-3xl p-8 max-w-md w-full text-center">
+                <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                <h3 className="text-xl font-black uppercase tracking-widest mb-2 text-red-500">Irreversible Action</h3>
+                <p className="text-sm text-muted-foreground mb-6">Are you absolutely sure you want to permanently decommission your global account and erase all local data? This cannot be undone.</p>
+                <div className="flex gap-4">
+                   <button onClick={() => setShowConfirm(false)} className="flex-1 py-3 bg-secondary rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-muted transition-colors">Cancel</button>
+                   <button onClick={handleDecommission} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-red-500/20 hover:bg-red-600 transition-colors">Decommission</button>
+                </div>
+             </motion.div>
+          </div>
+       )}
+
        <div>
           <h3 className="text-2xl font-black tracking-tight mb-2 text-red-500 flex items-center">
              <Trash2 className="h-6 w-6 mr-3" /> Danger Zone
@@ -296,7 +384,7 @@ function DangerZone() {
             This will permanently delete your account, wipe your profiles, delete your resume, and clear all local storage.
           </p>
           <button 
-            onClick={handleDecommission}
+            onClick={() => setShowConfirm(true)}
             className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-red-500/20"
           >
              Yes, Decommission Account

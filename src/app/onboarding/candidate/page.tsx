@@ -10,9 +10,11 @@ import { saveProfileData, fileToBase64 } from '@/lib/store';
 import api from '@/lib/api';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function CandidateOnboarding() {
   const router = useRouter();
+  const { login } = useAuth();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -86,29 +88,46 @@ export default function CandidateOnboarding() {
     setIsSubmitting(true);
     
     try {
-      // Process profile picture to base64 if it exists
-      let profilePicBase64 = null;
+      let profilePicUrl = null;
       if (currentData.profilePic) {
-        profilePicBase64 = await fileToBase64(currentData.profilePic);
+        const formData = new FormData();
+        formData.append('file', currentData.profilePic);
+        const { api } = await import('@/lib/api');
+        const uploadRes = await api.post('/api/upload', formData, {
+           headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        profilePicUrl = uploadRes.data.url;
+      }
+
+      let resumeUrl = null;
+      if (currentData.resume) {
+        const formData = new FormData();
+        formData.append('file', currentData.resume);
+        const { api } = await import('@/lib/api');
+        const uploadRes = await api.post('/api/upload', formData, {
+           headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        resumeUrl = uploadRes.data.url;
       }
       
-      // We don't save the actual resume file to localStorage due to size limits,
-      // but we record the filename to show it was uploaded.
       const finalData = {
         ...currentData,
-        profilePic: profilePicBase64,
-        resume: currentData.resume ? currentData.resume.name : null
+        profilePic: profilePicUrl,
+        resume: resumeUrl || null
       };
 
       saveProfileData('candidate', finalData);
       
       try {
-        await api.patch('/api/auth/me', {
+        const response = await api.patch('/api/auth/me', {
           full_name: currentData.fullName,
           bio: currentData.bio || null,
-          profile_picture: profilePicBase64 || null,
-          skills: currentData.skills.length > 0 ? currentData.skills.join(',') : null
+          profile_picture: profilePicUrl || null,
+          skills: currentData.skills.length > 0 ? currentData.skills.join(',') : null,
+          resume_data: resumeUrl ? { resume_url: resumeUrl } : null
         });
+        const token = localStorage.getItem('token');
+        if (token) login(token, response.data);
       } catch (err) {
         console.error("Failed to update profile on backend", err);
       }
@@ -164,19 +183,28 @@ export default function CandidateOnboarding() {
               <p className="text-muted-foreground">Tell us a bit about yourself so we can personalize your Kaarya.OS experience.</p>
             </div>
             
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-semibold">Full Name</label>
-                <input type="text" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="John Doe" />
+            <div className="space-y-6">
+              <div className="relative group">
+                <input type="text" id="fullName" required value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="peer w-full bg-background border border-border rounded-xl px-4 pt-6 pb-2 focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder-transparent" placeholder="John Doe" />
+                <label htmlFor="fullName" className="absolute left-4 top-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:font-normal peer-placeholder-shown:normal-case peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-black peer-focus:uppercase peer-focus:text-primary">Full Legal Name</label>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-semibold">Date of Birth</label>
-                  <input type="date" value={formData.dob} onChange={e => setFormData({...formData, dob: e.target.value})} className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+              <div className="grid grid-cols-2 gap-6">
+                <div className="relative group">
+                  <input type="date" id="dob" required value={formData.dob} onClick={(e: any) => e.target.showPicker && e.target.showPicker()} onChange={e => setFormData({...formData, dob: e.target.value})} className="peer w-full bg-background border border-border rounded-xl px-4 pt-6 pb-2 focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm cursor-pointer hover:bg-secondary/50" />
+                  <label htmlFor="dob" className="absolute left-4 top-2 text-[10px] font-black uppercase tracking-widest text-primary transition-all pointer-events-none">Date of Birth</label>
                 </div>
-                <div>
-                  <label className="text-sm font-semibold">Current Location</label>
-                  <input type="text" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="City, Country" />
+                <div className="relative group">
+                  <select id="location" required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="peer w-full bg-background border border-border rounded-xl px-4 pt-6 pb-2 focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm cursor-pointer appearance-none hover:bg-secondary/50">
+                    <option value="" disabled hidden>Select City</option>
+                    <option value="San Francisco, CA">San Francisco, CA</option>
+                    <option value="New York, NY">New York, NY</option>
+                    <option value="London, UK">London, UK</option>
+                    <option value="Bangalore, India">Bangalore, India</option>
+                    <option value="Toronto, Canada">Toronto, Canada</option>
+                    <option value="Singapore">Singapore</option>
+                    <option value="Remote">Remote / Anywhere</option>
+                  </select>
+                  <label htmlFor="location" className="absolute left-4 top-2 text-[10px] font-black uppercase tracking-widest text-primary transition-all pointer-events-none">Current Location</label>
                 </div>
               </div>
               <ProfileUpload 
@@ -212,7 +240,16 @@ export default function CandidateOnboarding() {
                  </div>
                  <div>
                   <label className="text-sm font-semibold">Degree / Course</label>
-                  <input type="text" value={formData.degree} onChange={e => setFormData({...formData, degree: e.target.value})} className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                  <select value={formData.degree} onChange={e => setFormData({...formData, degree: e.target.value})} className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer hover:bg-secondary/50">
+                    <option value="" disabled hidden>Select Degree</option>
+                    <option value="B.S. Computer Science">B.S. Computer Science</option>
+                    <option value="B.Tech Information Technology">B.Tech Information Technology</option>
+                    <option value="M.S. Computer Science">M.S. Computer Science</option>
+                    <option value="MBA">MBA</option>
+                    <option value="B.A. Design">B.A. Design</option>
+                    <option value="Self-Taught / Bootcamp">Self-Taught / Bootcamp</option>
+                    <option value="Other">Other</option>
+                  </select>
                  </div>
               </div>
               

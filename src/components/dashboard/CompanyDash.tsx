@@ -475,6 +475,19 @@ export default function CompanyDashboard() {
                     Archive Identity
                   </button>
                 </div>
+                
+                <div className="flex space-x-4 pt-4 border-t border-white/10 mt-4">
+                  {selectedCandidate.resume_url && (
+                    <a href={`http://localhost:8000/api/auth/users/${selectedCandidate.user_id}/resume`} target="_blank" rel="noopener noreferrer" className="flex-1 py-4 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 rounded-xl font-bold uppercase text-[10px] tracking-widest text-center transition-colors">
+                      Download Resume
+                    </a>
+                  )}
+                  {selectedCandidate.user_id && (
+                    <Link href={`/messages?user_id=${selectedCandidate.user_id}`} className="flex-1 py-4 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 rounded-xl font-bold uppercase text-[10px] tracking-widest text-center transition-colors">
+                      Message Candidate
+                    </Link>
+                  )}
+                </div>
               </div>
 
               {/* Background Glow */}

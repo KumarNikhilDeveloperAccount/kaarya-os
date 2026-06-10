@@ -8,8 +8,8 @@ import {
   ShieldCheck, Zap, Bell, CreditCard, HelpCircle, X
 } from 'lucide-react';
 import Image from 'next/image';
-import PerspectiveSwitcher from './PerspectiveSwitcher';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
   role?: string;
@@ -20,6 +20,7 @@ interface SidebarProps {
 
 export default function Sidebar({ role = 'candidate', onPersonaSwitch = () => {}, mobileOpen = false, setMobileOpen = () => {} }: SidebarProps) {
   const pathname = usePathname();
+  const { user } = useAuth();
 
   const getNavItems = () => {
     const common = [
@@ -32,6 +33,7 @@ export default function Sidebar({ role = 'candidate', onPersonaSwitch = () => {}
           { name: 'Dashboard', href: '/', icon: Home },
           { name: 'Talent Pool', href: '/candidates', icon: Users },
           { name: 'Manage Jobs', href: '/jobs/manage', icon: Briefcase },
+          { name: 'Messages', href: '/messages', icon: Bell },
           { name: 'Analytics', href: '/analytics', icon: BarChart },
           { name: 'Payments', href: '/billing', icon: CreditCard },
           { name: 'Settings', href: '/settings', icon: Settings },
@@ -58,6 +60,7 @@ export default function Sidebar({ role = 'candidate', onPersonaSwitch = () => {}
           { name: 'Network Feed', href: '/feed', icon: Users },
           { name: 'Talent Reels', href: '/reels', icon: Zap },
           { name: 'Opp Orbit', href: '/orbit', icon: Briefcase },
+          { name: 'Messages', href: '/messages', icon: Bell },
           { name: 'Personal Profile', href: '/profile', icon: User },
           { name: 'Resume Parser', href: '/resume', icon: FileText },
           { name: 'AI Assessment', href: '/interview', icon: ShieldCheck },
@@ -81,7 +84,7 @@ export default function Sidebar({ role = 'candidate', onPersonaSwitch = () => {}
         <div className="h-16 flex items-center justify-between px-8 border-b border-border/50 mb-6">
           <Link href="/" className="group flex items-center space-x-3" onClick={() => setMobileOpen(false)}>
               <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-xl border border-white/10 group-hover:scale-110 transition-transform duration-300">
-               <Image src="/kaarya-logo-final.png" alt="Kaarya OS Logo" fill className="object-cover" />
+               <Image src="/kaarya-logo-final.png" alt="Kaarya OS Logo" fill sizes="48px" className="object-cover" />
               </div>
             <h1 className="text-xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/80">Kaarya.OS</h1>
           </Link>
@@ -129,11 +132,15 @@ export default function Sidebar({ role = 'candidate', onPersonaSwitch = () => {}
 
       <div className="p-6 border-t border-border/50 mt-auto bg-muted/20">
         <div className="flex items-center space-x-3 p-3 rounded-2xl bg-background/50 border border-border/50">
-           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold">
-              KN
+           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold overflow-hidden">
+              {user?.profile_picture ? (
+                 <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                 user?.full_name ? user.full_name.substring(0,2).toUpperCase() : (role === 'company' ? 'HR' : 'U')
+              )}
            </div>
            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold truncate">Kumar Nikhil</p>
+              <p className="text-xs font-bold truncate">{user?.full_name || (role === 'company' ? 'Acme Corp' : 'Kaarya User')}</p>
               <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">{role}</p>
            </div>
            <HelpCircle className="h-4 w-4 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />

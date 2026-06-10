@@ -56,15 +56,31 @@ export default function TrainerOnboarding() {
     setIsSubmitting(true);
 
     try {
-      let profilePicBase64 = null;
+      let profilePicUrl = null;
       if (formData.profilePic) {
-        profilePicBase64 = await fileToBase64(formData.profilePic);
+        const uploadData = new FormData();
+        uploadData.append('file', formData.profilePic);
+        const { api } = await import('@/lib/api');
+        const uploadRes = await api.post('/api/upload', uploadData, {
+           headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        profilePicUrl = uploadRes.data.url;
       }
 
       const finalData = {
         ...formData,
-        profilePic: profilePicBase64
+        profilePic: profilePicUrl
       };
+
+      try {
+        const { api } = await import('@/lib/api');
+        await api.patch('/api/auth/me', {
+          full_name: formData.fullName,
+          profile_picture: profilePicUrl || null
+        });
+      } catch (err) {
+        console.error("Failed to update trainer on backend", err);
+      }
 
       saveProfileData('trainer', finalData);
 
@@ -77,9 +93,7 @@ export default function TrainerOnboarding() {
         colors: ['#f59e0b', '#3b82f6', '#10b981']
       });
       toast.success("Interviewer profile created successfully!");
-      setTimeout(() => {
-        router.push('/');
-      }, 2000);
+      setStep(4);
     } catch (error) {
       console.error(error);
       setIsSubmitting(false);
@@ -119,14 +133,14 @@ export default function TrainerOnboarding() {
               <p className="text-muted-foreground">Let's set up your interviewer profile.</p>
             </div>
             
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-semibold">Full Name</label>
-                <input type="text" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all" placeholder="Jane Doe" />
+            <div className="space-y-6">
+              <div className="relative group">
+                <input type="text" id="fullName" required value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="peer w-full bg-background border border-border rounded-xl px-4 pt-6 pb-2 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all placeholder-transparent" placeholder="Jane Doe" />
+                <label htmlFor="fullName" className="absolute left-4 top-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:font-normal peer-placeholder-shown:normal-case peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-black peer-focus:uppercase peer-focus:text-amber-500">Full Name</label>
               </div>
-              <div>
-                <label className="text-sm font-semibold">Location</label>
-                <input type="text" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all" placeholder="City, Country" />
+              <div className="relative group">
+                <input type="text" id="location" required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="peer w-full bg-background border border-border rounded-xl px-4 pt-6 pb-2 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all placeholder-transparent" placeholder="City, Country" />
+                <label htmlFor="location" className="absolute left-4 top-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:font-normal peer-placeholder-shown:normal-case peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-black peer-focus:uppercase peer-focus:text-amber-500">Location</label>
               </div>
               <ProfileUpload 
                 label="Profile Picture"

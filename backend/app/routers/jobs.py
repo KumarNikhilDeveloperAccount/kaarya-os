@@ -31,12 +31,16 @@ def list_jobs(db: Session = Depends(database.get_db)):
     """
     Visible to everyone (Candidates, etc.)
     """
-    return db.query(models.Job).filter(models.Job.is_active == True).all()
+    jobs = db.query(models.Job).filter(models.Job.is_active == True).all()
+    return jobs
 
 @router.post("/{job_id}/apply", response_model=schemas_job.ApplicationOut)
 async def apply_to_job(
     job_id: int, 
     file: UploadFile = File(...), 
+    notice_period: str = "",
+    expected_salary: str = "",
+    cover_notes: str = "",
     db: Session = Depends(database.get_db), 
     current_user: models.User = Depends(deps.get_current_user)
 ):
@@ -108,6 +112,9 @@ async def apply_to_job(
         job_id=job_id,
         candidate_id=current_user.id,
         resume_path=file_path,
+        notice_period=notice_period,
+        expected_salary=expected_salary,
+        cover_notes=cover_notes,
         ai_score=score,
         ai_feedback=ai_evaluation if isinstance(ai_evaluation, dict) else {"raw_evaluation": ai_evaluation},
         status="pending"
@@ -116,7 +123,58 @@ async def apply_to_job(
     db.add(new_app)
     db.commit()
     db.refresh(new_app)
+    
+    # Auto-schedule an interview for the Trainer/Interviewer persona
+    new_interview = models.Interview(
+        application_id=new_app.id,
+        candidate_id=current_user.id,
+        job_id=job_id,
+        status="pending"
+    )
+    db.add(new_interview)
+    db.commit()
+    
+    # Trigger real email notification to the Company
+    company_user = db.query(models.User).filter(models.User.id == job.company_id).first()
+    if company_user and company_user.email:
+        from app.services.email import send_notification_email
+        import threading
+        
+        email_body = f"Hello {company_user.full_name},<br><br><b>{current_user.full_name}</b> has just applied for the position of <b>{job.title}</b> on Kaarya.OS.<br><br>The candidate's resume has been automatically parsed and evaluated by Rit.ai, resulting in a preliminary match score of <b>{score}%</b>.<br><br>Please log in to your Recruitment Hub to review the full forensic report and proceed with scheduling."
+        
+        threading.Thread(target=send_notification_email, args=(
+            company_user.email,
+            f"New Application: {job.title} from {current_user.full_name}",
+            email_body,
+            "Review Application",
+            "http://localhost:3000/jobs/manage"
+        )).start()
+    
     return new_app
+
+@router.get("/applications", response_model=List[schemas_job.ApplicationOut])
+def get_company_applications(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    """
+    Company persona only (or admin). Get all applications for the company's jobs.
+    """
+    if current_user.active_persona == "candidate":
+        # Return candidate's own applications
+        return db.query(models.Application).filter(models.Application.candidate_id == current_user.id).all()
+        
+    if current_user.is_admin or current_user.active_persona == "admin":
+        return db.query(models.Application).all()
+        
+    # Company: get applications for their jobs
+    jobs = db.query(models.Job).filter(models.Job.company_id == current_user.id).all()
+    job_ids = [j.id for j in jobs]
+    if not job_ids:
+        return []
+        
+    apps = db.query(models.Application).filter(models.Application.job_id.in_(job_ids)).all()
+    return apps
 
 @router.patch("/applications/{application_id}/status", response_model=schemas_job.ApplicationOut)
 def update_application_status(

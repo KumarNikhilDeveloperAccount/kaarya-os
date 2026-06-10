@@ -63,3 +63,45 @@ class Endorsement(Base):
 
     endorser = relationship("User", foreign_keys=[endorser_id])
     target = relationship("User", foreign_keys=[target_id])
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    sender_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    receiver_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    content = Column(Text, nullable=False)
+    is_read = Column(Boolean, default=False)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    sender = relationship("User", foreign_keys=[sender_id])
+    receiver = relationship("User", foreign_keys=[receiver_id])
+
+class Feedback(Base):
+    __tablename__ = "feedbacks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    candidate_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    role = Column(String, nullable=True)
+    score = Column(Integer, default=0)
+    rating = Column(Integer, default=0)
+    feedback_text = Column(Text, nullable=False)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    author = relationship("User", foreign_keys=[author_id])
+    candidate = relationship("User", foreign_keys=[candidate_id])
+
+class Batch(Base):
+    __tablename__ = "batches"
+
+    id = Column(String, primary_key=True, index=True) # e.g. CS-2026
+    name = Column(String, nullable=False)
+    students_count = Column(Integer, default=0)
+    avg_score = Column(Integer, default=0)
+    placed_count = Column(Integer, default=0)
+    status = Column(String, default="Active")
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

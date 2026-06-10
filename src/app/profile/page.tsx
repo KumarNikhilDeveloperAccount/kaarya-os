@@ -127,6 +127,15 @@ export default function ProfilePage() {
                         <Share2 className="h-4 w-4" />
                         <span>Broadcast Profile</span>
                      </button>
+                     {profile.resumeUrl && (
+                       <button 
+                         onClick={() => window.open(profile.resumeUrl, '_blank')}
+                         className="px-8 py-4 bg-secondary text-foreground rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center space-x-2 border border-border"
+                       >
+                          <Briefcase className="h-4 w-4" />
+                          <span>View Resume</span>
+                       </button>
+                     )}
                   </div>
                </div>
                

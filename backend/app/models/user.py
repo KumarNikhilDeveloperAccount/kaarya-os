@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, JSON
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -24,6 +24,7 @@ class User(Base):
     bio = Column(String, nullable=True)
     profile_picture = Column(String, nullable=True) # URL to storage
     skills = Column(String, default="") # Comma separated
+    resume_data = Column(JSON, nullable=True)
     
     # roles: Comma separated roles (e.g. "candidate,trainer")
     roles = Column(String, default="") 

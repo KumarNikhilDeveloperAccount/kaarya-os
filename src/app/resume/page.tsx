@@ -65,32 +65,47 @@ export default function ResumePage() {
   const handleFinalize = async () => {
     toast.success("Portfolio integration initiated!");
     const currentProfile = getProfileData('candidate') || {};
-    saveProfileData('candidate', {
+    
+    const updatedProfile = {
        ...currentProfile,
        fullName: parsedData.personal.name,
        location: parsedData.personal.location,
        bio: parsedData.personal.objective,
        skills: parsedData.skills,
-    });
+    };
+    saveProfileData('candidate', updatedProfile);
     
     try {
-      await api.put('/api/auth/me', {
+      await api.patch('/api/auth/me', {
         full_name: parsedData.personal.name,
-        bio: parsedData.personal.objective
+        bio: parsedData.personal.objective,
+        skills: Array.isArray(parsedData.skills) ? parsedData.skills.join(',') : '',
+        resume_data: parsedData
       });
+      toast.success("Saved to database successfully.");
     } catch (err) {
-      console.error("Backend sync skipped.", err);
+      console.warn("Backend sync skipped (User likely offline/unauthenticated). Saved locally.");
+      // Do not throw error toast if it's just 401 unauthenticated
+      // Just rely on the local storage save which succeeded above
     }
+    
     setTimeout(() => {
-      window.location.href = '/profile';
-    }, 1500);
+      window.location.href = '/';
+    }, 1000);
+  };
+
+  const handleDownload = async () => {
+    toast.success("Preparing PDF...", { duration: 2000 });
+    setTimeout(() => {
+       window.print();
+    }, 500);
   };
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-      <div className="flex flex-col lg:flex-row gap-12">
+      <div className="flex flex-col lg:flex-row gap-12 print:block">
         {/* Builder Panel */}
-        <div className="flex-1 space-y-10">
+        <div className="flex-1 space-y-10 print:hidden">
           <div className="flex items-center justify-between">
              <div className="flex items-center space-x-3 text-primary">
                 <FileText className="h-8 w-8" />
@@ -172,10 +187,10 @@ export default function ResumePage() {
                       </button>
                    </motion.div>
                 )}
-                {activeStep === 1 && <PersonalInfoForm data={parsedData.personal} />}
-                {activeStep === 2 && <ExperienceForm data={parsedData.experience} />}
-                {activeStep === 3 && <SkillsForm data={parsedData.skills} />}
-                {activeStep === 4 && <EducationForm data={parsedData.education} />}
+                {activeStep === 1 && <PersonalInfoForm data={parsedData.personal} onChange={(val: any) => setParsedData({...parsedData, personal: val})} />}
+                {activeStep === 2 && <ExperienceForm data={parsedData.experience} onChange={(val: any) => setParsedData({...parsedData, experience: val})} />}
+                {activeStep === 3 && <SkillsForm data={parsedData.skills} onChange={(val: any) => setParsedData({...parsedData, skills: val})} />}
+                {activeStep === 4 && <EducationForm data={parsedData.education} onChange={(val: any) => setParsedData({...parsedData, education: val})} />}
              </AnimatePresence>
 
              {activeStep > 0 && (
@@ -207,9 +222,9 @@ export default function ResumePage() {
         </div>
 
         {/* Intelligence / Preview Preview */}
-        <div className="lg:w-[400px] space-y-8">
+        <div className="lg:w-[400px] space-y-8 print:w-full print:m-0 print:p-0">
            {aiOpinion ? (
-              <div className="p-8 bg-gradient-to-br from-primary via-blue-600 to-indigo-600 rounded-[2.5rem] text-white shadow-[0_20px_50px_rgba(59,130,246,0.3)]">
+              <div className="p-8 bg-gradient-to-br from-primary via-blue-600 to-indigo-600 rounded-[2.5rem] text-white shadow-[0_20px_50px_rgba(59,130,246,0.3)] print:hidden">
                  <div className="flex items-start justify-between mb-8">
                     <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-xl border border-white/20">
                        <Bot className="h-6 w-6" />
@@ -246,7 +261,7 @@ export default function ResumePage() {
                  </div>
               </div>
            ) : (
-              <div className="p-8 border border-dashed border-border rounded-[2.5rem] flex flex-col items-center justify-center h-[300px] text-center bg-card/50">
+              <div className="p-8 border border-dashed border-border rounded-[2.5rem] flex flex-col items-center justify-center h-[300px] text-center bg-card/50 print:hidden">
                  <Bot className="h-10 w-10 text-muted-foreground/30 mb-4" />
                  <p className="text-xs uppercase font-black tracking-widest text-muted-foreground">Awaiting Input Context</p>
               </div>
@@ -255,24 +270,58 @@ export default function ResumePage() {
            <div className="relative group cursor-zoom-in">
               <div className="absolute inset-0 bg-primary/20 rounded-[2.5rem] blur-2xl group-hover:blur-3xl transition-all print:hidden" />
               <div id="resume-preview" className="relative bg-white text-black p-8 rounded-[2rem] aspect-[1/1.4] shadow-2xl scale-95 group-hover:scale-100 transition-all duration-700">
-                 <div className="border-b-2 border-primary pb-4 mb-6">
-                    <h4 className="text-xl font-black uppercase tracking-tight">{parsedData.personal.name || 'Candidate Name'}</h4>
+                 <div className="border-b-2 border-primary pb-4 mb-4">
+                    <h4 className="text-xl font-black uppercase tracking-tight text-black">{parsedData.personal.name || 'Candidate Name'}</h4>
+                    <p className="text-[10px] font-medium text-gray-600">
+                      {parsedData.personal.email} {parsedData.personal.location ? `• ${parsedData.personal.location}` : ''}
+                    </p>
                     <p className="text-[8px] font-black text-primary uppercase tracking-[0.2em] mt-1">AI Structured Format</p>
                  </div>
-                 <div className="space-y-6">
-                    <div className="space-y-2">
-                       <div className="h-2 w-24 bg-zinc-200 rounded" />
-                       <div className="h-1.5 w-full bg-zinc-100 rounded" />
-                       <div className="h-1.5 w-4/5 bg-zinc-100 rounded" />
-                    </div>
-                    <div className="space-y-2">
-                       <div className="h-2 w-32 bg-zinc-200 rounded" />
-                       <div className="h-1.5 w-full bg-zinc-100 rounded" />
-                       <div className="h-1.5 w-full bg-zinc-100 rounded" />
-                    </div>
+                 <div className="space-y-4 text-left overflow-y-auto max-h-[calc(100%-80px)]">
+                    {parsedData.personal.objective && (
+                      <div className="space-y-1">
+                         <h5 className="text-[10px] font-black uppercase tracking-widest text-black">Summary</h5>
+                         <p className="text-[9px] leading-relaxed text-gray-700">{parsedData.personal.objective}</p>
+                      </div>
+                    )}
+                    {parsedData.experience && parsedData.experience.length > 0 && (
+                      <div className="space-y-2">
+                         <h5 className="text-[10px] font-black uppercase tracking-widest text-black border-b border-gray-200 pb-1">Experience</h5>
+                         {parsedData.experience.map((exp: any, i: number) => (
+                           <div key={i} className="mb-2">
+                              <div className="flex justify-between items-baseline">
+                                 <strong className="text-[9px] text-black uppercase tracking-wide">{exp.title}</strong>
+                                 <span className="text-[8px] text-gray-500">{exp.duration}</span>
+                              </div>
+                              <div className="text-[8px] font-medium text-primary mb-1">{exp.company}</div>
+                              <p className="text-[8px] text-gray-700 leading-tight">{exp.description}</p>
+                           </div>
+                         ))}
+                      </div>
+                    )}
+                    {parsedData.education && parsedData.education.length > 0 && (
+                      <div className="space-y-2">
+                         <h5 className="text-[10px] font-black uppercase tracking-widest text-black border-b border-gray-200 pb-1">Education</h5>
+                         {parsedData.education.map((edu: any, i: number) => (
+                           <div key={i}>
+                              <div className="flex justify-between items-baseline">
+                                 <strong className="text-[9px] text-black uppercase tracking-wide">{edu.degree}</strong>
+                                 <span className="text-[8px] text-gray-500">{edu.year}</span>
+                              </div>
+                              <div className="text-[8px] text-gray-700">{edu.institution}</div>
+                           </div>
+                         ))}
+                      </div>
+                    )}
+                    {parsedData.skills && parsedData.skills.length > 0 && (
+                      <div className="space-y-2">
+                         <h5 className="text-[10px] font-black uppercase tracking-widest text-black border-b border-gray-200 pb-1">Skills</h5>
+                         <p className="text-[8px] text-gray-700">{parsedData.skills.join(' • ')}</p>
+                      </div>
+                    )}
                  </div>
                  <button 
-                    onClick={() => window.print()}
+                    onClick={handleDownload}
                     className="absolute bottom-6 left-1/2 -translate-x-1/2 p-3 bg-black text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 active:scale-95"
                  >
                     <Download className="h-5 w-5" />
@@ -285,19 +334,23 @@ export default function ResumePage() {
   );
 }
 
-function PersonalInfoForm({ data }: any) {
+function PersonalInfoForm({ data, onChange }: any) {
+  const handleChange = (field: string, val: string) => {
+    onChange({ ...data, [field]: val });
+  };
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <InputGroup label="Full Portfolio Identity" placeholder="Jane Doe" icon={User} val={data.name} />
-          <InputGroup label="Primary Digital Reach" placeholder="jane@example.com" icon={Mail} val={data.email} />
-          <InputGroup label="Global Location" placeholder="San Francisco, CA" icon={MapPin} val={data.location} />
-          <InputGroup label="Digital Network" placeholder="github.com/janedoe" icon={Globe} val="" />
+          <InputGroup label="Full Portfolio Identity" placeholder="Jane Doe" icon={User} val={data.name} onChange={(val: string) => handleChange('name', val)} />
+          <InputGroup label="Primary Digital Reach" placeholder="jane@example.com" icon={Mail} val={data.email} onChange={(val: string) => handleChange('email', val)} />
+          <InputGroup label="Global Location" placeholder="San Francisco, CA" icon={MapPin} val={data.location} onChange={(val: string) => handleChange('location', val)} />
+          <InputGroup label="Digital Network" placeholder="github.com/janedoe" icon={Globe} val="" onChange={() => {}} />
        </div>
        <div className="space-y-3">
           <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-2">Legacy Overview</label>
           <textarea 
-            defaultValue={data.objective}
+            value={data.objective || ''}
+            onChange={(e) => handleChange('objective', e.target.value)}
             className="w-full bg-secondary border border-transparent focus:border-primary/30 rounded-3xl p-6 text-sm font-medium focus:ring-8 focus:ring-primary/5 outline-none transition-all h-32 resize-none" 
           />
        </div>
@@ -305,10 +358,24 @@ function PersonalInfoForm({ data }: any) {
   );
 }
 
-function ExperienceForm({ data }: any) {
+function ExperienceForm({ data, onChange }: any) {
+  const handleUpdate = (idx: number, field: string, val: string) => {
+     const newData = [...data];
+     newData[idx] = { ...newData[idx], [field]: val };
+     onChange(newData);
+  };
+  const handleAdd = () => {
+     onChange([{ title: '', company: '', duration: '', description: '' }, ...data]);
+  };
+  const handleDelete = (idx: number) => {
+     const newData = [...data];
+     newData.splice(idx, 1);
+     onChange(newData);
+  };
+
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
-       <div className="p-8 border border-dashed border-border rounded-[2rem] flex flex-col items-center justify-center text-center group hover:bg-secondary/20 transition-all cursor-pointer">
+       <div onClick={handleAdd} className="p-8 border border-dashed border-border rounded-[2rem] flex flex-col items-center justify-center text-center group hover:bg-secondary/20 transition-all cursor-pointer">
           <div className="w-16 h-16 bg-primary/10 text-primary rounded-[1.5rem] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
              <Plus className="h-8 w-8" />
           </div>
@@ -318,87 +385,140 @@ function ExperienceForm({ data }: any) {
        {data && data.length > 0 ? data.map((exp: any, idx: number) => (
          <ExperienceItem 
             key={idx}
-            role={exp.title || 'Role'} 
-            company={exp.company || 'Company'} 
-            period={exp.duration || 'Duration'} 
-            desc={exp.description || 'Description'} 
+            item={exp}
+            onChange={(field: string, val: string) => handleUpdate(idx, field, val)}
+            onDelete={() => handleDelete(idx)}
          />
        )) : (
-         <ExperienceItem role="Founding Engineer" company="NikVerse AI" period="2024 - Present" desc="Leading infrastructure architecture and high-performance system design." />
+         <div className="text-center text-muted-foreground text-sm py-4">No experience added.</div>
        )}
     </motion.div>
   );
 }
 
-function SkillsForm({ data }: any) {
+function SkillsForm({ data, onChange }: any) {
+  const [newSkill, setNewSkill] = useState('');
+  const handleAdd = (e: any) => {
+     if (e.key === 'Enter' && newSkill.trim()) {
+        onChange([...(data || []), newSkill.trim()]);
+        setNewSkill('');
+     }
+  };
+  const handleDelete = (idx: number) => {
+     const newData = [...data];
+     newData.splice(idx, 1);
+     onChange(newData);
+  };
+
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-10">
        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {data && data.length > 0 ? data.map((skill: string) => (
-            <div key={skill} className="flex items-center justify-between p-4 bg-secondary/40 border border-border/20 rounded-2xl group border-l-4 border-l-primary">
+          {data && data.length > 0 ? data.map((skill: string, idx: number) => (
+            <div key={idx} className="flex items-center justify-between p-4 bg-secondary/40 border border-border/20 rounded-2xl group border-l-4 border-l-primary">
                <span className="text-sm font-bold tracking-tight">{skill}</span>
-               <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500 cursor-pointer transition-colors" />
+               <Trash2 onClick={() => handleDelete(idx)} className="h-4 w-4 text-muted-foreground hover:text-red-500 cursor-pointer transition-colors" />
             </div>
           )) : (
              <div className="p-4 border border-dashed border-border rounded-2xl flex items-center justify-center text-xs font-black uppercase tracking-widest text-muted-foreground">No Skills Extracted</div>
           )}
-          <div className="p-4 border border-dashed border-border rounded-2xl flex items-center justify-center text-xs font-black uppercase tracking-widest text-muted-foreground hover:bg-secondary/40 cursor-text transition-all">
-             <Plus className="h-4 w-4 mr-2" /> Add Skill Spec
+          <div className="relative">
+             <input 
+                type="text"
+                value={newSkill}
+                onChange={(e) => setNewSkill(e.target.value)}
+                onKeyDown={handleAdd}
+                placeholder="Type and press Enter to add..."
+                className="w-full h-full p-4 border border-dashed border-border rounded-2xl text-sm font-medium bg-transparent focus:border-primary/50 outline-none transition-all"
+             />
+             <Plus className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           </div>
        </div>
     </motion.div>
   );
 }
 
-function EducationForm({ data }: any) {
+function EducationForm({ data, onChange }: any) {
+  const handleUpdate = (idx: number, field: string, val: string) => {
+     const newData = [...data];
+     newData[idx] = { ...newData[idx], [field]: val };
+     onChange(newData);
+  };
+  const handleAdd = () => {
+     onChange([{ degree: '', institution: '', year: '' }, ...data]);
+  };
+  const handleDelete = (idx: number) => {
+     const newData = [...data];
+     newData.splice(idx, 1);
+     onChange(newData);
+  };
+
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
+       <div onClick={handleAdd} className="p-8 border border-dashed border-border rounded-[2rem] flex flex-col items-center justify-center text-center group hover:bg-secondary/20 transition-all cursor-pointer mb-8">
+          <div className="w-16 h-16 bg-primary/10 text-primary rounded-[1.5rem] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+             <Plus className="h-8 w-8" />
+          </div>
+          <p className="font-bold uppercase tracking-widest text-[10px] text-muted-foreground group-hover:text-primary transition-colors">Integrate New Foundation</p>
+       </div>
        {data && data.length > 0 ? data.map((edu: any, idx: number) => (
          <ExperienceItem 
            key={idx}
-           role={edu.degree || 'Degree'} 
-           company={edu.institution || 'Institution'} 
-           period={edu.year || 'Year'} 
-           desc="Educational background extracted from resume." 
+           item={{ title: edu.degree, company: edu.institution, duration: edu.year, description: '' }}
+           onChange={(field: string, val: string) => {
+              if (field === 'title') handleUpdate(idx, 'degree', val);
+              if (field === 'company') handleUpdate(idx, 'institution', val);
+              if (field === 'duration') handleUpdate(idx, 'year', val);
+           }}
+           onDelete={() => handleDelete(idx)}
            isEdu
          />
        )) : (
-         <ExperienceItem role="Computer Science" company="Stanford Academy" period="2024" desc="Focused on Artificial Intelligence." isEdu />
+         <div className="text-center text-muted-foreground text-sm py-4">No education added.</div>
        )}
     </motion.div>
   );
 }
 
-function InputGroup({ label, placeholder, icon: Icon, val }: any) {
+function InputGroup({ label, placeholder, icon: Icon, val, onChange }: any) {
   return (
     <div className="space-y-3">
        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-2">{label}</label>
        <div className="relative">
           <Icon className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input defaultValue={val} className="w-full bg-secondary border border-transparent focus:border-primary/30 rounded-2xl pl-14 pr-6 py-4 text-sm font-medium focus:ring-8 focus:ring-primary/5 outline-none transition-all placeholder:opacity-50" placeholder={placeholder} />
+          <input value={val || ''} onChange={(e) => onChange(e.target.value)} className="w-full bg-secondary border border-transparent focus:border-primary/30 rounded-2xl pl-14 pr-6 py-4 text-sm font-medium focus:ring-8 focus:ring-primary/5 outline-none transition-all placeholder:opacity-50" placeholder={placeholder} />
        </div>
     </div>
   );
 }
 
-function ExperienceItem({ role, company, period, desc, isEdu }: any) {
+function ExperienceItem({ item, onChange, onDelete, isEdu }: any) {
   return (
-    <div className="p-8 bg-secondary/20 border border-border/50 rounded-3xl relative group hover:border-primary/20 transition-all">
-       <div className="flex justify-between items-start mb-4">
-          <div>
-             <h4 className="text-xl font-black uppercase tracking-tight">{role}</h4>
-             <p className="text-[10px] font-black uppercase tracking-widest text-primary mt-1 opacity-80">{company} • {period}</p>
-          </div>
-          <div className="flex space-x-2">
-             <div className="p-2 bg-card border border-border rounded-xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-secondary">
-                <Settings className="h-4 w-4 text-muted-foreground" />
-             </div>
-             <div className="p-2 bg-card border border-border rounded-xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-red-500/10 hover:text-red-500">
-                <Trash2 className="h-4 w-4" />
-             </div>
+    <div className="p-8 bg-secondary/20 border border-border/50 rounded-3xl relative group hover:border-primary/20 transition-all flex flex-col space-y-4">
+       <div className="absolute top-4 right-4 flex space-x-2">
+          <div onClick={onDelete} className="p-2 bg-card border border-border rounded-xl cursor-pointer hover:bg-red-500/10 hover:text-red-500 transition-colors">
+             <Trash2 className="h-4 w-4" />
           </div>
        </div>
-       <p className="text-sm text-muted-foreground font-medium leading-relaxed">{desc}</p>
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mr-10">
+          <div>
+             <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-1 block">{isEdu ? 'Degree' : 'Designation'}</label>
+             <input value={item.title || ''} onChange={(e) => onChange('title', e.target.value)} className="w-full bg-secondary border border-border/50 focus:border-primary/50 rounded-xl px-4 py-3 text-sm font-bold outline-none transition-all" placeholder={isEdu ? 'Degree' : 'Role Title'} />
+          </div>
+          <div>
+             <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-1 block">{isEdu ? 'Institution' : 'Company'}</label>
+             <input value={item.company || ''} onChange={(e) => onChange('company', e.target.value)} className="w-full bg-secondary border border-border/50 focus:border-primary/50 rounded-xl px-4 py-3 text-sm font-medium outline-none transition-all" placeholder={isEdu ? 'Institution' : 'Company'} />
+          </div>
+       </div>
+       <div>
+          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-1 block">{isEdu ? 'Year' : 'Duration'}</label>
+          <input value={item.duration || ''} onChange={(e) => onChange('duration', e.target.value)} className="w-full md:w-1/2 bg-secondary border border-border/50 focus:border-primary/50 rounded-xl px-4 py-3 text-sm font-medium outline-none transition-all" placeholder="e.g. 2021 - 2024" />
+       </div>
+       {!isEdu && (
+          <div>
+             <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-1 block">Description</label>
+             <textarea value={item.description || ''} onChange={(e) => onChange('description', e.target.value)} className="w-full bg-secondary border border-border/50 focus:border-primary/50 rounded-xl px-4 py-3 text-sm font-medium outline-none transition-all h-24 resize-none" placeholder="Description of your responsibilities..." />
+          </div>
+       )}
     </div>
   );
 }

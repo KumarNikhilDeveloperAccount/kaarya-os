@@ -1,19 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, Clock, Video, CheckCircle2, XCircle, MoreHorizontal } from 'lucide-react';
 
-const MOCK_REQUESTS = [
-  { id: 'REQ-001', candidate: 'Michael Chang', role: 'Full Stack Developer', date: '2026-06-02', time: '14:00 EST', status: 'Pending' },
-  { id: 'REQ-002', candidate: 'Emma Watson', role: 'UX Designer', date: '2026-06-03', time: '10:30 EST', status: 'Approved' },
-  { id: 'REQ-003', candidate: 'David Kim', role: 'Systems Engineer', date: '2026-06-04', time: '16:00 EST', status: 'Pending' },
-];
+export default function RequestsPage() {
+  const [requests, setRequests] = useState<any[]>([]);
 
-export default function InterviewRequestsPage() {
-  const [requests, setRequests] = useState(MOCK_REQUESTS);
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        const { api } = await import('@/lib/api');
+        const res = await api.get('/api/ecosystem/interviews');
+        setRequests(res.data);
+      } catch (err) {
+        console.error('Failed to fetch requests:', err);
+      }
+    };
+    fetchRequests();
+  }, []);
 
-  const handleAction = (id: string, action: 'Approved' | 'Declined') => {
-    setRequests(reqs => reqs.map(r => r.id === id ? { ...r, status: action } : r));
+  const handleAction = async (id: string, action: 'Approved' | 'Declined') => {
+    try {
+      const { api } = await import('@/lib/api');
+      await api.patch(`/api/ecosystem/interviews/${id}/status`, { status: action });
+      setRequests(reqs => reqs.map(r => r.id === id ? { ...r, status: action } : r));
+    } catch (err) {
+      console.error('Failed to update status:', err);
+    }
   };
 
   return (

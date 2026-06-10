@@ -87,7 +87,10 @@ def request_email_otp(data: schemas.OTPRequest, db: Session = Depends(database.g
 
     email = data.email.lower().strip()
     user = db.query(models.User).filter(models.User.email == email).first()
-    if not user:
+    
+    if data.is_signup:
+        if user:
+            raise HTTPException(status_code=400, detail="An account with this email already exists. Please log in.")
         user = models.User(
             email=email,
             full_name=(email.split("@")[0] if email else None),
@@ -98,6 +101,18 @@ def request_email_otp(data: schemas.OTPRequest, db: Session = Depends(database.g
         db.add(user)
         db.commit()
         db.refresh(user)
+    else:
+        if not user:
+            user = models.User(
+                email=email,
+                full_name=(email.split("@")[0] if email else None),
+                hashed_password="otp_managed",
+                roles="",
+                active_persona="",
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
 
     otp = generate_otp()
     user.otp_code = auth.get_password_hash(otp)  # store as bcrypt hash
@@ -381,6 +396,8 @@ def update_profile(
         current_user.profile_picture = data.profile_picture
     if data.skills is not None:
         current_user.skills = data.skills
+    if data.resume_data is not None:
+        current_user.resume_data = data.resume_data
 
     db.commit()
     db.refresh(current_user)
@@ -410,11 +427,134 @@ def get_current_user_info(current_user: models.User = Depends(deps.get_current_u
     return current_user
 
 
+@router.get("/users/{user_id}/resume")
+def get_user_resume(
+    user_id: int, 
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    """
+    Download a candidate's resume (PDF).
+    """
+    from fastapi.responses import FileResponse
+    import os
+    
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # Allow company, trainer, college to download, or user themselves
+    allowed_personas = ["company", "trainer", "college"]
+    if current_user.active_persona not in allowed_personas and current_user.id != user_id and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Unauthorized to download resume")
+        
+    if not user.resume_data or not isinstance(user.resume_data, dict):
+        raise HTTPException(status_code=404, detail="Resume data not found in DB")
+        
+    resume_path = user.resume_data.get("resume_url")
+    if not resume_path:
+        raise HTTPException(status_code=404, detail="No resume URL found")
+        
+    # If the resume path is a local file path
+    if os.path.exists(resume_path):
+        return FileResponse(path=resume_path, media_type="application/pdf", filename=f"{user.full_name}_Resume.pdf")
+    
+    # If it's stored in uploads/resumes matching the basename
+    local_path = os.path.join("uploads/resumes", os.path.basename(resume_path))
+    if os.path.exists(local_path):
+        return FileResponse(path=local_path, media_type="application/pdf", filename=f"{user.full_name}_Resume.pdf")
+        
+    raise HTTPException(status_code=404, detail="Resume file not found on disk")
+
+
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
 def delete_current_user(
     current_user: models.User = Depends(deps.get_current_user),
     db: Session = Depends(database.get_db),
 ):
+    from app.models.ecosystem import Post, Reel, Connection, Endorsement, Message, Feedback
+    from sqlalchemy import or_
+    
+    user_id = current_user.id
+    
+    # Manually cascade delete
+    db.query(Post).filter(Post.author_id == user_id).delete(synchronize_session=False)
+    db.query(Reel).filter(Reel.author_id == user_id).delete(synchronize_session=False)
+    db.query(Connection).filter(or_(Connection.requester_id == user_id, Connection.target_id == user_id)).delete(synchronize_session=False)
+    db.query(Endorsement).filter(or_(Endorsement.endorser_id == user_id, Endorsement.target_id == user_id)).delete(synchronize_session=False)
+    db.query(Message).filter(or_(Message.sender_id == user_id, Message.receiver_id == user_id)).delete(synchronize_session=False)
+    db.query(Feedback).filter(or_(Feedback.author_id == user_id, Feedback.candidate_id == user_id)).delete(synchronize_session=False)
+    
+    from app.models.interview import Interview
+    from app.models.job import Job, Application
+    from app.models.payment import Transaction, Wallet, PayoutRequest
+    
+    db.query(Interview).filter(Interview.candidate_id == user_id).delete(synchronize_session=False)
+    db.query(Application).filter(Application.candidate_id == user_id).delete(synchronize_session=False)
+    
+    jobs = db.query(Job).filter(Job.company_id == user_id).all()
+    job_ids = [j.id for j in jobs]
+    if job_ids:
+        db.query(Interview).filter(Interview.job_id.in_(job_ids)).delete(synchronize_session=False)
+        db.query(Application).filter(Application.job_id.in_(job_ids)).delete(synchronize_session=False)
+        
+    db.query(Job).filter(Job.company_id == user_id).delete(synchronize_session=False)
+    
+    db.query(Transaction).filter(Transaction.user_id == user_id).delete(synchronize_session=False)
+    db.query(Wallet).filter(Wallet.user_id == user_id).delete(synchronize_session=False)
+    db.query(PayoutRequest).filter(PayoutRequest.user_id == user_id).delete(synchronize_session=False)
+    
     db.delete(current_user)
     db.commit()
+    
+    # Send Final Confirmation Email
+    if current_user.email:
+        try:
+            from app.services.email import send_notification_email
+            import threading
+            
+            email_body = f"Hello {current_user.full_name},<br><br>We are writing to confirm that your Kaarya.OS account has been successfully and permanently decommissioned. All your data, resumes, and artifacts have been completely erased from our databases.<br><br>If this was a mistake or you wish to return, you will need to create a new profile from scratch."
+            
+            threading.Thread(target=send_notification_email, args=(
+                current_user.email,
+                "Kaarya.OS Account Decommissioned",
+                email_body,
+                "Return to Kaarya.OS",
+                "https://kaarya-os.vercel.app"
+            )).start()
+        except Exception as e:
+            logger.error(f"Failed to send decommission email: {e}")
+            
     return None
+
+@router.get("/users/search")
+def search_users(q: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(deps.get_current_user)):
+    from sqlalchemy import or_
+    users = db.query(models.User).filter(
+        models.User.id != current_user.id,
+        or_(
+            models.User.full_name.ilike(f"%{q}%"),
+            models.User.active_persona.ilike(f"%{q}%")
+        )
+    ).limit(20).all()
+    
+    return [
+        {
+            "id": u.id,
+            "full_name": u.full_name,
+            "active_persona": u.active_persona,
+            "profile_picture": u.profile_picture
+        } for u in users
+    ]
+
+@router.get("/users/{user_id}")
+def get_user_basic(user_id: int, db: Session = Depends(database.get_db), current_user: models.User = Depends(deps.get_current_user)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "id": user.id,
+        "full_name": user.full_name,
+        "active_persona": user.active_persona,
+        "profile_picture": user.profile_picture
+    }

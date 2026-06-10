@@ -36,22 +36,20 @@ const MOCK_CANDIDATES = [
 ];
 
 export default function CandidatesPage() {
-  const [candidates, setCandidates] = useState<any[]>(MOCK_CANDIDATES);
+  const [candidates, setCandidates] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    // If the active user has a candidate profile in localStorage, prepend it to the mock list
-    const candidateProfile = getProfileData('candidate');
-    if (candidateProfile && candidateProfile.fullName) {
-      setCandidates([
-        {
-          id: 'user',
-          ...candidateProfile,
-          hireability: 99
-        },
-        ...MOCK_CANDIDATES
-      ]);
-    }
+    const fetchCandidates = async () => {
+       try {
+         const { api } = await import('@/lib/api');
+         const response = await api.get('/api/ecosystem/candidates');
+         setCandidates(response.data || []);
+       } catch (error) {
+         console.error('Failed to fetch candidates:', error);
+       }
+    };
+    fetchCandidates();
   }, []);
 
   const filteredCandidates = candidates.filter(c => 
@@ -129,7 +127,7 @@ export default function CandidatesPage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-border">
+            <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-border mb-4">
               {candidate.skills && candidate.skills.slice(0, 3).map((skill: string) => (
                 <span key={skill} className="px-3 py-1 bg-secondary/50 rounded-lg text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   {skill}
@@ -140,6 +138,53 @@ export default function CandidatesPage() {
                   +{candidate.skills.length - 3}
                 </span>
               )}
+            </div>
+
+            <div className="flex gap-2 mt-2">
+              <button 
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    const { api } = await import('@/lib/api');
+                    const { toast } = await import('sonner');
+                    await api.post('/api/ecosystem/messages', {
+                      receiver_id: candidate.id,
+                      content: `Hi ${candidate.fullName.split(' ')[0]}, I came across your profile and would love to connect regarding some open opportunities.`
+                    });
+                    toast.success('Message sent!');
+                    window.location.href = '/messages';
+                  } catch (error) {
+                    console.error('Failed to send message:', error);
+                    const { toast } = await import('sonner');
+                    toast.error('Failed to connect. Please try again.');
+                  }
+                }}
+                className="flex-1 py-2 bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest rounded-xl hover:opacity-90 transition-opacity"
+              >
+                Contact
+              </button>
+              <button 
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const { toast } = await import('sonner');
+                  if (candidate.resumeUrl) {
+                    try {
+                        const downloadUrl = `/api/auth/users/${candidate.id}/resume`;
+                        const { api } = await import('@/lib/api');
+                        const response = await api.get(downloadUrl, { responseType: 'blob' });
+                        const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+                        window.open(blobUrl, '_blank');
+                    } catch(err) {
+                        toast.error('You do not have permission to download this resume or it is unavailable.');
+                    }
+                  } else {
+                    toast.error('This candidate has not uploaded a resume yet.');
+                  }
+                }}
+                className={`flex-1 py-2 border border-border text-xs font-bold uppercase tracking-widest rounded-xl transition-all ${candidate.resumeUrl ? 'hover:bg-secondary text-foreground' : 'opacity-50 cursor-not-allowed text-muted-foreground'}`}
+              >
+                Resume
+              </button>
             </div>
           </motion.div>
         ))}

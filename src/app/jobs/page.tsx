@@ -17,6 +17,9 @@ export default function JobBoard() {
   const [role, setRole] = useState('candidate');
   const [profile, setProfile] = useState<any>(null);
   const { user } = useAuth();
+  const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
+  const [applyForm, setApplyForm] = useState({ notice: '', salary: '', cover: '', file: null as File | null });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     setRole(getActiveRole());
@@ -26,30 +29,12 @@ export default function JobBoard() {
 
   const fetchJobs = async () => {
     try {
-      const localJobs = getJobs();
-      const fallbackJobs = [
-        {
-          id: 'fb1',
-          title: "Senior AI Backend Engineer",
-          description: "We are looking for a Python expert with Experience in FastAPI and Vertex AI to build Rit.ai infrastructure.",
-          location: "Remote / Hyderabad",
-          salary_range: "₹40L - ₹60L",
-          created_at: new Date().toISOString(),
-          company: { companyName: "Google Recruitment", logo: null }
-        },
-        {
-          id: 'fb2',
-          title: "Fullstack Product Designer",
-          description: "Join our team to build premium, dark-mode first dashboards for Kaarya.OS. Proficiency in Tailwind and Framer Motion required.",
-          location: "Bangalore",
-          salary_range: "₹25L - ₹35L",
-          created_at: new Date().toISOString(),
-          company: { companyName: "Kaarya Labs", logo: null }
-        }
-      ];
-      setJobs([...localJobs, ...fallbackJobs]);
+      const { api } = await import('@/lib/api');
+      const response = await api.get('/api/jobs');
+      setJobs(response.data || []);
     } catch (error) {
       console.error('Error fetching jobs:', error);
+      toast.error('Failed to load jobs from the server.');
     } finally {
       setLoading(false);
     }
@@ -60,22 +45,36 @@ export default function JobBoard() {
       toast.error('Only candidates can apply to jobs.');
       return;
     }
-    const candidateName = profile?.fullName || user?.full_name;
-    if (!candidateName) {
-      toast.error('Please complete your candidate profile first.');
-      return;
-    }
-    
-    if (hasAppliedToJob(jobId, candidateName)) {
-      toast.info('You have already applied to this job.');
-      return;
-    }
+    setApplyingJobId(jobId);
+  };
 
-    const applicationProfile = profile || { fullName: candidateName, email: user?.email };
-    applyToJob(jobId, applicationProfile);
-    toast.success('Application submitted successfully!');
-    // Trigger re-render to update UI (JobCard will need to check applied status)
-    fetchJobs();
+  const submitApplication = async () => {
+      if (!applyForm.file) {
+          toast.error("Please attach your Resume PDF.");
+          return;
+      }
+      setIsSubmitting(true);
+      const formData = new FormData();
+      formData.append('file', applyForm.file);
+      formData.append('notice_period', applyForm.notice);
+      formData.append('expected_salary', applyForm.salary);
+      formData.append('cover_notes', applyForm.cover);
+      
+      try {
+        const { api } = await import('@/lib/api');
+        await api.post(`/api/jobs/${applyingJobId}/apply`, formData, {
+           headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        toast.success('Application submitted successfully!');
+        setApplyingJobId(null);
+        setApplyForm({ notice: '', salary: '', cover: '', file: null });
+        fetchJobs(); // Refresh
+      } catch (error: any) {
+        console.error(error);
+        toast.error(error.response?.data?.detail || 'Failed to apply.');
+      } finally {
+        setIsSubmitting(false);
+      }
   };
 
   const filteredJobs = jobs.filter(job => 
@@ -157,6 +156,44 @@ export default function JobBoard() {
             )}
           </motion.div>
         </AnimatePresence>
+      )}
+
+      {/* Application Modal */}
+      {applyingJobId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-card border border-border rounded-[2rem] p-8 max-w-lg w-full shadow-2xl">
+                <h3 className="text-2xl font-black mb-2 uppercase tracking-widest text-primary">Complete Application</h3>
+                <p className="text-sm text-muted-foreground mb-6">Provide additional context to increase your Rit.ai match score.</p>
+                
+                <div className="space-y-4 mb-8">
+                   <div>
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Resume (PDF)</label>
+                      <input type="file" accept="application/pdf" onChange={(e) => setApplyForm(prev => ({...prev, file: e.target.files?.[0] || null}))} className="w-full bg-secondary border border-transparent focus:border-primary/30 rounded-xl px-4 py-3 text-sm focus:ring-4 focus:ring-primary/5 outline-none transition-all mt-1" />
+                   </div>
+                   <div className="grid grid-cols-2 gap-4">
+                      <div>
+                         <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Notice Period</label>
+                         <input type="text" placeholder="e.g. 30 Days" value={applyForm.notice} onChange={(e) => setApplyForm(prev => ({...prev, notice: e.target.value}))} className="w-full bg-secondary border border-transparent focus:border-primary/30 rounded-xl px-4 py-3 text-sm focus:ring-4 focus:ring-primary/5 outline-none transition-all mt-1" />
+                      </div>
+                      <div>
+                         <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Expected Salary</label>
+                         <input type="text" placeholder="e.g. $120k" value={applyForm.salary} onChange={(e) => setApplyForm(prev => ({...prev, salary: e.target.value}))} className="w-full bg-secondary border border-transparent focus:border-primary/30 rounded-xl px-4 py-3 text-sm focus:ring-4 focus:ring-primary/5 outline-none transition-all mt-1" />
+                      </div>
+                   </div>
+                   <div>
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Cover Notes</label>
+                      <textarea placeholder="Why are you the best fit for this role?" value={applyForm.cover} onChange={(e) => setApplyForm(prev => ({...prev, cover: e.target.value}))} className="w-full h-24 resize-none bg-secondary border border-transparent focus:border-primary/30 rounded-xl px-4 py-3 text-sm focus:ring-4 focus:ring-primary/5 outline-none transition-all mt-1" />
+                   </div>
+                </div>
+
+                <div className="flex gap-4">
+                   <button onClick={() => setApplyingJobId(null)} className="flex-1 py-4 bg-secondary text-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:bg-muted transition-colors">Cancel</button>
+                   <button onClick={submitApplication} disabled={isSubmitting} className="flex-1 py-4 bg-primary text-primary-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50">
+                      {isSubmitting ? 'Analyzing...' : 'Submit Application'}
+                   </button>
+                </div>
+             </motion.div>
+          </div>
       )}
     </div>
   );

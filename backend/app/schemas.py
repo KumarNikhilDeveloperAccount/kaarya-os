@@ -18,6 +18,7 @@ class UserOut(BaseModel):
     bio: Optional[str] = None
     profile_picture: Optional[str] = None
     skills: Optional[str] = None
+    resume_data: Optional[dict] = None
 
     class Config:
         from_attributes = True
@@ -27,10 +28,12 @@ class UserUpdate(BaseModel):
     bio: Optional[str] = None
     profile_picture: Optional[str] = None
     skills: Optional[str] = None
+    resume_data: Optional[dict] = None
 
 class OTPRequest(BaseModel):
     email: Optional[EmailStr] = None
     phone_number: Optional[str] = None
+    is_signup: bool = False
 
 class OTPVerify(BaseModel):
     email: Optional[EmailStr] = None

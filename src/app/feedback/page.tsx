@@ -1,17 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MessageSquare, Star, ThumbsUp, ThumbsDown, Filter, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const MOCK_FEEDBACK = [
-  { id: 1, candidate: 'Alex Rivera', role: 'Frontend Engineer', score: 92, feedback: 'Excellent grasp of React fundamentals and system design. Communication was clear and concise.', rating: 5, date: '2026-05-31' },
-  { id: 2, candidate: 'Sarah Chen', role: 'Backend Engineer', score: 85, feedback: 'Strong Python skills, but struggled slightly with the deep architectural database scaling question.', rating: 4, date: '2026-05-30' },
-  { id: 3, candidate: 'Jordan Lee', role: 'DevOps Engineer', score: 95, feedback: 'Exceptional performance across the board. Highly recommended for the senior position.', rating: 5, date: '2026-05-28' },
-];
-
 export default function FeedbackPage() {
-  const [feedbacks, setFeedbacks] = useState(MOCK_FEEDBACK);
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchFeedbacks = async () => {
+      try {
+        const { api } = await import('@/lib/api');
+        const res = await api.get('/api/ecosystem/feedbacks');
+        setFeedbacks(res.data);
+      } catch (err) {
+        console.error('Failed to fetch feedbacks:', err);
+      }
+    };
+    fetchFeedbacks();
+  }, []);
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 animate-in fade-in duration-1000">

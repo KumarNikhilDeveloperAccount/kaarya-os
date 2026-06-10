@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, CheckCircle2, Building2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import api from '@/lib/api';
 import { TagInput } from '@/components/ui/TagInput';
 import { ProfileUpload } from '@/components/ui/ProfileUpload';
 import { saveProfileData, fileToBase64 } from '@/lib/store';
@@ -63,15 +64,31 @@ export default function CompanyOnboarding() {
     setIsSubmitting(true);
 
     try {
-      let logoBase64 = null;
+      let logoUrl = null;
+      const { api } = await import('@/lib/api');
       if (currentData.logo) {
-        logoBase64 = await fileToBase64(currentData.logo);
+        const formData = new FormData();
+        formData.append('file', currentData.logo);
+        const uploadRes = await api.post('/api/upload', formData, {
+           headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        logoUrl = uploadRes.data.url;
       }
 
       const finalData = {
         ...currentData,
-        logo: logoBase64
+        logo: logoUrl
       };
+
+      try {
+        await api.patch('/api/auth/me', {
+          full_name: currentData.companyName,
+          bio: currentData.bio || null,
+          profile_picture: logoUrl || null
+        });
+      } catch (err) {
+        console.error("Failed to update company on backend", err);
+      }
 
       saveProfileData('company', finalData);
 
@@ -84,9 +101,7 @@ export default function CompanyOnboarding() {
         colors: ['#8b5cf6', '#3b82f6', '#10b981']
       });
       toast.success("Company profile created successfully!");
-      setTimeout(() => {
-        router.push('/');
-      }, 2000);
+      setStep(4);
     } catch (error) {
       console.error(error);
       setIsSubmitting(false);
@@ -126,19 +141,19 @@ export default function CompanyOnboarding() {
               <p className="text-muted-foreground">Let candidates know who they're applying to.</p>
             </div>
             
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-semibold">Company Name</label>
-                <input type="text" value={formData.companyName} onChange={e => setFormData({...formData, companyName: e.target.value})} className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all" placeholder="Acme Corp" />
+            <div className="space-y-6">
+              <div className="relative group">
+                <input type="text" id="companyName" required value={formData.companyName} onChange={e => setFormData({...formData, companyName: e.target.value})} className="peer w-full bg-background border border-border rounded-xl px-4 pt-6 pb-2 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all placeholder-transparent" placeholder="Acme Corp" />
+                <label htmlFor="companyName" className="absolute left-4 top-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:font-normal peer-placeholder-shown:normal-case peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-black peer-focus:uppercase peer-focus:text-emerald-500">Company Name</label>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-semibold">Website</label>
-                  <input type="url" value={formData.website} onChange={e => setFormData({...formData, website: e.target.value})} className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all" placeholder="https://..." />
+              <div className="grid grid-cols-2 gap-6">
+                <div className="relative group">
+                  <input type="url" id="website" required value={formData.website} onChange={e => setFormData({...formData, website: e.target.value})} className="peer w-full bg-background border border-border rounded-xl px-4 pt-6 pb-2 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all placeholder-transparent" placeholder="https://..." />
+                  <label htmlFor="website" className="absolute left-4 top-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:font-normal peer-placeholder-shown:normal-case peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-black peer-focus:uppercase peer-focus:text-emerald-500">Website</label>
                 </div>
-                <div>
-                  <label className="text-sm font-semibold">HQ Location</label>
-                  <input type="text" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all" placeholder="City, Country" />
+                <div className="relative group">
+                  <input type="text" id="location" required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="peer w-full bg-background border border-border rounded-xl px-4 pt-6 pb-2 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all placeholder-transparent" placeholder="City, Country" />
+                  <label htmlFor="location" className="absolute left-4 top-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:font-normal peer-placeholder-shown:normal-case peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-black peer-focus:uppercase peer-focus:text-emerald-500">HQ Location</label>
                 </div>
               </div>
               <ProfileUpload 
