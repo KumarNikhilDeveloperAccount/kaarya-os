@@ -89,17 +89,25 @@ def get_college_stats(
         raise HTTPException(status_code=403, detail="Unauthorized")
         
     total_students = db.query(models.User).filter(models.User.roles.contains("candidate")).count()
+    from app.models.ecosystem import Batch
+    batches = db.query(Batch).all()
+    
+    formatted_batches = [
+        { "name": b.name, "placed": b.placed_count, "total": b.students_count, "avgScore": b.avg_score }
+        for b in batches
+    ]
+
+    total_placed = sum(b.placed_count for b in batches)
+    total_batch_students = sum(b.students_count for b in batches)
+    placements_pct = f"{int((total_placed / total_batch_students) * 100)}%" if total_batch_students > 0 else "0%"
     
     return {
         "stats": {
             "total_students": total_students,
-            "placements": "86%",
-            "avg_package": "₹12.4L"
+            "placements": placements_pct,
+            "avg_package": "TBD"
         },
-        "batches": [
-            { "name": "Computer Science 2026", "placed": 84, "total": 120, "avgScore": 82 },
-            { "name": "Machine Learning 2026", "placed": 62, "total": 90, "avgScore": 88 }
-        ]
+        "batches": formatted_batches
     }
 
 @router.get("/candidate")
@@ -155,20 +163,15 @@ def get_analytics(
         
         apps_day = db.query(models.Application).filter(models.Application.created_at >= start_of_day, models.Application.created_at <= end_of_day).count()
         sims_day = db.query(models.Interview).filter(models.Interview.created_at >= start_of_day, models.Interview.created_at <= end_of_day).count()
-        placed_day = db.query(models.Application).filter(models.Application.status == "hired", models.Application.updated_at >= start_of_day, models.Application.updated_at <= end_of_day).count()
+        placed_day = db.query(models.Application).filter(models.Application.status == "hired", models.Application.created_at >= start_of_day, models.Application.created_at <= end_of_day).count()
         
         day_name = days[target_date.weekday()]
         
-        # If no DB data, inject some baseline so graph isn't totally flat for demo
-        baseline_apps = 120 + (i * 10) if apps_day == 0 and total_apps == 0 else apps_day
-        baseline_sims = 80 + (i * 8) if sims_day == 0 and total_apps == 0 else sims_day
-        baseline_placed = 20 + (i * 2) if placed_day == 0 and total_apps == 0 else placed_day
-
         chart_data.append({
             "name": day_name,
-            "applicants": apps_day + (baseline_apps if apps_day==0 else 0),
-            "simulated": sims_day + (baseline_sims if sims_day==0 else 0),
-            "placed": placed_day + (baseline_placed if placed_day==0 else 0)
+            "applicants": apps_day,
+            "simulated": sims_day,
+            "placed": placed_day
         })
 
     # For skill data, aggregate actual application AI scores 
@@ -184,10 +187,10 @@ def get_analytics(
 
     return {
         "stats": {
-            "total_applicants": total_apps if total_apps > 0 else 1480,
-            "simulations_run": total_apps if total_apps > 0 else 1190,
-            "avg_score": avg_score if avg_score > 0 else 82, 
-            "placements": hired if hired > 0 else 380
+            "total_applicants": total_apps,
+            "simulations_run": total_apps,
+            "avg_score": avg_score, 
+            "placements": hired
         },
         "chart_data": chart_data,
         "skill_data": skill_data

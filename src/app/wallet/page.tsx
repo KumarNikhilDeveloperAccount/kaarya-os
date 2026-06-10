@@ -45,6 +45,17 @@ export default function WalletPage() {
 
       const { order_id, amount: orderAmount } = orderRes.data;
 
+      if (order_id && order_id.startsWith("order_mock_")) {
+          await api.post('/api/payment/verify', {
+            razorpay_order_id: order_id,
+            razorpay_payment_id: "pay_mock_123456",
+            razorpay_signature: "mock_signature"
+          });
+          toast.success('Mock Payment Successful! Funds added to wallet.');
+          setIsLoading(false);
+          return;
+      }
+
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_SXSIL5pBjkGpta',
         amount: orderAmount,

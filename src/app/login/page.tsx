@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import Image from 'next/image';
 
 function LoginPageInner() {
-  const [email, setEmail] = useState('nkashyapnikhilnk@gmail.com'); 
+  const [email, setEmail] = useState(''); 
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [isOtpMode, setIsOtpMode] = useState(false);

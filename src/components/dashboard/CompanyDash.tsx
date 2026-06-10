@@ -207,15 +207,15 @@ export default function CompanyDashboard() {
                <RecruitmentPulse />
                <div className="mt-8 grid grid-cols-3 gap-8">
                   <div>
-                     <p className="text-3xl font-black text-glow">92%</p>
+                     <p className="text-3xl font-black text-glow">{stats.integrity || '92%'}</p>
                      <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Candidate Integrity</p>
                   </div>
                   <div>
-                     <p className="text-3xl font-black text-glow">14.2</p>
+                     <p className="text-3xl font-black text-glow">{stats.avg_score || '0'}</p>
                      <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Average Rit.ai Score</p>
                   </div>
                   <div>
-                     <p className="text-3xl font-black text-glow">3.1h</p>
+                     <p className="text-3xl font-black text-glow">{stats.time_to_forensic || '3.1h'}</p>
                      <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Time to Forensic</p>
                   </div>
                </div>

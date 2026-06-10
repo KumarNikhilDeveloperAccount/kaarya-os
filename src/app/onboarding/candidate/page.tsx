@@ -242,11 +242,13 @@ export default function CandidateOnboarding() {
                   <label className="text-sm font-semibold">Degree / Course</label>
                   <select value={formData.degree} onChange={e => setFormData({...formData, degree: e.target.value})} className="w-full mt-1 bg-background border border-border rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer hover:bg-secondary/50">
                     <option value="" disabled hidden>Select Degree</option>
-                    <option value="B.S. Computer Science">B.S. Computer Science</option>
-                    <option value="B.Tech Information Technology">B.Tech Information Technology</option>
-                    <option value="M.S. Computer Science">M.S. Computer Science</option>
+                    <option value="B.TECH / B.E.">B.TECH / B.E.</option>
+                    <option value="B.SC">B.SC</option>
+                    <option value="B.A">B.A</option>
+                    <option value="M.TECH / M.E.">M.TECH / M.E.</option>
+                    <option value="M.SC">M.SC</option>
                     <option value="MBA">MBA</option>
-                    <option value="B.A. Design">B.A. Design</option>
+                    <option value="PHD">PhD</option>
                     <option value="Self-Taught / Bootcamp">Self-Taught / Bootcamp</option>
                     <option value="Other">Other</option>
                   </select>

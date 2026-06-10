@@ -10,6 +10,7 @@ import {
   Camera, Edit3, Share2, Building2
 } from 'lucide-react';
 import { getProfileData, getActiveRole, fileToBase64, saveProfileData } from '@/lib/store';
+import { toast } from 'sonner';
 
 export default function ProfilePage() {
   const [role, setRole] = useState('candidate');
@@ -123,7 +124,7 @@ export default function ProfilePage() {
                      </p>
                   </div>
                   <div className="flex gap-4">
-                     <button className="px-8 py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center space-x-2">
+                     <button onClick={() => toast.success('Profile broadcasted to network!')} className="px-8 py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center space-x-2">
                         <Share2 className="h-4 w-4" />
                         <span>Broadcast Profile</span>
                      </button>
@@ -211,22 +212,21 @@ export default function ProfilePage() {
             </div>
 
             {/* Career Reels / Media (Living Identity) */}
-            {role === 'candidate' && (
+            {role === 'candidate' && profile.reels && profile.reels.length > 0 && (
                <div className="space-y-6">
                   <div className="flex items-center justify-between px-4">
                      <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Professional Reels</h3>
-                     <button className="text-[10px] font-black text-primary hover:underline uppercase tracking-widest flex items-center">
+                     <button onClick={() => toast.info('Media uploader coming soon!')} className="text-[10px] font-black text-primary hover:underline uppercase tracking-widest flex items-center">
                        <Camera className="h-3 w-3 mr-1" /> Add Media
                      </button>
                   </div>
                   <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-4 snap-x">
-                     {[1, 2, 3].map(i => (
+                     {profile.reels.map((reel: any, i: number) => (
                         <div key={i} className="w-48 h-72 rounded-3xl bg-zinc-900 border border-border shrink-0 snap-start relative overflow-hidden group cursor-pointer">
-                           <img src={`https://picsum.photos/400/600?random=${i}`} className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-700" alt="Reel" />
+                           <video src={reel.url} className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-700" />
                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
                            <div className="absolute bottom-4 left-4 right-4">
-                              <p className="text-white text-xs font-bold leading-tight">System Design Architecture overview</p>
-                              <p className="text-primary text-[8px] font-black uppercase tracking-widest mt-2">1.2k views</p>
+                              <p className="text-white text-xs font-bold leading-tight">{reel.caption || 'System Design Architecture overview'}</p>
                            </div>
                         </div>
                      ))}
@@ -268,12 +268,12 @@ export default function ProfilePage() {
                </div>
             )}
 
-            {/* Workforce Legacy / Details based on role */}
+             {/* Workforce Legacy / Details based on role */}
             {role === 'candidate' || role === 'trainer' ? (
               <div className="space-y-8">
                  <div className="flex items-center justify-between px-4">
                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Workforce Legacy</h3>
-                    <button className="text-[10px] font-black text-primary hover:underline uppercase tracking-widest">Update Records</button>
+                    <button onClick={() => toast.info('Record update feature coming soon!')} className="text-[10px] font-black text-primary hover:underline uppercase tracking-widest">Update Records</button>
                  </div>
                  <div className="space-y-6">
                     <LegacyItem 

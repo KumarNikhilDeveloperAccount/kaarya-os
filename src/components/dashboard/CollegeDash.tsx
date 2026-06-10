@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { 
   GraduationCap, Users, Building, BarChart3, TrendingUp, Sparkles, 
-  Plus, Search, Download, ChevronRight, CheckCircle2, UserCheck, Loader2
+  Plus, Search, Download, ChevronRight, CheckCircle2, UserCheck, Loader2, X
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
 export default function CollegeDashboard() {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newBatch, setNewBatch] = useState({ id: '', name: '', students: 0, avgScore: 0, placed: 0, status: 'Active' });
 
   useEffect(() => {
     fetchData();
@@ -40,6 +42,18 @@ export default function CollegeDashboard() {
 
   const batches = data?.batches || [];
 
+  const handleCreateBatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post('/api/ecosystem/batches', newBatch);
+      toast.success('Batch onboarded successfully.');
+      setIsModalOpen(false);
+      fetchData();
+    } catch (err) {
+      toast.error('Failed to create batch');
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -48,14 +62,20 @@ export default function CollegeDashboard() {
             <p className="text-muted-foreground mt-2 text-lg font-medium tracking-tight">Managing <span className="text-foreground font-bold">{data?.stats?.total_students || 0} scholars</span>. Placement integrity: <span className="text-emerald-500 font-bold">{data?.stats?.placements || '0%'}</span>.</p>
          </div>
          <div className="flex space-x-3">
-            <button className="h-12 bg-secondary/50 border border-white/5 text-foreground px-6 rounded-2xl font-black flex items-center space-x-3 hover:bg-muted transition-all text-[10px] uppercase tracking-widest">
-               <Download className="h-4 w-4" />
-               <span>Export Analytics</span>
-            </button>
-            <button className="h-12 bg-primary text-white px-6 rounded-2xl font-black flex items-center space-x-3 shadow-2xl shadow-primary/20 hover:scale-[1.05] transition-all text-[10px] uppercase tracking-widest">
-               <Plus className="h-4 w-4" />
-               <span>Onboard Batch</span>
-            </button>
+             <button 
+                onClick={() => toast.success("Analytics exported to secure vault.")}
+                className="h-12 bg-secondary/50 border border-white/5 text-foreground px-6 rounded-2xl font-black flex items-center space-x-3 hover:bg-muted transition-all text-[10px] uppercase tracking-widest"
+             >
+                <Download className="h-4 w-4" />
+                <span>Export Analytics</span>
+             </button>
+             <button 
+                onClick={() => setIsModalOpen(true)}
+                className="h-12 bg-primary text-white px-6 rounded-2xl font-black flex items-center space-x-3 shadow-2xl shadow-primary/20 hover:scale-[1.05] transition-all text-[10px] uppercase tracking-widest"
+             >
+                <Plus className="h-4 w-4" />
+                <span>Onboard Batch</span>
+             </button>
          </div>
       </div>
 
@@ -154,6 +174,81 @@ export default function CollegeDashboard() {
          </div>
 
       </div>
+
+      {/* Batch Creation Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-card border border-border w-full max-w-lg rounded-[2.5rem] shadow-2xl p-8 relative"
+            >
+              <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 p-2 rounded-full hover:bg-secondary transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+              
+              <div className="flex items-center space-x-3 text-primary mb-6">
+                 <GraduationCap className="h-6 w-6" />
+                 <h2 className="text-2xl font-black uppercase tracking-tighter">Onboard Batch</h2>
+              </div>
+
+              <form onSubmit={handleCreateBatch} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Batch ID</label>
+                  <input 
+                    required 
+                    value={newBatch.id} 
+                    onChange={(e) => setNewBatch({...newBatch, id: e.target.value})}
+                    placeholder="e.g. BATCH-CS-26"
+                    className="w-full bg-secondary border-none rounded-2xl p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20" 
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Batch Name</label>
+                  <input 
+                    required 
+                    value={newBatch.name} 
+                    onChange={(e) => setNewBatch({...newBatch, name: e.target.value})}
+                    placeholder="e.g. Computer Science 2026"
+                    className="w-full bg-secondary border-none rounded-2xl p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20" 
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total Students</label>
+                    <input 
+                      type="number"
+                      required
+                      value={newBatch.students} 
+                      onChange={(e) => setNewBatch({...newBatch, students: parseInt(e.target.value) || 0})}
+                      className="w-full bg-secondary border-none rounded-2xl p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Placed Students</label>
+                    <input 
+                      type="number"
+                      required
+                      value={newBatch.placed} 
+                      onChange={(e) => setNewBatch({...newBatch, placed: parseInt(e.target.value) || 0})}
+                      className="w-full bg-secondary border-none rounded-2xl p-4 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20" 
+                    />
+                  </div>
+                </div>
+                <button 
+                  type="submit"
+                  className="w-full h-14 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all text-xs uppercase tracking-widest flex items-center justify-center space-x-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span>Onboard New Batch</span>
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

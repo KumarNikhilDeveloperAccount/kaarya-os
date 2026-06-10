@@ -94,7 +94,7 @@ export default function InterviewPage() {
 
       const payload = response.data;
 
-      if (payload.is_complete || currentQuestion >= 4) {
+      if (payload.is_complete || currentQuestion >= 9) {
          setStep('result');
          setIsRecording(false);
       } else {
@@ -278,7 +278,7 @@ export default function InterviewPage() {
                 <div className="space-y-4">
                    <h2 className="text-3xl font-black tracking-tight uppercase">Cinematic Lobby</h2>
                    <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                     Your identity has been verified. The assessment will consist of 5 technical intuition prompts. Voice volume and facial expressions are mapped.
+                     Your identity has been verified. The assessment will consist of 10 technical intuition prompts. Voice volume and facial expressions are mapped.
                    </p>
                 </div>
                 <ul className="space-y-4 pt-6 border-t border-border">
@@ -319,7 +319,7 @@ export default function InterviewPage() {
                       />
                    </div>
                    <div className="p-3 bg-primary/10 rounded-2xl text-primary font-black text-[10px] uppercase tracking-widest mb-6">
-                      Question {currentQuestion + 1} of 5
+                      Question {currentQuestion + 1} of 10
                    </div>
                    <h2 className="text-2xl md:text-3xl font-black tracking-tight max-w-3xl leading-snug">
                       "{currentQuestionText}"

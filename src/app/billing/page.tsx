@@ -50,9 +50,11 @@ export default function BillingPage() {
         const orderData = orderRes.data;
         if (!orderData || !orderData.id) throw new Error("Failed to create order");
         
+        const rzpKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY || "rzp_test_kaaryaos123456";
+
         // Step 2: Initialize Razorpay
         const options = {
-            key: "rzp_test_kaaryaos123456", // Test key, real one will be passed if available
+            key: rzpKey,
             amount: orderData.amount,
             currency: orderData.currency,
             name: "Kaarya.OS",
@@ -72,7 +74,6 @@ export default function BillingPage() {
                     
                     if (verifyRes.data.status === 'success') {
                         setPurchased([...purchased, item.id]);
-                        // Refresh invoices
                         const newInvoice = {
                            id: `INV-2026-${Math.floor(Math.random() * 1000)}`,
                            date: new Date().toISOString().split('T')[0],
@@ -87,15 +88,30 @@ export default function BillingPage() {
                 }
             },
             prefill: {
-                name: "Nikhil Kashyap",
-                email: "nkashyapnikhilnk@gmail.com",
-                contact: "9315600875"
+                name: "Kaarya User",
+                email: "user@kaarya.com",
+                contact: "9999999999"
             },
-            theme: {
-                color: "#3b82f6"
-            }
+            theme: { color: "#3b82f6" }
         };
         
+        if (rzpKey === "rzp_test_kaaryaos123456") {
+            // Mock payment flow for testing
+            console.warn("Using mock Razorpay test key. Simulating successful payment...");
+            setTimeout(() => {
+                 setPurchased([...purchased, item.id]);
+                 const newInvoice = {
+                    id: `INV-2026-${Math.floor(Math.random() * 1000)}`,
+                    date: new Date().toISOString().split('T')[0],
+                    amount: item.price,
+                    status: 'Paid'
+                 };
+                 setInvoices([newInvoice, ...invoices]);
+                 alert("Mock Payment successful! Premium feature unlocked.");
+            }, 1000);
+            return;
+        }
+
         const rzp = new (window as any).Razorpay(options);
         rzp.on('payment.failed', function (response: any){
             alert("Payment failed: " + response.error.description);
@@ -104,7 +120,7 @@ export default function BillingPage() {
         
     } catch (err: any) {
         console.error('Checkout error:', err);
-        alert(err.response?.data?.detail || "Checkout failed. Using mock system fallback? Configure Razorpay keys in backend.");
+        alert(err.response?.data?.detail || "Checkout failed. Please configure Razorpay keys in backend.");
     } finally {
         setLoading(false);
     }

@@ -53,11 +53,14 @@ export default function InterviewerDashboard() {
          </div>
 
          <div className="flex space-x-3">
-            <button className="h-12 bg-secondary border border-border text-foreground px-6 rounded-xl font-bold flex items-center space-x-2 hover:bg-muted transition-all">
+            <Link href="/interviews/requests" className="h-12 bg-secondary border border-border text-foreground px-6 rounded-xl font-bold flex items-center space-x-2 hover:bg-muted transition-all">
                <Calendar className="h-4 w-4" />
-               <span>Manage Calendar</span>
-            </button>
-            <button className="h-12 bg-primary text-white px-6 rounded-xl font-bold flex items-center space-x-2 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+               <span>Manage Calendar & Requests</span>
+            </Link>
+            <button 
+               onClick={() => toast.success("Withdrawal request submitted. Funds will reflect in 24 hours.")}
+               className="h-12 bg-primary text-white px-6 rounded-xl font-bold flex items-center space-x-2 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform"
+            >
                <DollarSign className="h-4 w-4" />
                <span>Withdraw ₹4,200</span>
             </button>

@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
-import { Send, User, MessageCircle, Clock, ChevronLeft, Search, X } from 'lucide-react';
+import { Send, User, MessageCircle, Clock, ChevronLeft, Search, X, Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function MessagesPage() {
+function MessagesContent() {
   const { user } = useAuth();
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,13 +104,14 @@ export default function MessagesPage() {
   };
 
   // Group messages by conversation
-  const conversations = messages.reduce((acc, msg) => {
-    const otherUser = msg.sender.id === user?.id ? msg.receiver : msg.sender;
+  const conversations = messages.reduce((acc: any, msg) => {
+    const isMe = String(msg.sender.id) === String(user?.id);
+    const otherUser = isMe ? msg.receiver : msg.sender;
     if (!acc[otherUser.id]) {
       acc[otherUser.id] = { user: otherUser, messages: [], unreadCount: 0 };
     }
     acc[otherUser.id].messages.push(msg);
-    if (msg.sender.id === otherUser.id && !msg.is_read) {
+    if (String(msg.sender.id) === String(otherUser.id) && !msg.is_read) {
         acc[otherUser.id].unreadCount += 1;
     }
     return acc;
@@ -252,7 +253,7 @@ export default function MessagesPage() {
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col-reverse">
                {conversations[selectedUser.id]?.messages.map((msg: any) => {
-                  const isMe = msg.sender.id === user?.id;
+                  const isMe = String(msg.sender.id) === String(user?.id);
                   return (
                     <motion.div 
                       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -277,6 +278,12 @@ export default function MessagesPage() {
 
             <div className="p-4 border-t border-border/50 bg-card">
                <div className="flex space-x-2">
+                  <button className="p-3 bg-secondary text-muted-foreground rounded-2xl hover:bg-muted transition-colors flex items-center justify-center">
+                     <span className="text-lg leading-none">😀</span>
+                  </button>
+                  <button className="p-3 bg-secondary text-muted-foreground font-bold text-xs rounded-2xl hover:bg-muted transition-colors flex items-center justify-center uppercase">
+                     GIF
+                  </button>
                   <input 
                     type="text" 
                     value={replyText}
@@ -307,5 +314,13 @@ export default function MessagesPage() {
          </div>
       )}
     </div>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+      <MessagesContent />
+    </Suspense>
   );
 }

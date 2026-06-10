@@ -71,6 +71,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.routers import auth, jobs, sandbox, interviews, payments, admin, support, ai, dashboard, boomi, ecosystem, upload, coding, payment
+
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(jobs.router, prefix="/api/jobs", tags=["jobs"])
 app.include_router(sandbox.router, prefix="/api/sandbox", tags=["sandbox"])

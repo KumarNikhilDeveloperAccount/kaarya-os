@@ -57,6 +57,30 @@ export default function FeedPage() {
     }
   };
 
+  const handleLike = (id: number) => {
+    setPosts(posts.map(p => {
+       if (p.id === id) {
+          return { ...p, is_liked: !p.is_liked, likes_count: p.is_liked ? Math.max(0, p.likes_count - 1) : (p.likes_count || 0) + 1 };
+       }
+       return p;
+    }));
+  };
+
+  const [activeCommentPost, setActiveCommentPost] = useState<number | null>(null);
+  const [commentText, setCommentText] = useState('');
+
+  const submitComment = (id: number) => {
+    if (!commentText.trim()) return;
+    setPosts(posts.map(p => {
+       if (p.id === id) {
+          const newComment = { id: Date.now(), text: commentText, author: user?.full_name || 'You' };
+          return { ...p, comments_count: (p.comments_count || 0) + 1, comments: [newComment, ...(p.comments || [])] };
+       }
+       return p;
+    }));
+    setCommentText('');
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 animate-in fade-in duration-1000">
       <div className="flex justify-between items-center mb-8">
@@ -178,18 +202,40 @@ export default function FeedPage() {
                     )}
 
                     <div className="flex items-center space-x-6 pt-4 border-t border-border/50">
-                       <button className="flex items-center space-x-2 text-muted-foreground hover:text-red-500 transition-colors group">
-                          <div className="p-2 rounded-full group-hover:bg-red-500/10"><Heart className="h-4 w-4" /></div>
+                       <button onClick={() => handleLike(post.id)} className={`flex items-center space-x-2 transition-colors group ${post.is_liked ? 'text-red-500' : 'text-muted-foreground hover:text-red-500'}`}>
+                          <div className={`p-2 rounded-full ${post.is_liked ? 'bg-red-500/10' : 'group-hover:bg-red-500/10'}`}>
+                             <Heart className="h-4 w-4" fill={post.is_liked ? 'currentColor' : 'none'} />
+                          </div>
                           <span className="text-xs font-bold">{post.likes_count}</span>
                        </button>
-                       <button className="flex items-center space-x-2 text-muted-foreground hover:text-blue-500 transition-colors group">
-                          <div className="p-2 rounded-full group-hover:bg-blue-500/10"><MessageCircle className="h-4 w-4" /></div>
+                       <button onClick={() => setActiveCommentPost(activeCommentPost === post.id ? null : post.id)} className={`flex items-center space-x-2 transition-colors group ${activeCommentPost === post.id ? 'text-blue-500' : 'text-muted-foreground hover:text-blue-500'}`}>
+                          <div className={`p-2 rounded-full ${activeCommentPost === post.id ? 'bg-blue-500/10' : 'group-hover:bg-blue-500/10'}`}><MessageCircle className="h-4 w-4" /></div>
                           <span className="text-xs font-bold">{post.comments_count}</span>
                        </button>
                        <button className="flex items-center space-x-2 text-muted-foreground hover:text-emerald-500 transition-colors group ml-auto">
                           <div className="p-2 rounded-full group-hover:bg-emerald-500/10"><Share2 className="h-4 w-4" /></div>
                        </button>
                     </div>
+
+                    {activeCommentPost === post.id && (
+                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="pt-4 mt-4 border-t border-border/50">
+                          <div className="flex space-x-2 mb-4">
+                             <input type="text" value={commentText} onChange={e => setCommentText(e.target.value)} onKeyDown={e => e.key === 'Enter' && submitComment(post.id)} placeholder="Write a comment..." className="flex-1 bg-secondary border border-transparent focus:border-primary/30 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-primary/10 outline-none transition-all" />
+                             <button onClick={() => submitComment(post.id)} className="px-4 py-2 bg-primary text-white rounded-xl font-bold text-xs hover:scale-105 transition-transform">Post</button>
+                          </div>
+                          <div className="space-y-3 max-h-48 overflow-y-auto">
+                             {post.comments?.map((c: any) => (
+                                <div key={c.id} className="text-sm bg-secondary/30 p-3 rounded-xl border border-border/50">
+                                   <span className="font-bold text-primary mr-2">{c.author}</span>
+                                   <span>{c.text}</span>
+                                </div>
+                             ))}
+                             {(!post.comments || post.comments.length === 0) && (
+                                <p className="text-muted-foreground text-xs text-center py-2">No comments yet. Join the discussion!</p>
+                             )}
+                          </div>
+                       </motion.div>
+                    )}
                  </motion.div>
                ))}
              </AnimatePresence>

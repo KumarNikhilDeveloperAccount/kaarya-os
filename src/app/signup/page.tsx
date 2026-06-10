@@ -11,10 +11,10 @@ import { toast } from 'sonner';
 import Image from 'next/image';
 
 export default function SignupPage() {
-  const [email, setEmail] = useState('nkashyapnikhilnk@gmail.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('9315600875');
+  const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [phoneOtp, setPhoneOtp] = useState('');
   const [isPasswordMode, setIsPasswordMode] = useState(true);

@@ -28,7 +28,7 @@ export default function SettingsPage() {
     { id: 'notifications', name: 'Notifications', icon: Bell },
     { id: 'ui', name: 'UI & Theme', icon: Layout },
     { id: 'privacy', name: 'Privacy', icon: Eye },
-    { id: 'danger', name: 'Danger Zone', icon: Trash2 }
+    { id: 'danger', name: 'Account Management', icon: Trash2 }
   ];
 
 
@@ -83,8 +83,8 @@ export default function SettingsPage() {
                 {activeTab === 'security' && <SecuritySettings />}
                 {activeTab === 'notifications' && <NotificationPreferences />}
                 {activeTab === 'ui' && <UISettings theme={theme} setTheme={setTheme} />}
-                {activeTab === 'privacy' && <PrivacySettings />}
-                {activeTab === 'danger' && <DangerZone />}
+                { activeTab === 'privacy' && <PrivacySettings /> }
+                { activeTab === 'danger' && <AccountManagement /> }
              </motion.div>
            </AnimatePresence>
         </div>
@@ -289,14 +289,14 @@ function SecuritySettings() {
     <div className="space-y-10 relative">
        {showConfirm && (
           <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm rounded-[2rem]">
-             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-card border border-red-500/30 shadow-2xl rounded-3xl p-8 max-w-md w-full text-center">
-                <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                <h3 className="text-xl font-black uppercase tracking-widest mb-2">Terminate Sessions</h3>
-                <p className="text-sm text-muted-foreground mb-6">Are you sure you want to terminate all active sessions across all devices?</p>
-                <div className="flex gap-4">
-                   <button onClick={() => setShowConfirm(false)} className="flex-1 py-3 bg-secondary rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-muted transition-colors">Cancel</button>
-                   <button onClick={handleLogOutAll} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-red-500/20 hover:bg-red-600 transition-colors">Terminate</button>
-                </div>
+              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-card border border-red-500/30 shadow-2xl rounded-3xl p-8 max-w-md w-full text-center">
+                 <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                 <h3 className="text-xl font-black uppercase tracking-widest mb-2">Sign Out Sessions</h3>
+                 <p className="text-sm text-muted-foreground mb-6">Are you sure you want to sign out of all active sessions across all devices?</p>
+                 <div className="flex gap-4">
+                    <button onClick={() => setShowConfirm(false)} className="flex-1 py-3 bg-secondary rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-muted transition-colors">Cancel</button>
+                    <button onClick={handleLogOutAll} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-red-500/20 hover:bg-red-600 transition-colors">Sign Out All</button>
+                 </div>
              </motion.div>
           </div>
        )}
@@ -327,7 +327,7 @@ function SecuritySettings() {
                 </div>
              </div>
              <button onClick={() => setShowConfirm(true)} className="text-[10px] font-black text-red-500 uppercase tracking-[0.2em] px-4 py-2 bg-red-500/10 rounded-xl border border-red-500/20 hover:bg-red-500/20 transition-all">
-                Terminate All
+                Sign Out All
              </button>
           </div>
        </div>
@@ -335,7 +335,7 @@ function SecuritySettings() {
   );
 }
 
-function DangerZone() {
+function AccountManagement() {
   const { logout } = useAuth();
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -360,26 +360,26 @@ function DangerZone() {
        {showConfirm && (
           <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-background/90 backdrop-blur-sm rounded-[2rem]">
              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-card border border-red-500/50 shadow-2xl rounded-3xl p-8 max-w-md w-full text-center">
-                <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                <h3 className="text-xl font-black uppercase tracking-widest mb-2 text-red-500">Irreversible Action</h3>
-                <p className="text-sm text-muted-foreground mb-6">Are you absolutely sure you want to permanently decommission your global account and erase all local data? This cannot be undone.</p>
-                <div className="flex gap-4">
-                   <button onClick={() => setShowConfirm(false)} className="flex-1 py-3 bg-secondary rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-muted transition-colors">Cancel</button>
-                   <button onClick={handleDecommission} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-red-500/20 hover:bg-red-600 transition-colors">Decommission</button>
-                </div>
+                 <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                 <h3 className="text-xl font-black uppercase tracking-widest mb-2 text-red-500">Account Deletion</h3>
+                 <p className="text-sm text-muted-foreground mb-6">Are you absolutely sure you want to permanently delete your global account and erase all local data? This cannot be undone.</p>
+                 <div className="flex gap-4">
+                    <button onClick={() => setShowConfirm(false)} className="flex-1 py-3 bg-secondary rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-muted transition-colors">Cancel</button>
+                    <button onClick={handleDecommission} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-red-500/20 hover:bg-red-600 transition-colors">Delete Account</button>
+                 </div>
              </motion.div>
           </div>
        )}
 
        <div>
           <h3 className="text-2xl font-black tracking-tight mb-2 text-red-500 flex items-center">
-             <Trash2 className="h-6 w-6 mr-3" /> Danger Zone
+             <Trash2 className="h-6 w-6 mr-3" /> Account Management
           </h3>
           <p className="text-sm text-muted-foreground font-medium">Irreversible actions for your Kaarya.OS account.</p>
        </div>
        
        <div className="p-8 border border-red-500/30 bg-red-500/5 rounded-3xl">
-          <h4 className="text-xl font-bold mb-2">Decommission Global Account</h4>
+          <h4 className="text-xl font-bold mb-2">Delete Global Account</h4>
           <p className="text-sm text-muted-foreground mb-6">
             This will permanently delete your account, wipe your profiles, delete your resume, and clear all local storage.
           </p>
@@ -387,7 +387,7 @@ function DangerZone() {
             onClick={() => setShowConfirm(true)}
             className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-red-500/20"
           >
-             Yes, Decommission Account
+             Yes, Delete Account
           </button>
        </div>
     </div>

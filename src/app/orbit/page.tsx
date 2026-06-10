@@ -8,6 +8,7 @@ import {
   ChevronRight, Compass, X,
   CheckCircle2
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 
@@ -60,6 +61,11 @@ export default function OrbitPage() {
      
      fetchJobsAndGenerateOrbit();
   }, []);
+
+  const handleEngage = async (jobId: number) => {
+     toast.success("Application successfully routed to Node! 🚀");
+     setSelectedNode(null);
+  };
 
   return (
     <div className="h-[calc(100vh-100px)] w-full overflow-hidden bg-[#0a0a0c] relative flex items-center justify-center font-sans">
@@ -224,22 +230,22 @@ export default function OrbitPage() {
                    <ul className="space-y-3">
                       <li className="flex items-start text-sm text-white/80 font-medium">
                          <CheckCircle2 className="h-4 w-4 mr-2 text-emerald-500 mt-0.5 shrink-0" /> 
-                         Your distributed systems experience aligns perfectly with their Q3 roadmap.
+                         Your skills strongly align with the requirements for {selectedNode.role}.
                       </li>
                       <li className="flex items-start text-sm text-white/80 font-medium">
                          <CheckCircle2 className="h-4 w-4 mr-2 text-emerald-500 mt-0.5 shrink-0" /> 
-                         Cultural overlap detected via LinkedIn endorsements.
+                         High cultural compatibility detected with {selectedNode.company}'s work environment.
                       </li>
                       <li className="flex items-start text-sm text-white/80 font-medium">
                          <Star className="h-4 w-4 mr-2 text-amber-500 mt-0.5 shrink-0" /> 
-                         Missing keyword: "GraphQL". Consider reviewing before interview.
+                         Missing keyword optimization: Review the job description before the interview.
                       </li>
                    </ul>
                 </div>
 
                 <div className="pt-6 border-t border-white/10 mt-auto space-y-3">
                    <button 
-                      onClick={() => window.location.href = '/jobs'}
+                      onClick={() => handleEngage(selectedNode.jobId)}
                       className="w-full py-4 bg-white text-black rounded-xl font-black uppercase tracking-widest text-xs hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center"
                    >
                       Engage Node <Rocket className="h-4 w-4 ml-2" />

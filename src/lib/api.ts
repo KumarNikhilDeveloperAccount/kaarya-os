@@ -29,4 +29,23 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Gracefully handle 401 errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      console.warn('API returned 401 Unauthorized. User session might be expired or invalid.');
+      if (typeof window !== 'undefined') {
+        // Only redirect to signup if we are definitely trying to access a secure route 
+        // without an active valid token, and we are not already on an auth page.
+        const path = window.location.pathname;
+        if (!path.startsWith('/signup') && !path.startsWith('/login') && path !== '/') {
+           // Optionally redirect, or let the AuthContext handle it
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

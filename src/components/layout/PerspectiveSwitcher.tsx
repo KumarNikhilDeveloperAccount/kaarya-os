@@ -24,6 +24,10 @@ export default function PerspectiveSwitcher({
 
   return (
     <div className="relative px-3 mb-6">
+      <div className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2 px-2 flex items-center justify-between">
+        <span>Demo Sandbox Mode</span>
+        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+      </div>
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between p-3 rounded-xl bg-secondary/50 border border-border hover:bg-secondary transition-all duration-300 group"

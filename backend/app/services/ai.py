@@ -18,7 +18,7 @@ client = None
 try:
     if genai and settings.GEMINI_API_KEY:
         genai.configure(api_key=settings.GEMINI_API_KEY)
-        client = genai.GenerativeModel("gemini-1.5-pro")
+        client = genai.GenerativeModel("gemini-1.5-flash")
     else:
         logger.warning("GEMINI_API_KEY is missing in settings.")
 except Exception as e:
@@ -197,7 +197,10 @@ def conduct_interview_turn(job_description: str, candidate_resume: str, history:
                 temperature=0.7
             )
         )
-        return json.loads(clean_json(response.text))
+        result = json.loads(clean_json(response.text))
+        if turn_count < 10:
+            result["is_complete"] = False
+        return result
     except Exception as e:
         logger.error(f"Gemini interview evaluation failed: {e}")
         return {
