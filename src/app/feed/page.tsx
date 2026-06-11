@@ -182,7 +182,7 @@ export default function FeedPage() {
                           <div>
                               <h4 className="font-bold">{post.author?.full_name || 'Kaarya User'}</h4>
                               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-0.5">
-                                {post.created_at ? new Date(post.created_at).toLocaleDateString() : 'Just now'} • {post.author?.active_persona || 'User'}
+                                {post.created_at ? new Date(post.created_at).toLocaleDateString() : 'Just now'} • {post.author?.primary_role || 'User'}
                               </p>
                           </div>
                        </div>

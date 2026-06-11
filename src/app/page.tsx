@@ -17,8 +17,8 @@ export default function Home() {
     return <LandingExperience />;
   }
 
-  // Determine which dashboard to show based on active_persona
-  switch (user.active_persona) {
+  // Determine which dashboard to show based on primary_role
+  switch (user.primary_role) {
     case 'company':
       return <CompanyDashboard />;
     case 'trainer':

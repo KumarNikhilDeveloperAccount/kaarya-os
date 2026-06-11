@@ -13,7 +13,7 @@ import Image from 'next/image';
 export default function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const { user } = useAuth();
-  const persona = user?.active_persona || 'guest';
+  const persona = user?.primary_role || 'guest';
   const router = useRouter();
 
   const personaMap: any = {
@@ -37,31 +37,10 @@ export default function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
           </div>
         <span className="ml-2 text-xl font-black tracking-tighter text-primary hidden md:inline">Kaarya.OS</span>
         
-        <div className="hidden md:flex ml-8 items-center space-x-2 relative group">
+        <div className="hidden md:flex ml-8 items-center space-x-2">
            <div className={`h-2 w-2 rounded-full animate-pulse ${persona === 'guest' ? 'bg-muted-foreground' : 'bg-primary'}`} />
-           <button className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${activeInfo.color} flex items-center gap-2 cursor-pointer`}>
+           <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${activeInfo.color} flex items-center gap-2`}>
               {activeInfo.label}
-           </button>
-           
-           <div className="absolute top-full left-0 mt-2 w-48 bg-card border border-border rounded-xl shadow-2xl py-2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-50">
-             {Object.keys(personaMap).filter(k => k !== 'guest').map(p => (
-               <button
-                 key={p}
-                 onClick={async () => {
-                   try {
-                     const { api } = await import('@/lib/api');
-                     await api.post(`/api/auth/switch-persona?persona=${p}`);
-                     localStorage.setItem('kaarya_active_role', p);
-                     window.location.reload();
-                   } catch (err) {
-                     console.error(err);
-                   }
-                 }}
-                 className="w-full text-left px-4 py-2 text-xs font-bold hover:bg-secondary transition-colors uppercase tracking-wider"
-               >
-                 {personaMap[p].label}
-               </button>
-             ))}
            </div>
         </div>
       </div>

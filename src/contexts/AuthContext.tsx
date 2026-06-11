@@ -10,8 +10,7 @@ interface User {
   id: number;
   email: string;
   full_name: string;
-  roles: string;
-  active_persona: string;
+  primary_role: str;
   bio?: string;
   profile_picture?: string;
 }
@@ -57,7 +56,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (!token) {
         setToken(storedToken);
         fetchUser(storedToken);
-      } else if (user && !user.active_persona && pathname !== '/role-selection' && !isPublicRoute) {
+      } else if (user && !user.primary_role && pathname !== '/role-selection' && !isPublicRoute) {
         router.push('/role-selection');
       }
     } else {
@@ -79,21 +78,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(userData);
       
       // Hydrate local storage for profile data
-      if (userData.active_persona) {
-        localStorage.setItem('kaarya_active_role', userData.active_persona);
+      if (userData.primary_role) {
+        localStorage.setItem('kaarya_active_role', userData.primary_role);
         const dbProfile = {
           fullName: userData.full_name,
           bio: userData.bio,
           profilePic: userData.profile_picture,
           skills: userData.skills ? userData.skills.split(',') : [],
         };
-        const existingStr = localStorage.getItem(`kaarya_profile_${userData.active_persona}`);
+        const existingStr = localStorage.getItem(`kaarya_profile_${userData.primary_role}`);
         let existing = {};
         if (existingStr) {
            try { existing = JSON.parse(existingStr); } catch (e) {}
         }
         // DB fields overwrite local fields
-        localStorage.setItem(`kaarya_profile_${userData.active_persona}`, JSON.stringify({ ...existing, ...dbProfile }));
+        localStorage.setItem(`kaarya_profile_${userData.primary_role}`, JSON.stringify({ ...existing, ...dbProfile }));
       }
     } catch (err: any) {
       console.error('Failed to validate token', err);
@@ -114,7 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem('token', newToken);
     setToken(newToken);
     setUser(newUser);
-    if (!newUser.active_persona) {
+    if (!newUser.primary_role) {
       router.push('/role-selection');
     } else {
       router.push('/');

@@ -15,7 +15,7 @@ def get_company_stats(
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(deps.get_current_user)
 ):
-    if current_user.active_persona != "company":
+    if current_user.primary_role != "company":
         raise HTTPException(status_code=403, detail="Unauthorized")
     
     # Get all jobs posted by this company
@@ -56,7 +56,7 @@ def get_interviewer_stats(
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(deps.get_current_user)
 ):
-    if current_user.active_persona != "trainer":
+    if current_user.primary_role != "trainer":
         raise HTTPException(status_code=403, detail="Unauthorized")
     
     # For now, show all applications in 'tech_round' state as upcoming sessions
@@ -85,10 +85,10 @@ def get_college_stats(
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(deps.get_current_user)
 ):
-    if current_user.active_persona != "college":
+    if current_user.primary_role != "college":
         raise HTTPException(status_code=403, detail="Unauthorized")
         
-    total_students = db.query(models.User).filter(models.User.roles.contains("candidate")).count()
+    total_students = db.query(models.User).filter(models.User.primary_role == "candidate").count()
     from app.models.ecosystem import Batch
     batches = db.query(Batch).all()
     
@@ -115,7 +115,7 @@ def get_candidate_stats(
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(deps.get_current_user)
 ):
-    if current_user.active_persona != "candidate":
+    if current_user.primary_role != "candidate":
         raise HTTPException(status_code=403, detail="Unauthorized")
         
     apps = db.query(models.Application).filter(models.Application.candidate_id == current_user.id).all()

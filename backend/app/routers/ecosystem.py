@@ -14,7 +14,7 @@ class UserBasic(BaseModel):
     full_name: Optional[str]
     email: Optional[str]
     profile_picture: Optional[str]
-    active_persona: Optional[str]
+    primary_role: Optional[str]
 
     class Config:
         orm_mode = True
@@ -68,6 +68,66 @@ class ReelCreate(BaseModel):
     tags: Optional[str] = None
 
 # --- Endpoints ---
+
+class ConnectionResponse(BaseModel):
+    id: int
+    requester: UserBasic
+    target: UserBasic
+    status: str
+
+    class Config:
+        orm_mode = True
+
+@router.post("/connect", response_model=ConnectionResponse)
+def request_connection(
+    target_id: int = Body(..., embed=True),
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    if current_user.id == target_id:
+        raise HTTPException(status_code=400, detail="Cannot connect with yourself")
+        
+    existing = db.query(Connection).filter(
+        ((Connection.requester_id == current_user.id) & (Connection.target_id == target_id)) |
+        ((Connection.requester_id == target_id) & (Connection.target_id == current_user.id))
+    ).first()
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Connection already exists or is pending")
+        
+    new_conn = Connection(requester_id=current_user.id, target_id=target_id, status="pending")
+    db.add(new_conn)
+    db.commit()
+    db.refresh(new_conn)
+    return new_conn
+
+@router.put("/connect/{conn_id}/accept", response_model=ConnectionResponse)
+def accept_connection(
+    conn_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    conn = db.query(Connection).filter(Connection.id == conn_id).first()
+    if not conn:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    if conn.target_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+        
+    conn.status = "accepted"
+    db.commit()
+    db.refresh(conn)
+    return conn
+
+@router.get("/connections", response_model=List[ConnectionResponse])
+def get_connections(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    from sqlalchemy import or_
+    connections = db.query(Connection).filter(
+        or_(Connection.requester_id == current_user.id, Connection.target_id == current_user.id)
+    ).all()
+    return connections
 
 @router.get("/messages", response_model=List[MessageResponse])
 def get_messages(
@@ -179,7 +239,7 @@ def get_reels(
                 "likes_count": 1205,
                 "views_count": 45000,
                 "created_at": datetime.utcnow(),
-                "author": {"id": 0, "full_name": "System Demo", "email": "", "profile_picture": None, "active_persona": "candidate"}
+                "author": {"id": 0, "full_name": "System Demo", "email": "", "profile_picture": None, "primary_role": "candidate"}
             },
             {
                 "id": 2,
@@ -190,7 +250,7 @@ def get_reels(
                 "likes_count": 890,
                 "views_count": 21000,
                 "created_at": datetime.utcnow(),
-                "author": {"id": 0, "full_name": "HR Expert", "email": "", "profile_picture": None, "active_persona": "company"}
+                "author": {"id": 0, "full_name": "HR Expert", "email": "", "profile_picture": None, "primary_role": "company"}
             }
         ]
     return reels
@@ -332,12 +392,9 @@ def like_reel(reel_id: int, db: Session = Depends(database.get_db)):
         return {"status": "success", "likes_count": reel.likes_count}
     raise HTTPException(status_code=404, detail="Reel not found")
 
-@router.get("/candidates")
-def get_candidates(db: Session = Depends(database.get_db)):
-    """
-    Get users with candidate persona or skills.
-    """
-    users = db.query(models.User).filter(models.User.active_persona == "candidate").all()
+@router.get("/candidates/pool")
+def get_talent_pool(db: Session = Depends(database.get_db), current_user: models.User = Depends(deps.get_current_user)):
+    users = db.query(models.User).filter(models.User.primary_role == "candidate").all()
     return [
         {
             "id": u.id,
@@ -352,12 +409,9 @@ def get_candidates(db: Session = Depends(database.get_db)):
         } for u in users
     ]
 
-@router.get("/companies")
-def get_companies(db: Session = Depends(database.get_db)):
-    """
-    Get users with company persona.
-    """
-    users = db.query(models.User).filter(models.User.active_persona == "company").all()
+@router.get("/companies/pool")
+def get_company_pool(db: Session = Depends(database.get_db), current_user: models.User = Depends(deps.get_current_user)):
+    users = db.query(models.User).filter(models.User.primary_role == "company").all()
     return [
         {
             "id": u.id,
@@ -392,10 +446,10 @@ def get_invoices(db: Session = Depends(database.get_db)):
     txs = db.query(Transaction).all()
     return [
         {
-            "id": f"INV-{t.id:04d}",
+            "id": f"INV-{str(t.id)[:8].upper()}",
             "date": t.created_at.strftime("%Y-%m-%d"),
-            "amount": f"${t.amount:,.2f}",
-            "status": t.status.capitalize()
+            "amount": f"₹{(t.amount or 0):,.2f}",
+            "status": t.status.capitalize() if t.status else "Completed"
         } for t in txs
     ]
 

@@ -22,10 +22,16 @@ export default function BillingPage() {
     const fetchInvoices = async () => {
       try {
         const { api } = await import('@/lib/api');
-        const res = await api.get('/api/ecosystem/invoices');
-        setInvoices(res.data);
+        const res = await api.get('/api/payment/transactions');
+        const formatted = res.data.map((t: any) => ({
+            id: `TXN-${t.id.substring(0, 8).toUpperCase()}`,
+            date: new Date(t.created_at).toISOString().split('T')[0],
+            amount: `₹${(t.amount || 0).toLocaleString()}`,
+            status: t.status ? t.status.charAt(0).toUpperCase() + t.status.slice(1) : 'Paid'
+        }));
+        setInvoices(formatted);
       } catch (err) {
-        console.error('Failed to fetch invoices:', err);
+        console.error('Failed to fetch transactions:', err);
       }
     };
     fetchInvoices();
@@ -50,7 +56,7 @@ export default function BillingPage() {
         const orderData = orderRes.data;
         if (!orderData || !orderData.id) throw new Error("Failed to create order");
         
-        const rzpKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY || "rzp_test_kaaryaos123456";
+        const rzpKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY;
 
         // Step 2: Initialize Razorpay
         const options = {

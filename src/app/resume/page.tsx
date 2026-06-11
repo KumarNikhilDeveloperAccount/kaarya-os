@@ -168,9 +168,42 @@ export default function ResumePage() {
                          />
                       </div>
                       <div className="space-y-3">
-                         <label className="text-[10px] font-black uppercase tracking-[0.3em] text-primary ml-2 flex justify-between">
+                         <label className="text-[10px] font-black uppercase tracking-[0.3em] text-primary ml-2 flex justify-between items-center">
                             <span>Raw Resume Content</span>
-                            <span className="text-muted-foreground">Or Upload PDF (Coming Soon)</span>
+                            <button 
+                                onClick={() => document.getElementById('resume-pdf-upload')?.click()}
+                                className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+                            >
+                                <Upload className="h-3 w-3" /> Or Upload PDF
+                            </button>
+                            <input 
+                                id="resume-pdf-upload" 
+                                type="file" 
+                                accept="application/pdf" 
+                                className="hidden" 
+                                onChange={async (e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                        setIsParsing(true);
+                                        try {
+                                            const formData = new FormData();
+                                            formData.append('file', e.target.files[0]);
+                                            formData.append('job_description', jd);
+                                            const response = await api.post('/api/ai/parse-pdf', formData, {
+                                                headers: { 'Content-Type': 'multipart/form-data' }
+                                            });
+                                            const payload = response.data;
+                                            setParsedData(payload);
+                                            setAiOpinion(payload.rit_analysis);
+                                            toast.success('PDF Analyzed via Rit AI');
+                                            setActiveStep(1);
+                                        } catch (err) {
+                                            toast.error('Failed to parse PDF.');
+                                        } finally {
+                                            setIsParsing(false);
+                                        }
+                                    }
+                                }}
+                            />
                          </label>
                          <textarea 
                             value={rawResume} onChange={(e) => setRawResume(e.target.value)}

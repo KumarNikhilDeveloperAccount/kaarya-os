@@ -95,8 +95,7 @@ def request_email_otp(data: schemas.OTPRequest, db: Session = Depends(database.g
             email=email,
             full_name=(email.split("@")[0] if email else None),
             hashed_password="otp_managed",
-            roles="",
-            active_persona="",
+            primary_role="candidate",
         )
         db.add(user)
         db.commit()
@@ -107,8 +106,7 @@ def request_email_otp(data: schemas.OTPRequest, db: Session = Depends(database.g
                 email=email,
                 full_name=(email.split("@")[0] if email else None),
                 hashed_password="otp_managed",
-                roles="",
-                active_persona="",
+                primary_role="candidate",
             )
             db.add(user)
             db.commit()
@@ -166,6 +164,7 @@ def verify_email_otp(data: schemas.OTPVerify, db: Session = Depends(database.get
 
     user.otp_code = None
     user.otp_expiry = None
+    user.is_email_verified = True
     db.commit()
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -223,8 +222,7 @@ def firebase_login(data: dict, db: Session = Depends(database.get_db)):
             phone_number=phone,
             full_name=name,
             hashed_password="firebase_managed",
-            active_persona="",
-            roles="",
+            primary_role="candidate",
         )
         db.add(user)
         db.commit()
@@ -362,8 +360,7 @@ async def linkedin_callback(request: Request, code: Optional[str] = None, state:
             full_name=full_name or "LinkedIn User",
             hashed_password="oauth_managed",
             linkedin_id=linkedin_id,
-            active_persona="",
-            roles="",
+            primary_role="candidate",
         )
         db.add(user)
         db.commit()
@@ -398,28 +395,17 @@ def update_profile(
         current_user.skills = data.skills
     if data.resume_data is not None:
         current_user.resume_data = data.resume_data
+    if data.preferences is not None:
+        # Merge new preferences with existing
+        existing_prefs = current_user.preferences or {}
+        current_user.preferences = {**existing_prefs, **data.preferences}
 
     db.commit()
     db.refresh(current_user)
     return current_user
 
 
-@router.post("/switch-persona", response_model=schemas.UserOut)
-def switch_user_persona(
-    persona: str,
-    current_user: models.User = Depends(deps.get_current_user),
-    db: Session = Depends(database.get_db),
-):
-    roles_list = [r for r in current_user.roles.split(",") if r] if current_user.roles else []
 
-    if persona not in roles_list:
-        roles_list.append(persona)
-        current_user.roles = ",".join(roles_list)
-
-    current_user.active_persona = persona
-    db.commit()
-    db.refresh(current_user)
-    return current_user
 
 
 @router.get("/me", response_model=schemas.UserOut)
@@ -445,7 +431,7 @@ def get_user_resume(
         
     # Allow company, trainer, college to download, or user themselves
     allowed_personas = ["company", "trainer", "college"]
-    if current_user.active_persona not in allowed_personas and current_user.id != user_id and not current_user.is_admin:
+    if current_user.primary_role not in allowed_personas and current_user.id != user_id and not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Unauthorized to download resume")
         
     if not user.resume_data or not isinstance(user.resume_data, dict):
@@ -459,8 +445,8 @@ def get_user_resume(
     if os.path.exists(resume_path):
         return FileResponse(path=resume_path, media_type="application/pdf", filename=f"{user.full_name}_Resume.pdf")
     
-    # If it's stored in uploads/resumes matching the basename
-    local_path = os.path.join("uploads/resumes", os.path.basename(resume_path))
+    # If it's stored in uploads/ matching the basename
+    local_path = os.path.join("uploads", os.path.basename(resume_path))
     if os.path.exists(local_path):
         return FileResponse(path=local_path, media_type="application/pdf", filename=f"{user.full_name}_Resume.pdf")
         
@@ -534,7 +520,7 @@ def search_users(q: str, db: Session = Depends(database.get_db), current_user: m
         models.User.id != current_user.id,
         or_(
             models.User.full_name.ilike(f"%{q}%"),
-            models.User.active_persona.ilike(f"%{q}%")
+            models.User.primary_role.ilike(f"%{q}%")
         )
     ).limit(20).all()
     
@@ -542,7 +528,7 @@ def search_users(q: str, db: Session = Depends(database.get_db), current_user: m
         {
             "id": u.id,
             "full_name": u.full_name,
-            "active_persona": u.active_persona,
+            "primary_role": u.primary_role,
             "profile_picture": u.profile_picture
         } for u in users
     ]
@@ -555,6 +541,6 @@ def get_user_basic(user_id: int, db: Session = Depends(database.get_db), current
     return {
         "id": user.id,
         "full_name": user.full_name,
-        "active_persona": user.active_persona,
+        "primary_role": user.primary_role,
         "profile_picture": user.profile_picture
     }

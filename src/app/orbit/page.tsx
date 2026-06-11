@@ -63,8 +63,13 @@ export default function OrbitPage() {
   }, []);
 
   const handleEngage = async (jobId: number) => {
-     toast.success("Application successfully routed to Node! 🚀");
-     setSelectedNode(null);
+     try {
+         await api.post(`/api/jobs/${jobId}/apply`);
+         toast.success("Application successfully routed to Node! 🚀");
+         setSelectedNode(null);
+     } catch (err: any) {
+         toast.error(err.response?.data?.detail || "Failed to engage node. Have you uploaded a resume?");
+     }
   };
 
   return (

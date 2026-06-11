@@ -172,7 +172,7 @@ function MessagesContent() {
                             </div>
                             <div>
                                 <h4 className="font-bold">{su.full_name}</h4>
-                                <p className="text-xs text-muted-foreground uppercase">{su.active_persona}</p>
+                                <p className="text-xs text-muted-foreground uppercase">{su.primary_role}</p>
                             </div>
                         </button>
                     ))}
@@ -247,22 +247,33 @@ function MessagesContent() {
                </div>
                <div>
                   <h2 className="font-black">{selectedUser.full_name}</h2>
-                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{selectedUser.active_persona || 'Direct Message'}</p>
+                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{selectedUser.primary_role || 'Direct Message'}</p>
                </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col-reverse">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col-reverse bg-[url('/chat-pattern.png')] bg-cover bg-center">
                {conversations[selectedUser.id]?.messages.map((msg: any) => {
                   const isMe = String(msg.sender.id) === String(user?.id);
                   return (
                     <motion.div 
                       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                       key={msg.id} 
-                      className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
+                      className={`flex ${isMe ? 'justify-end' : 'justify-start'} items-end space-x-2`}
                     >
-                       <div className={`max-w-[70%] p-4 rounded-2xl ${isMe ? 'bg-primary text-white rounded-br-sm shadow-xl shadow-primary/20' : 'bg-secondary text-foreground rounded-bl-sm border border-border/50'}`}>
+                       {!isMe && (
+                          <div className="w-8 h-8 rounded-full bg-secondary overflow-hidden shrink-0 mb-1">
+                             {msg.sender?.profile_picture ? (
+                                <img src={msg.sender.profile_picture} alt="Avatar" className="w-full h-full object-cover" />
+                             ) : (
+                                <div className="w-full h-full flex items-center justify-center font-black text-xs">
+                                   {msg.sender?.full_name?.charAt(0) || 'U'}
+                                </div>
+                             )}
+                          </div>
+                       )}
+                       <div className={`max-w-[70%] p-4 rounded-[1.5rem] ${isMe ? 'bg-primary text-white rounded-br-sm shadow-md' : 'bg-secondary text-foreground rounded-bl-sm border border-border/50 shadow-sm'}`}>
                           <p className="text-sm font-medium">{msg.content}</p>
-                          <span className={`text-[8px] font-black uppercase tracking-widest mt-2 block ${isMe ? 'text-white/50 text-right' : 'text-muted-foreground'}`}>
+                          <span className={`text-[9px] font-black uppercase tracking-widest mt-2 block ${isMe ? 'text-white/60 text-right' : 'text-muted-foreground'}`}>
                              {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                        </div>
@@ -270,18 +281,24 @@ function MessagesContent() {
                   );
                })}
                {conversations[selectedUser.id]?.messages.length === 0 && (
-                   <div className="text-center text-muted-foreground text-sm my-auto">
+                   <div className="text-center text-muted-foreground text-sm my-auto bg-card/50 p-4 rounded-2xl mx-auto backdrop-blur-sm">
                        No messages yet. Send a message to start the conversation!
                    </div>
                )}
             </div>
 
-            <div className="p-4 border-t border-border/50 bg-card">
-               <div className="flex space-x-2">
-                  <button className="p-3 bg-secondary text-muted-foreground rounded-2xl hover:bg-muted transition-colors flex items-center justify-center">
-                     <span className="text-lg leading-none">😀</span>
+            <div className="p-4 border-t border-border/50 bg-card z-10">
+               <div className="flex items-center space-x-2 bg-secondary/50 p-1.5 rounded-[2rem] border border-border/30">
+                  <button 
+                    onClick={() => setReplyText(prev => prev + '😀')}
+                    className="p-3 text-muted-foreground hover:bg-secondary rounded-full transition-colors flex items-center justify-center shrink-0"
+                  >
+                     <span className="text-xl leading-none">😀</span>
                   </button>
-                  <button className="p-3 bg-secondary text-muted-foreground font-bold text-xs rounded-2xl hover:bg-muted transition-colors flex items-center justify-center uppercase">
+                  <button 
+                    onClick={() => toast.info('GIF picker coming soon!')}
+                    className="p-2 px-3 bg-secondary/80 text-muted-foreground font-black text-[10px] rounded-full hover:bg-muted transition-colors flex items-center justify-center uppercase tracking-widest shrink-0"
+                  >
                      GIF
                   </button>
                   <input 
@@ -290,14 +307,14 @@ function MessagesContent() {
                     onChange={(e) => setReplyText(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                     placeholder={`Message ${selectedUser.full_name}...`}
-                    className="flex-1 bg-secondary border border-transparent focus:border-primary/30 rounded-2xl px-4 py-3 text-sm focus:ring-4 focus:ring-primary/10 outline-none transition-all"
+                    className="flex-1 bg-transparent border-none px-2 py-3 text-sm focus:ring-0 outline-none transition-all"
                   />
                   <button 
                     onClick={handleSend}
                     disabled={!replyText.trim()}
-                    className="p-3 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                    className="p-3 bg-primary text-white rounded-full shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 shrink-0"
                   >
-                     <Send className="h-5 w-5" />
+                     <Send className="h-5 w-5 -ml-1 mt-0.5" />
                   </button>
                </div>
             </div>

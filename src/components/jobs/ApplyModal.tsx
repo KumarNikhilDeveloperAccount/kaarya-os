@@ -41,7 +41,7 @@ export default function ApplyModal({ job, isOpen, onClose, onSuccess }: ApplyMod
 
     try {
       // In a real app, use the backend URL
-      const response = await axios.post(`http://localhost:8000/api/jobs/${job.id}/apply`, formData, {
+      const response = await axios.post(`/api/jobs/${job.id}/apply`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${localStorage.getItem('token')}` // Ensure we have the token

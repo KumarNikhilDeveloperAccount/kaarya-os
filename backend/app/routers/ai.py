@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from app import database, models, schemas, deps
 from app.services.ai import evaluate_resume
 from typing import Dict, Any
-import pdfplumber
 import io
 
 router = APIRouter()
@@ -20,12 +19,16 @@ async def parse_resume_pdf(
     try:
         contents = await file.read()
         text = ""
-        with pdfplumber.open(io.BytesIO(contents)) as pdf:
-            for page in pdf.pages:
+        try:
+            import PyPDF2
+            reader = PyPDF2.PdfReader(io.BytesIO(contents))
+            for page in reader.pages:
                 page_text = page.extract_text()
                 if page_text:
                     text += page_text + "\n"
-                    
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to read PDF: {str(e)}")
+            
         if not text.strip():
              raise HTTPException(status_code=400, detail="Could not extract text from PDF.")
              

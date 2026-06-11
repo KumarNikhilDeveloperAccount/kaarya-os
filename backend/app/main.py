@@ -91,7 +91,7 @@ app.include_router(payment.router, prefix="/api/payment", tags=["payment"])
 # Mount uploads directory to serve static files
 import os
 os.makedirs("uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/api/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.get("/")
 def read_root():

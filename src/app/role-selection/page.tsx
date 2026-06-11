@@ -51,9 +51,10 @@ export default function RoleSelectionPage() {
   const { user, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (!authLoading && user?.active_persona) {
-      toast.info('You have already selected a persona.');
+    if (!authLoading && user?.primary_role) {
       router.push('/');
+    } else if (!authLoading && !user) {
+      router.push('/login');
     }
   }, [user, authLoading, router]);
 
@@ -61,18 +62,9 @@ export default function RoleSelectionPage() {
     if (!selectedRole) return;
     setIsLoading(true);
     try {
-      await api.post(`/api/auth/switch-persona?persona=${selectedRole}`);
-      if (selectedRole === 'candidate') {
-        window.location.href = '/onboarding/candidate';
-      } else if (selectedRole === 'company') {
-        window.location.href = '/onboarding/company';
-      } else if (selectedRole === 'trainer') {
-        window.location.href = '/onboarding/trainer';
-      } else if (selectedRole === 'college') {
-        window.location.href = '/onboarding/college';
-      } else {
-        window.location.href = '/'; // Fallback
-      }
+      // Identity is set during signup now; role selection page should no longer be needed
+      // If it is hit, redirect.
+      router.push('/onboarding');
     } catch (err: any) {
       console.error(err);
       toast.error(err.response?.data?.detail || 'Failed to assign role');

@@ -17,7 +17,7 @@ def create_job(job: schemas_job.JobCreate, db: Session = Depends(database.get_db
     """
     Recruiters / Company persona only.
     """
-    if current_user.active_persona != "company" and not current_user.is_admin:
+    if current_user.primary_role != "company" and not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Only companies can post jobs")
     
     new_job = models.Job(**job.dict(), company_id=current_user.id)
@@ -49,8 +49,8 @@ async def apply_to_job(
     Uploads a PDF resume, extracts text, and triggers Rit.ai evaluation.
     """
     # 1. Verification
-    if current_user.active_persona != "candidate" and not current_user.is_admin:
-        raise HTTPException(status_code=403, detail="Only candidates can apply to jobs. Switch your persona.")
+    if current_user.primary_role != "candidate" and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Only candidates can apply to jobs. Switch your role.")
 
     job = db.query(models.Job).filter(models.Job.id == job_id).first()
     if not job:
@@ -160,11 +160,11 @@ def get_company_applications(
     """
     Company persona only (or admin). Get all applications for the company's jobs.
     """
-    if current_user.active_persona == "candidate":
+    if current_user.primary_role == "candidate":
         # Return candidate's own applications
         return db.query(models.Application).filter(models.Application.candidate_id == current_user.id).all()
         
-    if current_user.is_admin or current_user.active_persona == "admin":
+    if current_user.is_admin or current_user.primary_role == "admin":
         return db.query(models.Application).all()
         
     # Company: get applications for their jobs

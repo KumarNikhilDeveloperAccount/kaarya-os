@@ -26,10 +26,15 @@ class User(Base):
     skills = Column(String, default="") # Comma separated
     resume_data = Column(JSON, nullable=True)
     
-    # roles: Comma separated roles (e.g. "candidate,trainer")
-    roles = Column(String, default="") 
-    # active_persona: The currently active persona (e.g. "candidate")
-    active_persona = Column(String, default="")
+    # Identity & Roles
+    primary_role = Column(String, nullable=False, default="candidate") # "candidate", "company", "college", "trainer"
+    
+    # Verification & Trust
+    is_email_verified = Column(Boolean, default=False)
+    is_identity_verified = Column(Boolean, default=False)
+    
+    # Settings & Preferences
+    preferences = Column(JSON, default={})
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

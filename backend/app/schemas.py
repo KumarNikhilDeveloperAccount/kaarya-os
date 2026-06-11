@@ -13,8 +13,10 @@ class UserOut(BaseModel):
     full_name: Optional[str] = None
     is_active: bool
     is_admin: bool
-    roles: str
-    active_persona: str
+    primary_role: str
+    is_email_verified: bool = False
+    is_identity_verified: bool = False
+    preferences: dict = {}
     bio: Optional[str] = None
     profile_picture: Optional[str] = None
     skills: Optional[str] = None
@@ -29,6 +31,7 @@ class UserUpdate(BaseModel):
     profile_picture: Optional[str] = None
     skills: Optional[str] = None
     resume_data: Optional[dict] = None
+    preferences: Optional[dict] = None
 
 class OTPRequest(BaseModel):
     email: Optional[EmailStr] = None

@@ -22,7 +22,7 @@ export default function AdminTransactions() {
   const fetchTransactions = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:8000/api/admin/monitoring/transactions', {
+      const response = await axios.get('/api/admin/monitoring/transactions', {
         withCredentials: true
       });
       
@@ -48,7 +48,7 @@ export default function AdminTransactions() {
   const handleRefund = async (txId: string) => {
     const rawId = txId.replace('tx_', '');
     toast.promise(
-      axios.post(`http://localhost:8000/api/admin/refund/${rawId}`, {}, { withCredentials: true }),
+      axios.post(`/api/admin/refund/${rawId}`, {}, { withCredentials: true }),
       {
         loading: 'Processing manual refund...',
         success: (data) => {

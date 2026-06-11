@@ -57,7 +57,7 @@ export default function WalletPage() {
       }
 
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_SXSIL5pBjkGpta',
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ,
         amount: orderAmount,
         currency: 'INR',
         name: 'Kaarya.OS',

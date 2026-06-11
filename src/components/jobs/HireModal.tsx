@@ -53,7 +53,7 @@ export default function HireModal({ candidate, isOpen, onClose, onSuccess }: Hir
 
       // Step 2: Open Razorpay
       await openCheckout({
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_placeholder',
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ,
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Kaarya.OS',

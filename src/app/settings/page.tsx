@@ -249,7 +249,7 @@ function ProfileSettings() {
             />
           </label>
           {user?.resume_data?.resume_url && (
-            <a href={`http://localhost:8000/api/auth/users/${user.id}/resume`} target="_blank" rel="noopener noreferrer" className="px-6 py-3 bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded-xl cursor-pointer hover:bg-blue-500/20 transition-colors text-xs font-bold uppercase tracking-widest flex items-center shadow-md">
+            <a href={`/api/auth/users/${user.id}/resume`} target="_blank" rel="noopener noreferrer" className="px-6 py-3 bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded-xl cursor-pointer hover:bg-blue-500/20 transition-colors text-xs font-bold uppercase tracking-widest flex items-center shadow-md">
               Download Active Resume
             </a>
           )}
@@ -395,11 +395,25 @@ function AccountManagement() {
 }
 
 function NotificationPreferences() {
+  const { user, updateUser } = useAuth();
   const [prefs, setPrefs] = useState({
-    hiring: true,
-    interview: true,
-    system: false
+    hiring: user?.preferences?.hiring ?? true,
+    interview: user?.preferences?.interview ?? true,
+    system: user?.preferences?.system ?? false
   });
+
+  const togglePref = async (key: string) => {
+    const newPrefs = { ...prefs, [key]: !prefs[key as keyof typeof prefs] };
+    setPrefs(newPrefs);
+    try {
+      const response = await api.patch('/api/auth/me', { preferences: newPrefs });
+      updateUser(response.data);
+      toast.success('Preferences synchronized.');
+    } catch (e) {
+      toast.error('Failed to sync preferences.');
+      setPrefs(prefs); // Revert
+    }
+  };
 
   return (
     <div className="space-y-10">
@@ -420,7 +434,7 @@ function NotificationPreferences() {
                   <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Real-time push delivery</span>
                </div>
                <button 
-                 onClick={() => setPrefs(prev => ({ ...prev, [key]: !prev[key as keyof typeof prefs] }))}
+                 onClick={() => togglePref(key)}
                  className={`w-14 h-8 rounded-full relative transition-all duration-300 ${prefs[key as keyof typeof prefs] ? 'bg-primary shadow-lg shadow-primary/20' : 'bg-muted border border-border'}`}
                >
                   <motion.div 
@@ -475,7 +489,19 @@ function UISettings({ theme, setTheme }: any) {
 }
 
 function PrivacySettings() {
-  const [visible, setVisible] = useState(true);
+  const { user, updateUser } = useAuth();
+  const [visible, setVisible] = useState(user?.preferences?.visibility ?? true);
+
+  const toggleVisible = async () => {
+    const newVal = !visible;
+    setVisible(newVal);
+    try {
+      const response = await api.patch('/api/auth/me', { preferences: { visibility: newVal } });
+      updateUser(response.data);
+    } catch (e) {
+      setVisible(!newVal);
+    }
+  };
 
   return (
     <div className="space-y-10">
@@ -496,7 +522,7 @@ function PrivacySettings() {
                   <p className="text-xs text-muted-foreground font-medium mt-1 leading-relaxed">{p.desc}</p>
                </div>
                <button 
-                 onClick={() => setVisible(!visible)}
+                 onClick={toggleVisible}
                  className={`w-14 h-8 rounded-full relative transition-all duration-300 ${visible ? 'bg-primary shadow-lg shadow-primary/10' : 'bg-muted border border-border'}`}
                >
                   <motion.div 

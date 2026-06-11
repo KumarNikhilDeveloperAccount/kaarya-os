@@ -35,8 +35,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
                 full_name=sub.split('@')[0] if is_email else f"User {sub}",
                 is_active=True,
                 hashed_password="ephemeral_recreated",
-                active_persona="",
-                roles=""
+                primary_role="candidate"
             )
             db.add(user)
             db.commit()
@@ -69,13 +68,13 @@ def get_current_active_user(current_user: models.User = Depends(get_current_user
     return current_user
 
 def get_current_admin_user(current_user: models.User = Depends(get_current_active_user)):
-    if not current_user.is_admin and current_user.active_persona != "admin":
+    if not current_user.is_admin and current_user.primary_role != "admin":
         raise HTTPException(status_code=403, detail="Not enough privileges")
     return current_user
 
 def get_role_checker(allowed_roles: list):
     def role_checker(current_user: models.User = Depends(get_current_active_user)):
-        if current_user.active_persona not in allowed_roles and not current_user.is_admin:
+        if current_user.primary_role not in allowed_roles and not current_user.is_admin:
             raise HTTPException(status_code=403, detail="Not enough privileges for this persona")
         return current_user
     return role_checker

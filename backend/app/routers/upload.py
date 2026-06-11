@@ -29,8 +29,8 @@ async def upload_file(
             shutil.copyfileobj(file.file, buffer)
             
         # Return the public URL
-        # For local dev, this will be /uploads/...
-        url = f"http://localhost:8000/uploads/{unique_name}"
+        # Next.js will proxy /api/... to the backend.
+        url = f"/api/uploads/{unique_name}"
         return {"url": url, "filename": file.filename}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")

@@ -21,7 +21,7 @@ export default function AdminVerification() {
   const fetchVettingPending = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:8000/api/admin/applications', {
+      const response = await axios.get('/api/admin/applications', {
         withCredentials: true
       });
       
@@ -52,7 +52,7 @@ export default function AdminVerification() {
 
   const handleApprove = async (candidate: any) => {
     toast.promise(
-      axios.post(`http://localhost:8000/api/admin/approve-interviewer/${candidate.user_id}`, {}, { withCredentials: true }),
+      axios.post(`/api/admin/approve-interviewer/${candidate.user_id}`, {}, { withCredentials: true }),
       {
         loading: 'Approving professional...',
         success: (data) => {

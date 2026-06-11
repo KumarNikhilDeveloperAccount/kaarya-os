@@ -20,8 +20,8 @@ def approve_interviewer(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # We should check if rit_score exists etc (Simplified)
-    user.roles = f"{user.roles},interviewer" # Add role if not present
+    # Set identity verified flag
+    user.is_identity_verified = True
     db.commit()
     return {"status": "success", "message": f"Interviewer {user.full_name} approved."}
 
