@@ -14,7 +14,7 @@ export default function BackendStatusBanner() {
   const check = async () => {
     setStatus((s) => (s === 'offline' ? 'checking' : s));
     const controller = new AbortController();
-    const t = window.setTimeout(() => controller.abort(), 1200);
+    const t = window.setTimeout(() => controller.abort(), 50000); // Allow Render cold starts
     try {
       const res = await fetch(`${apiBase}/api/health`, {
         method: 'GET',
@@ -32,7 +32,7 @@ export default function BackendStatusBanner() {
 
   useEffect(() => {
     check();
-    const id = window.setInterval(check, 15000);
+    const id = window.setInterval(check, 60000); // Check every 60s
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
