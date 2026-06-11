@@ -18,8 +18,8 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (user && user.active_persona) {
-      setActivePersona(user.active_persona);
+    if (user && user.primary_role) {
+      setActivePersona(user.primary_role);
     }
   }, [user]);
 
