@@ -64,7 +64,7 @@ export default function RitPanel() {
       {/* Floating Trigger */}
       <button 
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-40 group"
+        className="fixed bottom-28 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-40 group"
       >
         <Bot className="h-6 w-6 group-hover:animate-pulse" />
         <span className="absolute -top-1 -right-1 flex h-4 w-4">
