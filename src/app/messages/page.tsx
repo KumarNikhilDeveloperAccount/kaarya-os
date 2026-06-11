@@ -30,16 +30,23 @@ function MessagesContent() {
 
   const fetchMessages = async () => {
     try {
-      const res = await api.get('/api/ecosystem/messages');
-      setMessages(res.data);
+      const res = await api.get('/api/messages');
+      // Backend returns them in desc order, but UI might want them in asc or we can leave as is.
+      // We will sort them by created_at asc for the chat view.
+      setMessages(res.data.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
       
       if (threadId && !selectedUser) {
           const preSelect = res.data.find((msg: any) => 
-             msg.sender.id === parseInt(threadId) || msg.receiver.id === parseInt(threadId)
+             msg.sender_id === parseInt(threadId) || msg.receiver_id === parseInt(threadId)
           );
           if (preSelect) {
-             const otherUser = preSelect.sender.id === user?.id ? preSelect.receiver : preSelect.sender;
-             handleSelectUser(otherUser);
+             const isSenderThread = preSelect.sender_id === parseInt(threadId);
+             try {
+                const uRes = await api.get(`/api/auth/users/${threadId}`);
+                handleSelectUser(uRes.data);
+             } catch (err) {
+                console.error("Failed to load user", err);
+             }
           } else {
              // Fetch user basic info if no messages exist yet
              try {
@@ -61,11 +68,11 @@ function MessagesContent() {
       setSelectedUser(u);
       setIsSearching(false);
       try {
-          // Mark as read
-          await api.patch(`/api/ecosystem/messages/${u.id}/read`);
+          // Mark as read API might not exist yet, we can skip or add it
+          // await api.patch(`/api/messages/${u.id}/read`);
           // Optimistically update local state
           setMessages(prev => prev.map(m => {
-              if (m.sender.id === u.id && !m.is_read) {
+              if (m.sender_id === u.id && !m.is_read) {
                   return { ...m, is_read: true };
               }
               return m;
@@ -92,11 +99,12 @@ function MessagesContent() {
   const handleSend = async () => {
     if (!replyText.trim() || !selectedUser) return;
     try {
-      const res = await api.post('/api/ecosystem/messages', {
+      const res = await api.post('/api/messages', {
         receiver_id: selectedUser.id,
         content: replyText
       });
-      setMessages([res.data, ...messages]);
+      // push to end since we sorted ascending
+      setMessages([...messages, res.data]);
       setReplyText('');
     } catch (e) {
       console.error("Failed to send", e);

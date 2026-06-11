@@ -390,48 +390,7 @@ def create_post(
     return new_post
 
 
-@router.get("/reels")
-def get_reels(
-    skip: int = 0, 
-    limit: int = 50, 
-    db: Session = Depends(database.get_db),
-    current_user: models.User = Depends(deps.get_current_user_optional)
-):
-    reels = db.query(Reel).order_by(Reel.created_at.desc()).offset(skip).limit(limit).all()
-    
-    if not reels:
-        mock_user = db.query(models.User).filter(models.User.email == "system@kaarya.os").first()
-        if mock_user:
-            demo_reels = [
-                Reel(author_id=mock_user.id, video_url="/reels/A_playful_cinematic_startup_ad.mp4", caption="A playful cinematic startup ad showcasing Kaarya.OS capabilities.", tags="Startup,KaaryaOS"),
-                Reel(author_id=mock_user.id, video_url="/reels/Cinematic_emotional_advertisem.mp4", caption="Cinematic emotional advertisement for Kaarya.", tags="Emotional,Ad"),
-                Reel(author_id=mock_user.id, video_url="/reels/Futuristic_dark_SaaS_advertise.mp4", caption="Futuristic dark SaaS advertisement.", tags="SaaS,Futuristic"),
-                Reel(author_id=mock_user.id, video_url="/reels/Make_a_thirty_second_video_thi.mp4", caption="A thirty-second video about the hiring revolution.", tags="Hiring,Revolution"),
-                Reel(author_id=mock_user.id, video_url="/reels/make_more_videos_not_landscap.mp4", caption="Make more videos - vertical format preferred.", tags="Vertical,Video"),
-                Reel(author_id=mock_user.id, video_url="/reels/tagline_is_Hiring_Decided_.mp4", caption="Hiring, Decided. The new way to hire.", tags="Hiring,Decided"),
-                Reel(author_id=mock_user.id, video_url="/reels/A_playful_cinematic_startup_ad.mp4", caption="Inside look: How we built Kaarya.OS Phase 2.", tags="Engineering,InsideLook"),
-                Reel(author_id=mock_user.id, video_url="/reels/Cinematic_emotional_advertisem.mp4", caption="The future of professional networking is here.", tags="Networking,Future"),
-                Reel(author_id=mock_user.id, video_url="/reels/Futuristic_dark_SaaS_advertise.mp4", caption="Deep dive into our AI capabilities.", tags="AI,DeepDive"),
-                Reel(author_id=mock_user.id, video_url="/reels/Make_a_thirty_second_video_thi.mp4", caption="Why we chose Next.js for Kaarya.OS.", tags="NextJS,Frontend")
-            ]
-            db.add_all(demo_reels)
-            db.commit()
-            reels = db.query(Reel).order_by(Reel.created_at.desc()).offset(skip).limit(limit).all()
-            
-    result = []
-    for r in reels:
-        result.append({
-            "id": r.id,
-            "video_url": r.video_url,
-            "thumbnail_url": r.thumbnail_url,
-            "caption": r.caption,
-            "tags": r.tags,
-            "likes_count": r.likes_count,
-            "views_count": r.views_count,
-            "created_at": r.created_at,
-            "author": r.author
-        })
-    return result
+
 
 
 @router.post("/reels", response_model=ReelResponse)

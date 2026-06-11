@@ -12,6 +12,7 @@ export default function InterviewSession({ params }: { params: Promise<{ id: str
   const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [status, setStatus] = useState('initializing');
+  const [interviewId, setInterviewId] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function InterviewSession({ params }: { params: Promise<{ id: str
       const response = await axios.post(`http://localhost:8000/api/interviews/${id}/start`, {}, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
+      setInterviewId(response.data.interview_id);
       setMessages([{ role: 'bot', content: response.data.question }]);
     } catch (error) {
       console.error('Start interview error:', error);
@@ -48,7 +50,9 @@ export default function InterviewSession({ params }: { params: Promise<{ id: str
     setIsTyping(true);
 
     try {
-      const response = await axios.post(`http://localhost:8000/api/interviews/${id}/respond`, {
+      // Use the actual interview ID returned by the start endpoint
+      const targetId = interviewId || id;
+      const response = await axios.post(`http://localhost:8000/api/interviews/${targetId}/respond`, {
         user_input: userInput,
         history: messages
       }, {
