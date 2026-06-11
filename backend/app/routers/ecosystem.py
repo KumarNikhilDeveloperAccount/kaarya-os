@@ -255,6 +255,77 @@ def get_reels(
         ]
     return reels
 
+@router.get("/orbit")
+def get_orbit_nodes(db: Session = Depends(database.get_db), current_user: models.User = Depends(deps.get_current_user)):
+    """
+    Real backend matching engine for Opportunity Orbit.
+    Calculates spatial node properties and match scores based on candidate profile.
+    """
+    from app.models.job import Job
+    jobs = db.query(Job).all()
+    
+    if not jobs:
+        return []
+        
+    user_skills = current_user.skills.lower() if current_user.skills else ""
+    user_bio = current_user.bio.lower() if current_user.bio else ""
+    user_text = user_skills + " " + user_bio
+    
+    nodes = []
+    rings = 3
+    colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899']
+    
+    for i, job in enumerate(jobs):
+        # Calculate real match score
+        job_text = f"{job.title} {job.description} {job.skills_required}".lower()
+        
+        # Simple overlap algorithm
+        score = 60 # Base score
+        if current_user.primary_role == "candidate":
+            job_keywords = set([k.strip() for k in (job.skills_required or "").split(",") if k.strip()])
+            user_keywords = set([k.strip() for k in (current_user.skills or "").split(",") if k.strip()])
+            
+            overlap = len(job_keywords.intersection(user_keywords))
+            if len(job_keywords) > 0:
+                score += int((overlap / len(job_keywords)) * 40)
+            
+            # Bonus for bio matching title
+            if job.title.lower() in user_bio:
+                score += 10
+                
+        # Cap score at 99
+        match_score = min(99, max(45, score))
+        
+        # Determine spatial properties based on match score
+        # Higher score = lower ring (closer to center)
+        if match_score >= 90:
+            ring = 1
+        elif match_score >= 75:
+            ring = 2
+        else:
+            ring = 3
+            
+        radius = ring * 120 + 50
+        speed = 20 + ring * 10 + (i % 5)
+        start_angle = (i / len(jobs)) * 360 * ring
+        
+        nodes.append({
+            "id": job.id,
+            "jobId": job.id,
+            "ring": ring,
+            "radius": radius,
+            "speed": speed,
+            "startAngle": start_angle,
+            "color": colors[i % len(colors)],
+            "role": job.title,
+            "company": job.company,
+            "salary": job.salary_range,
+            "description": job.description,
+            "matchScore": match_score
+        })
+        
+    return nodes
+
 @router.get("/feed", response_model=List[PostResponse])
 def get_feed(
     skip: int = 0, 

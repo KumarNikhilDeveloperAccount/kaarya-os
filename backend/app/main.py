@@ -71,7 +71,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.routers import auth, jobs, sandbox, interviews, payments, admin, support, ai, dashboard, boomi, ecosystem, upload, coding, payment
+from app.routers import auth, jobs, sandbox, interviews, payments, admin, support, ai, dashboard, boomi, ecosystem, upload, coding, payment, files
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(jobs.router, prefix="/api/jobs", tags=["jobs"])
@@ -87,6 +87,7 @@ app.include_router(ecosystem.router, prefix="/api/ecosystem", tags=["ecosystem"]
 app.include_router(upload.router, prefix="/api/upload", tags=["upload"])
 app.include_router(coding.router, prefix="/api/coding", tags=["coding"])
 app.include_router(payment.router, prefix="/api/payment", tags=["payment"])
+app.include_router(files.router, prefix="/api/files", tags=["files"])
 
 # Mount uploads directory to serve static files
 import os

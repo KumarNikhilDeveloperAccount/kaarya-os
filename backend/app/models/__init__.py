@@ -6,4 +6,5 @@ from app.models.payment import Transaction, Wallet, PayoutRequest
 from app.models.support import Ticket, TicketMessage
 from app.models.interview import Interview
 from app.models.ecosystem import Post, Reel, Connection, Endorsement, Message, Feedback, Batch
+from app.models.file import PersistentFile
 # This file imports all models so that Alembic can see them when it imports Base.

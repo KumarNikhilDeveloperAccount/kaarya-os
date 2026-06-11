@@ -17,43 +17,11 @@ export default function OrbitPage() {
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const [nodes, setNodes] = useState<any[]>([]);
 
-  useEffect(() => {
+   useEffect(() => {
      const fetchJobsAndGenerateOrbit = async () => {
         try {
-           const response = await api.get('/api/jobs');
-           const fetchedJobs = response.data;
-           
-           if (!fetchedJobs || fetchedJobs.length === 0) return;
-
-           const orbitData = [];
-           const rings = 3;
-           const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899'];
-           
-           for (let i = 0; i < fetchedJobs.length; i++) {
-              const job = fetchedJobs[i];
-              // distribute jobs evenly across rings
-              const ring = (i % rings) + 1;
-              const radius = ring * 120 + 50; // pixels
-              const speed = 20 + ring * 10 + Math.random() * 5; // seconds for full rotation
-              
-              const startAngle = (i / fetchedJobs.length) * 360 * ring; // scatter them around
-              
-              orbitData.push({
-                 id: job.id,
-                 jobId: job.id, // Store actual job ID for later engagement
-                 ring,
-                 radius,
-                 speed,
-                 startAngle,
-                 color: colors[i % colors.length],
-                 role: job.title,
-                 company: job.company,
-                 salary: job.salary_range,
-                 description: job.description,
-                 matchScore: Math.floor(Math.random() * 20) + 80, // 80-99 (could be real ML score later)
-              });
-           }
-           setNodes(orbitData);
+           const response = await api.get('/api/ecosystem/orbit');
+           setNodes(response.data);
         } catch (error) {
            console.error("Failed to fetch orbit data:", error);
         }
