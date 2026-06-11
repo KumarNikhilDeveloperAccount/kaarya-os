@@ -101,6 +101,22 @@ def read_root():
 def health_check():
     return {"status": "healthy"}
 
+@app.get("/api/force-wipe-db")
+def force_wipe():
+    logger.info("Manual force wipe requested via API.")
+    try:
+        import os
+        if str(engine.url).startswith("sqlite"):
+            db_path = str(engine.url).split("sqlite:///")[-1]
+            if os.path.exists(db_path):
+                # force close connections maybe?
+                pass
+        Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
+        return {"status": "Database wiped and recreated."}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
+
 @app.on_event("startup")
 def startup_db_migration():
     """Migrate existing emails to lowercase to prevent duplicates and login issues."""
