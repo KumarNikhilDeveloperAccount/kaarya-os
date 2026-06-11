@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import AppLayout from "@/components/layout/AppLayout";
+import { AuthProvider } from "@/contexts/AuthContext";
+import CrispBotLogic from "@/components/support/CrispBotLogic";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,6 +24,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider>
+          <CrispBotLogic />
           <AppLayout>{children}</AppLayout>
           <Toaster richColors position="top-right" theme="dark" />
         </ThemeProvider>
