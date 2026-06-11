@@ -6,6 +6,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     full_name: Optional[str] = None
+    primary_role: Optional[str] = "candidate"
 
 class UserOut(BaseModel):
     id: int
