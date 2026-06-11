@@ -12,8 +12,7 @@ def test():
         hashed_password="dummy",
         is_active=True,
         is_admin=False,
-        roles="Candidate",
-        active_persona="Candidate"
+        primary_role="candidate"
     )
     db.add(new_user)
     db.commit()

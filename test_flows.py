@@ -1,7 +1,7 @@
 import requests
 import time
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "https://kaarya-os-backend.onrender.com"
 
 def log(msg):
     print(f"[*] {msg}")

@@ -7,15 +7,15 @@ from app.services.sandbox import run_code_in_sandbox
 
 def test_sandbox_correct_code():
     res = run_code_in_sandbox('print("Hello from Kaarya Docker Sandbox!")')
-    assert "Hello from Kaarya Docker Sandbox!" in res, "Sandbox failed to execute correct code."
+    assert "Hello from Kaarya Docker Sandbox!" in res["output"], "Sandbox failed to execute correct code."
 
 def test_sandbox_infinite_loop():
     res = run_code_in_sandbox('while True: pass', timeout_seconds=2)
-    assert "Timeout" in res, "Sandbox did not timeout on infinite loop."
+    assert res["status"] == "timeout" or "Timeout" in res.get("error", ""), "Sandbox did not timeout on infinite loop."
 
 def test_sandbox_error_code():
     res = run_code_in_sandbox('1/0')
-    assert "ZeroDivisionError" in res, "Sandbox did not handle error code correctly."
+    assert "ZeroDivisionError" in res["error"], "Sandbox did not handle error code correctly."
 
 if __name__ == "__main__":
     test_sandbox_correct_code()

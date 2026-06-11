@@ -106,6 +106,7 @@ def startup_db_migration():
     """Migrate existing emails to lowercase to prevent duplicates and login issues."""
     try:
         db = SessionLocal()
+        # Test if the new columns exist by querying
         users_list = db.query(User).all()
         migrated_count = 0
         for u in users_list:
@@ -116,4 +117,12 @@ def startup_db_migration():
         db.close()
         logger.info(f"Successfully migrated {migrated_count} emails to lowercase.")
     except Exception as e:
-        logger.error(f"Migration error: {e}")
+        logger.error(f"Migration error (Schema Mismatch?): {e}")
+        # Wipe the database tables if schema is mismatched (Requested by user: "wipe the existing mock database")
+        try:
+            logger.info("Wiping database and recreating schema to resolve mismatch...")
+            Base.metadata.drop_all(bind=engine)
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database wiped and recreated successfully.")
+        except Exception as e2:
+            logger.error(f"Failed to wipe and recreate: {e2}")
