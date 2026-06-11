@@ -40,13 +40,12 @@ CRITICAL DIRECTIVES:
 
 def clean_json(text: str) -> str:
     text = text.strip()
-    if text.startswith("```json"):
-        text = text[7:]
-    if text.startswith("```"):
-        text = text[3:]
-    if text.endswith("```"):
-        text = text[:-3]
-    return text.strip()
+    # Find the first { and the last }
+    start_idx = text.find("{")
+    end_idx = text.rfind("}")
+    if start_idx != -1 and end_idx != -1 and end_idx >= start_idx:
+        return text[start_idx:end_idx+1]
+    return text
 
 def evaluate_resume(resume_text: str, job_description: str) -> dict:
     """
@@ -203,8 +202,18 @@ def conduct_interview_turn(job_description: str, candidate_resume: str, history:
         return result
     except Exception as e:
         logger.error(f"Gemini interview evaluation failed: {e}")
+        
+        # Salvage whatever Gemini responded with if it was plain text
+        raw_text = "Could you please elaborate on your previous answer? We had a slight connection issue."
+        try:
+            if response and hasattr(response, 'text') and response.text:
+                if len(response.text) > 10 and '{' not in response.text:
+                    raw_text = response.text.strip()
+        except:
+            pass
+
         return {
-             "evaluation_of_last_answer": "AI encountered an error parsing your response.", 
-             "next_question": "Please try answering again or restarting the assessment.", 
+             "evaluation_of_last_answer": "I had trouble parsing the technical nuances of your last response.", 
+             "next_question": raw_text, 
              "is_complete": False
          }
