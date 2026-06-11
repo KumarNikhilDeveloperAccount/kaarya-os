@@ -13,6 +13,16 @@ class MessageCreate(BaseModel):
     receiver_id: int
     content: str
 
+class UserBasic(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    primary_role: Optional[str] = None
+    profile_picture: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
 class MessageResponse(BaseModel):
     id: int
     sender_id: int
@@ -20,6 +30,8 @@ class MessageResponse(BaseModel):
     content: str
     is_read: bool
     created_at: datetime
+    sender: UserBasic
+    receiver: UserBasic
     
     class Config:
         from_attributes = True
