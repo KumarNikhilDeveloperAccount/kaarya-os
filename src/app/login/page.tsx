@@ -39,20 +39,6 @@ function LoginPageInner() {
       return;
     }
 
-    if (!token) return;
-
-    (async () => {
-      try {
-        localStorage.setItem('token', token);
-        const userResponse = await api.get('/api/auth/me', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        login(token, userResponse.data);
-        toast.success('LinkedIn identity synchronized.');
-      } catch {
-        toast.error('LinkedIn login failed.');
-      }
-    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 

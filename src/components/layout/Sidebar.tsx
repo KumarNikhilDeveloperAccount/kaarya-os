@@ -143,16 +143,9 @@ export default function Sidebar({ role = 'candidate', onPersonaSwitch = () => {}
               <p className="text-xs font-bold truncate">{user?.full_name || (role === 'company' ? 'Acme Corp' : 'Kaarya User')}</p>
               <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">{role}</p>
            </div>
-           <HelpCircle 
-              onClick={() => {
-                if (typeof window !== 'undefined' && (window as any).$crisp) {
-                  (window as any).$crisp.push(["do", "chat:open"]);
-                } else {
-                  alert('Support chat is currently loading. Please try again in a moment.');
-                }
-              }}
-              className="h-4 w-4 text-muted-foreground hover:text-primary cursor-pointer transition-colors" 
-           />
+           <Link href="/support">
+             <HelpCircle className="h-4 w-4 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
+           </Link>
         </div>
         <div className="text-[9px] text-center text-muted-foreground/30 mt-6 uppercase font-bold tracking-widest">© 2026 Kaarya Operating System</div>
       </div>

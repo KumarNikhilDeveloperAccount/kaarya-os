@@ -91,6 +91,10 @@ def rit_ai_chat(
 ):
     from app.services.ai import ask_rit
     try:
+        if current_user:
+            user_context = f"Candidate Profile -> Name: {current_user.full_name}, Role: {current_user.primary_role}. Ensure your advice is tailored to their specific career state."
+            context = f"{user_context}\nAdditional Context: {context}"
+            
         response = ask_rit(message, context)
         return {"response": response}
     except Exception as e:

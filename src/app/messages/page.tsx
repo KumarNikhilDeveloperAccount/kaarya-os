@@ -68,8 +68,7 @@ function MessagesContent() {
       setSelectedUser(u);
       setIsSearching(false);
       try {
-          // Mark as read API might not exist yet, we can skip or add it
-          // await api.patch(`/api/messages/${u.id}/read`);
+          await api.patch(`/api/messages/${u.id}/read`);
           // Optimistically update local state
           setMessages(prev => prev.map(m => {
               if (m.sender_id === u.id && !m.is_read) {

@@ -378,7 +378,8 @@ async def linkedin_callback(request: Request, code: Optional[str] = None, state:
     jwt_token = auth.create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
 
     # Redirect back to frontend with token for client-side storage.
-    redirect_to = f"https://kaarya-os.vercel.app/login?{urlencode({'token': jwt_token, 'source': 'linkedin'})}"
+    frontend_url = settings.FRONTEND_BASE_URL or "http://localhost:3000"
+    redirect_to = f"{frontend_url}/auth/callback?{urlencode({'token': jwt_token, 'source': 'linkedin'})}"
     resp = RedirectResponse(url=redirect_to, status_code=302)
     resp.delete_cookie("li_oauth_state")
     return resp

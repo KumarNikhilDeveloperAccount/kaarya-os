@@ -31,7 +31,7 @@ export default function RitPanel() {
     }
   }, [messages, isTyping]);
 
-  const handleSendMessage = (text: string = input) => {
+  const handleSendMessage = async (text: string = input) => {
     if (!text.trim()) return;
 
     const userMessage = { role: 'user', content: text };
@@ -39,18 +39,18 @@ export default function RitPanel() {
     setInput('');
     setIsTyping(true);
 
-    // Simulate Rit Intelligence
-    setTimeout(() => {
+    try {
+      const { api } = await import('@/lib/api');
+      const response = await api.post('/api/ai/chat', { 
+        message: text,
+        context: "The user is interacting with Rit.AI via the global dashboard panel."
+      });
+      setMessages(prev => [...prev, { role: 'bot', content: response.data.response }]);
+    } catch (err) {
+      setMessages(prev => [...prev, { role: 'bot', content: "I'm currently experiencing connectivity issues with the intelligence core. Please try again." }]);
+    } finally {
       setIsTyping(false);
-      const responses: Record<string, string> = {
-        "How is my score calculated?": "Your score is a weighted average of your Resume Depth (30%), Simulation Accuracy (50%), and Communication Clarity (20%). We use LLM-based vector analysis to compare you with top 1% engineers.",
-        "Suggest my next simulation": "Based on your recent 'System Design' performance, I recommend the 'Distributed Cache Implementation' simulation. It will boost your infrastructure score by 15%.",
-        "Improve my profile completeness": "You're missing a 'Personal Project' link and 'Github' verification. Adding these will give recruiters more evidence of your hands-on capability."
-      };
-      
-      const botResponse = responses[text] || "I've processed your query. As your AI guide, I recommend exploring the 'Engineering Lab' to further validate your coding depth in 'Distributed Systems'.";
-      setMessages(prev => [...prev, { role: 'bot', content: botResponse }]);
-    }, 1500);
+    }
   };
 
   const suggestions = [
