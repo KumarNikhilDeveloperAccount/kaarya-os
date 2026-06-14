@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
-export default function AuthCallback() {
+import { Suspense } from 'react';
+
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { loginWithToken, fetchUser } = useAuth();
@@ -35,11 +37,19 @@ export default function AuthCallback() {
   }, [searchParams, router, loginWithToken, fetchUser]);
 
   return (
+    <div className="flex flex-col items-center space-y-4">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground animate-pulse">Authenticating Identity...</h2>
+    </div>
+  );
+}
+
+export default function AuthCallback() {
+  return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center space-y-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground animate-pulse">Authenticating Identity...</h2>
-      </div>
+      <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin text-primary" />}>
+        <AuthCallbackContent />
+      </Suspense>
     </div>
   );
 }
