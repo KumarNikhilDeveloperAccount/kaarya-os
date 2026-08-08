@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import CompanyDashboard from '@/components/dashboard/CompanyDash';
 import InterviewerDashboard from '@/components/dashboard/InterviewerDash';
 import CollegeDashboard from '@/components/dashboard/CollegeDash';
+import Footer from '@/components/layout/Footer';
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -14,7 +15,12 @@ export default function Home() {
   if (loading) return null;
 
   if (!user) {
-    return <LandingExperience />;
+    return (
+      <div className="flex flex-col min-h-screen">
+        <LandingExperience />
+        <Footer />
+      </div>
+    );
   }
 
   // Determine which dashboard to show based on primary_role

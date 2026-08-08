@@ -40,7 +40,6 @@ services:
     name: kaarya-social-engine
     env: python
     rootDir: backend
-    plan: free
     schedule: "0 */8 * * *"
     buildCommand: pip install -r requirements.txt && playwright install chromium --with-deps
     startCommand: python scripts/social_automation.py
