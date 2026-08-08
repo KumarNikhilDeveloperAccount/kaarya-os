@@ -377,21 +377,9 @@ def execute_broadcast():
         failed = [k for k, v in success_states.items() if not v]
         send_notification("❌ Kaarya OS Social Engine - Broadcast FAILED", f"Failed to post {media_type} to: {failed} after {max_retries} attempts.")
         
-    logger.info("=== Broadcast Cycle Complete ===")
-    schedule_next_run()
-
-def schedule_next_run():
-    # Enforce exactly 8 hours to align with Render schedule
-    hours_to_wait = 8.0
-    seconds_to_wait = int(hours_to_wait * 3600)
-    next_run_time = datetime.datetime.now() + datetime.timedelta(seconds=seconds_to_wait)
-    logger.info(f"Next broadcast scheduled in {hours_to_wait:.2f} hours (at {next_run_time.strftime('%Y-%m-%d %H:%M:%S')})")
-    time.sleep(seconds_to_wait)
-
 if __name__ == "__main__":
     logger.info("Kaarya.OS Autonomous Social Engine Started.")
     IMAGES_DIR.mkdir(parents=True, exist_ok=True)
     VIDEOS_DIR.mkdir(parents=True, exist_ok=True)
     
-    while True:
-        execute_broadcast()
+    execute_broadcast()

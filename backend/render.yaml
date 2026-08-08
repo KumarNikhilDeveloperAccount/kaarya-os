@@ -36,31 +36,4 @@ services:
       - key: FRONTEND_BASE_URL
         value: https://frontend-two-steel-22.vercel.app
 
-  - type: cron
-    name: kaarya-social-engine
-    env: python
-    rootDir: backend
-    schedule: "0 */8 * * *"
-    buildCommand: pip install -r requirements.txt && playwright install chromium --with-deps
-    startCommand: python scripts/social_automation.py
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: META_USERNAME
-        sync: false
-      - key: META_PASSWORD
-        sync: false
-      - key: TWITTER_API_KEY
-        sync: false
-      - key: TWITTER_API_SECRET
-        sync: false
-      - key: TWITTER_ACCESS_TOKEN
-        sync: false
-      - key: TWITTER_ACCESS_SECRET
-        sync: false
-      - key: LINKEDIN_ACCESS_TOKEN
-        sync: false
-      - key: LINKEDIN_URN
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
+
