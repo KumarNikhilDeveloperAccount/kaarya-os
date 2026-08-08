@@ -10,7 +10,7 @@ import { Suspense } from 'react';
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { loginWithToken, fetchUser } = useAuth();
+  const { login } = useAuth();
   const hasProcessed = useRef(false);
 
   useEffect(() => {
@@ -19,22 +19,26 @@ function AuthCallbackContent() {
     const token = searchParams.get('token');
     if (token) {
       hasProcessed.current = true;
-      loginWithToken(token);
       
-      fetchUser().then((user) => {
-        if (!user || (user.primary_role === 'candidate' && (!user.full_name || user.full_name === 'LinkedIn User'))) {
-          router.push('/onboarding');
-        } else {
-          router.push('/');
-        }
-      }).catch(() => {
-        router.push('/login');
+      // Store temporarily so api.get uses it
+      localStorage.setItem('token', token);
+      
+      import('@/lib/api').then(({ api }) => {
+        api.get('/api/auth/me')
+          .then((res) => {
+             // AuthContext login handles the strict onboarding redirect logic now
+             login(token, res.data);
+          })
+          .catch(() => {
+             localStorage.removeItem('token');
+             router.push('/login');
+          });
       });
     } else {
       hasProcessed.current = true;
       router.push('/login');
     }
-  }, [searchParams, router, loginWithToken, fetchUser]);
+  }, [searchParams, router, login]);
 
   return (
     <div className="flex flex-col items-center space-y-4">

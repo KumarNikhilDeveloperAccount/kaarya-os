@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Body, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Body, UploadFile, File, BackgroundTasks
 from sqlalchemy.orm import Session
 from app import database, models, schemas, deps
 from app.services.ai import evaluate_resume
@@ -85,9 +85,11 @@ def assess_interview_response(
 
 @router.post("/chat", response_model=Dict[str, Any])
 def rit_ai_chat(
+    background_tasks: BackgroundTasks,
     message: str = Body(..., embed=True),
     context: str = Body("", embed=True),
-    current_user: models.User = Depends(deps.get_current_user_optional)
+    current_user: models.User = Depends(deps.get_current_user_optional),
+    db: Session = Depends(database.get_db)
 ):
     from app.services.ai import ask_rit
     try:
@@ -96,6 +98,36 @@ def rit_ai_chat(
             context = f"{user_context}\nAdditional Context: {context}"
             
         response = ask_rit(message, context)
+
+        if "registered your request" in response and current_user:
+            from app.routers.support import sync_ticket_to_support_desk
+            new_ticket = models.Ticket(
+                user_id=current_user.id,
+                subject=f"Rit.ai Auto-Ticket: {message[:30]}",
+                status="Open",
+                priority="Medium"
+            )
+            db.add(new_ticket)
+            db.commit()
+            db.refresh(new_ticket)
+            
+            first_msg = models.TicketMessage(
+                ticket_id=new_ticket.id,
+                sender_id=current_user.id,
+                content=message
+            )
+            db.add(first_msg)
+            db.commit()
+            
+            payload = {
+                "id": new_ticket.id,
+                "subject": new_ticket.subject,
+                "content": message,
+                "priority": new_ticket.priority,
+                "user_email": current_user.email
+            }
+            background_tasks.add_task(sync_ticket_to_support_desk, payload)
+
         return {"response": response}
     except Exception as e:
         print(f"Rit Chat Error: {e}")

@@ -1,350 +1,259 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/lib/api';
-import { Send, User, MessageCircle, Clock, ChevronLeft, Search, X, Loader2 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Send, Users, Circle, MoreVertical, Search, CheckCircle2, Phone, Video } from 'lucide-react';
+import Sidebar from '@/components/layout/Sidebar';
+import Topbar from '@/components/layout/Topbar';
+import { useAuth } from '@/contexts/AuthContext';
 
-function MessagesContent() {
-  const { user } = useAuth();
-  const [messages, setMessages] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [replyText, setReplyText] = useState('');
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-
-  // Search state
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-
-  const searchParams = useSearchParams();
-  const threadId = searchParams.get('thread_id');
-
-  useEffect(() => {
-    fetchMessages();
-    const interval = setInterval(fetchMessages, 10000); // Auto-polling
-    return () => clearInterval(interval);
-  }, [user]);
-
-  const fetchMessages = async () => {
-    try {
-      const res = await api.get('/api/messages');
-      // Backend returns them in desc order, but UI might want them in asc or we can leave as is.
-      // We will sort them by created_at asc for the chat view.
-      setMessages(res.data.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
-      
-      if (threadId && !selectedUser) {
-          const preSelect = res.data.find((msg: any) => 
-             msg.sender_id === parseInt(threadId) || msg.receiver_id === parseInt(threadId)
-          );
-          if (preSelect) {
-             const isSenderThread = preSelect.sender_id === parseInt(threadId);
-             try {
-                const uRes = await api.get(`/api/auth/users/${threadId}`);
-                handleSelectUser(uRes.data);
-             } catch (err) {
-                console.error("Failed to load user", err);
-             }
-          } else {
-             // Fetch user basic info if no messages exist yet
-             try {
-                const uRes = await api.get(`/api/auth/users/${threadId}`);
-                handleSelectUser(uRes.data);
-             } catch (err) {
-                console.error("Failed to load thread user", err);
-             }
-          }
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSelectUser = async (u: any) => {
-      setSelectedUser(u);
-      setIsSearching(false);
-      try {
-          await api.patch(`/api/messages/${u.id}/read`);
-          // Optimistically update local state
-          setMessages(prev => prev.map(m => {
-              if (m.sender_id === u.id && !m.is_read) {
-                  return { ...m, is_read: true };
-              }
-              return m;
-          }));
-      } catch (e) {
-          console.error("Failed to mark read", e);
-      }
-  };
-
-  const handleSearch = async (q: string) => {
-      setSearchQuery(q);
-      if (q.length < 2) {
-          setSearchResults([]);
-          return;
-      }
-      try {
-          const res = await api.get(`/api/auth/users/search?q=${encodeURIComponent(q)}`);
-          setSearchResults(res.data);
-      } catch (e) {
-          console.error(e);
-      }
-  };
-
-  const handleSend = async () => {
-    if (!replyText.trim() || !selectedUser) return;
-    try {
-      const res = await api.post('/api/messages', {
-        receiver_id: selectedUser.id,
-        content: replyText
-      });
-      // push to end since we sorted ascending
-      setMessages([...messages, res.data]);
-      setReplyText('');
-    } catch (e) {
-      console.error("Failed to send", e);
-    }
-  };
-
-  // Group messages by conversation
-  const conversations = messages.reduce((acc: any, msg) => {
-    const isMe = String(msg.sender.id) === String(user?.id);
-    const otherUser = isMe ? msg.receiver : msg.sender;
-    if (!acc[otherUser.id]) {
-      acc[otherUser.id] = { user: otherUser, messages: [], unreadCount: 0 };
-    }
-    acc[otherUser.id].messages.push(msg);
-    if (String(msg.sender.id) === String(otherUser.id) && !msg.is_read) {
-        acc[otherUser.id].unreadCount += 1;
-    }
-    return acc;
-  }, {});
-
-  // If selectedUser has no messages yet, ensure they appear in the chat list
-  if (selectedUser && !conversations[selectedUser.id]) {
-      conversations[selectedUser.id] = { user: selectedUser, messages: [], unreadCount: 0 };
-  }
-
-  const chatList = Object.values(conversations);
-
-  if (loading) {
-     return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading Messages...</div>;
-  }
-
-  return (
-    <div className="max-w-6xl mx-auto py-8 px-4 h-[calc(100vh-100px)] flex gap-6 relative">
-      {/* Search Overlay */}
-      <AnimatePresence>
-        {isSearching && (
-            <motion.div 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="absolute top-8 left-4 md:w-1/3 w-[calc(100%-2rem)] bg-card border border-border rounded-3xl shadow-2xl z-50 p-4"
-            >
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-black uppercase tracking-tight">New Conversation</h3>
-                    <button onClick={() => setIsSearching(false)} className="p-2 hover:bg-secondary rounded-full">
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-                <div className="relative mb-4">
-                    <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                    <input 
-                        type="text" 
-                        autoFocus
-                        value={searchQuery}
-                        onChange={(e) => handleSearch(e.target.value)}
-                        placeholder="Search network..." 
-                        className="w-full bg-secondary pl-10 pr-4 py-3 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                </div>
-                <div className="max-h-64 overflow-y-auto space-y-2">
-                    {searchResults.map((su: any) => (
-                        <button 
-                            key={su.id}
-                            onClick={() => handleSelectUser(su)}
-                            className="w-full flex items-center space-x-3 p-3 hover:bg-secondary rounded-xl text-left transition-colors"
-                        >
-                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                {su.profile_picture ? (
-                                    <img src={su.profile_picture} alt="" className="w-full h-full object-cover rounded-full" />
-                                ) : (
-                                    <span className="font-black text-primary">{su.full_name?.charAt(0)}</span>
-                                )}
-                            </div>
-                            <div>
-                                <h4 className="font-bold">{su.full_name}</h4>
-                                <p className="text-xs text-muted-foreground uppercase">{su.primary_role}</p>
-                            </div>
-                        </button>
-                    ))}
-                    {searchQuery.length >= 2 && searchResults.length === 0 && (
-                        <p className="text-center text-muted-foreground text-sm py-4">No users found.</p>
-                    )}
-                </div>
-            </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar List */}
-      <div className={`w-full md:w-1/3 bg-card border border-border rounded-3xl p-4 flex flex-col ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
-         <div className="flex items-center justify-between mb-6 px-2">
-            <div className="flex items-center space-x-3">
-                <MessageCircle className="h-6 w-6 text-primary" />
-                <h1 className="text-2xl font-black uppercase tracking-tight">Inbox</h1>
-            </div>
-            <button onClick={() => setIsSearching(true)} className="p-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-full transition-colors">
-                <Search className="w-5 h-5" />
-            </button>
-         </div>
-         <div className="flex-1 overflow-y-auto space-y-2">
-            {chatList.length === 0 ? (
-               <div className="text-center p-8 text-muted-foreground/50 text-xs font-black uppercase tracking-widest">
-                  No Messages Yet
-               </div>
-            ) : (
-               chatList.map((chat: any) => (
-                 <button 
-                   key={chat.user.id}
-                   onClick={() => handleSelectUser(chat.user)}
-                   className={`w-full text-left p-4 rounded-2xl transition-all ${selectedUser?.id === chat.user.id ? 'bg-primary text-white shadow-xl shadow-primary/20 scale-[1.02]' : 'hover:bg-secondary border border-transparent'}`}
-                 >
-                    <div className="flex items-center space-x-3">
-                       <div className="relative w-10 h-10 rounded-full bg-secondary overflow-hidden shrink-0">
-                          {chat.user.profile_picture ? (
-                             <img src={chat.user.profile_picture} alt="Avatar" className="w-full h-full object-cover" />
-                          ) : (
-                             <div className="w-full h-full flex items-center justify-center font-black">
-                                {chat.user.full_name?.charAt(0) || 'U'}
-                             </div>
-                          )}
-                       </div>
-                       <div className="overflow-hidden flex-1">
-                          <h3 className={`font-black truncate ${selectedUser?.id === chat.user.id ? 'text-white' : ''}`}>{chat.user.full_name}</h3>
-                          <p className={`text-xs truncate ${selectedUser?.id === chat.user.id ? 'text-white/70' : 'text-muted-foreground'}`}>
-                             {chat.messages.length > 0 ? chat.messages[0].content : "Start a conversation"}
-                          </p>
-                       </div>
-                       {chat.unreadCount > 0 && selectedUser?.id !== chat.user.id && (
-                           <div className="w-5 h-5 rounded-full bg-primary text-white text-[10px] font-black flex items-center justify-center shrink-0">
-                               {chat.unreadCount}
-                           </div>
-                       )}
-                    </div>
-                 </button>
-               ))
-            )}
-         </div>
-      </div>
-
-      {/* Chat Area */}
-      {selectedUser ? (
-         <div className="flex-1 bg-card border border-border rounded-3xl flex flex-col overflow-hidden relative">
-            <div className="p-4 border-b border-border/50 bg-secondary/20 flex items-center">
-               <button onClick={() => setSelectedUser(null)} className="md:hidden mr-4 p-2 rounded-xl bg-secondary hover:bg-muted transition-colors">
-                  <ChevronLeft className="h-5 w-5" />
-               </button>
-               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-black mr-3 shrink-0">
-                  {selectedUser.full_name?.charAt(0)}
-               </div>
-               <div>
-                  <h2 className="font-black">{selectedUser.full_name}</h2>
-                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{selectedUser.primary_role || 'Direct Message'}</p>
-               </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col-reverse bg-[url('/chat-pattern.png')] bg-cover bg-center">
-               {conversations[selectedUser.id]?.messages.map((msg: any) => {
-                  const isMe = String(msg.sender.id) === String(user?.id);
-                  return (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                      key={msg.id} 
-                      className={`flex ${isMe ? 'justify-end' : 'justify-start'} items-end space-x-2`}
-                    >
-                       {!isMe && (
-                          <div className="w-8 h-8 rounded-full bg-secondary overflow-hidden shrink-0 mb-1">
-                             {msg.sender?.profile_picture ? (
-                                <img src={msg.sender.profile_picture} alt="Avatar" className="w-full h-full object-cover" />
-                             ) : (
-                                <div className="w-full h-full flex items-center justify-center font-black text-xs">
-                                   {msg.sender?.full_name?.charAt(0) || 'U'}
-                                </div>
-                             )}
-                          </div>
-                       )}
-                       <div className={`max-w-[70%] p-4 rounded-[1.5rem] ${isMe ? 'bg-primary text-white rounded-br-sm shadow-md' : 'bg-secondary text-foreground rounded-bl-sm border border-border/50 shadow-sm'}`}>
-                          <p className="text-sm font-medium">{msg.content}</p>
-                          <span className={`text-[9px] font-black uppercase tracking-widest mt-2 block ${isMe ? 'text-white/60 text-right' : 'text-muted-foreground'}`}>
-                             {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                       </div>
-                    </motion.div>
-                  );
-               })}
-               {conversations[selectedUser.id]?.messages.length === 0 && (
-                   <div className="text-center text-muted-foreground text-sm my-auto bg-card/50 p-4 rounded-2xl mx-auto backdrop-blur-sm">
-                       No messages yet. Send a message to start the conversation!
-                   </div>
-               )}
-            </div>
-
-            <div className="p-4 border-t border-border/50 bg-card z-10">
-               <div className="flex items-center space-x-2 bg-secondary/50 p-1.5 rounded-[2rem] border border-border/30">
-                  <button 
-                    onClick={() => setReplyText(prev => prev + '😀')}
-                    className="p-3 text-muted-foreground hover:bg-secondary rounded-full transition-colors flex items-center justify-center shrink-0"
-                  >
-                     <span className="text-xl leading-none">😀</span>
-                  </button>
-                  <button 
-                    onClick={() => toast.info('GIF picker coming soon!')}
-                    className="p-2 px-3 bg-secondary/80 text-muted-foreground font-black text-[10px] rounded-full hover:bg-muted transition-colors flex items-center justify-center uppercase tracking-widest shrink-0"
-                  >
-                     GIF
-                  </button>
-                  <input 
-                    type="text" 
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                    placeholder={`Message ${selectedUser.full_name}...`}
-                    className="flex-1 bg-transparent border-none px-2 py-3 text-sm focus:ring-0 outline-none transition-all"
-                  />
-                  <button 
-                    onClick={handleSend}
-                    disabled={!replyText.trim()}
-                    className="p-3 bg-primary text-white rounded-full shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 shrink-0"
-                  >
-                     <Send className="h-5 w-5 -ml-1 mt-0.5" />
-                  </button>
-               </div>
-            </div>
-         </div>
-      ) : (
-         <div className="hidden md:flex flex-1 border border-dashed border-border rounded-3xl items-center justify-center flex-col text-center p-8 bg-secondary/10">
-            <MessageCircle className="h-16 w-16 text-muted-foreground/20 mb-4" />
-            <h3 className="text-lg font-black uppercase tracking-widest text-muted-foreground">Select a Conversation</h3>
-            <p className="text-xs text-muted-foreground/60 mt-2 max-w-sm">Connect with companies, recruiters, or candidates to advance your career.</p>
-            <button onClick={() => setIsSearching(true)} className="mt-6 px-6 py-3 bg-primary text-white rounded-xl font-bold hover:scale-105 transition-transform shadow-xl shadow-primary/20 flex items-center">
-                <Search className="w-4 h-4 mr-2" />
-                Find Connections
-            </button>
-         </div>
-      )}
-    </div>
-  );
+interface Message {
+  id: string;
+  sender_id: string;
+  message: string;
+  timestamp: string;
+  isSelf: boolean;
 }
 
 export default function MessagesPage() {
+  const { user } = useAuth();
+  
+  // Use user id or fallback to a random ID for testing
+  const clientId = user?.id || `user_${Math.floor(Math.random() * 1000)}`;
+  
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputText, setInputText] = useState("");
+  const [isConnected, setIsConnected] = useState(false);
+  
+  const ws = useRef<WebSocket | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Connect to WebSocket backend
+    const socket = new WebSocket(`ws://localhost:8000/api/chat/ws/${clientId}`);
+    
+    socket.onopen = () => {
+      setIsConnected(true);
+      console.log('Connected to WebSocket server');
+    };
+    
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        // Handle echo confirmations separately if needed
+        if (data.status === "delivered") return;
+        
+        const newMsg: Message = {
+          id: Math.random().toString(36).substr(2, 9),
+          sender_id: data.sender_id,
+          message: data.message,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isSelf: data.sender_id === clientId
+        };
+        
+        setMessages(prev => [...prev, newMsg]);
+      } catch (e) {
+        console.error("Error parsing message", e);
+      }
+    };
+    
+    socket.onclose = () => {
+      setIsConnected(false);
+      console.log('Disconnected from WebSocket server');
+    };
+    
+    ws.current = socket;
+    
+    return () => {
+      socket.close();
+    };
+  }, [clientId]);
+
+  // Scroll to bottom on new message
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const sendMessage = (e: FormEvent) => {
+    e.preventDefault();
+    if (!inputText.trim() || !ws.current) return;
+    
+    const payload = {
+      message: inputText,
+      // In a real app, target_id would be the currently selected contact
+      target_id: null 
+    };
+    
+    ws.current.send(JSON.stringify(payload));
+    
+    // Optimistically add to UI
+    const optimisticMsg: Message = {
+      id: Math.random().toString(36).substr(2, 9),
+      sender_id: clientId,
+      message: inputText,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isSelf: true
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
+    setInputText("");
+  };
+
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-      <MessagesContent />
-    </Suspense>
+    <div className="min-h-screen bg-background flex flex-col md:flex-row">
+      <Sidebar />
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        <Topbar />
+        
+        <main className="flex-1 flex overflow-hidden p-6 gap-6">
+          
+          {/* Contacts Sidebar */}
+          <div className="w-80 hidden lg:flex flex-col rounded-3xl bg-card border border-border/50 shadow-xl overflow-hidden">
+            <div className="p-6 border-b border-border/50">
+               <h2 className="text-2xl font-black mb-4">Messages</h2>
+               <div className="relative">
+                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                 <input 
+                   type="text" 
+                   placeholder="Search conversations..." 
+                   className="w-full bg-secondary/50 border border-border rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-primary transition-colors"
+                 />
+               </div>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+               {/* Mock Active Chat */}
+               <div className="flex items-center space-x-4 p-3 rounded-2xl bg-primary/10 border border-primary/20 cursor-pointer">
+                  <div className="relative">
+                     <div className="h-12 w-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                       AC
+                     </div>
+                     <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-card rounded-full" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                     <div className="flex justify-between items-baseline mb-1">
+                        <h3 className="font-bold truncate">Global Chat Room</h3>
+                        <span className="text-xs text-primary font-medium">Now</span>
+                     </div>
+                     <p className="text-sm text-muted-foreground truncate">WebSocket test active...</p>
+                  </div>
+               </div>
+
+               {/* Mock Inactive Chat */}
+               <div className="flex items-center space-x-4 p-3 rounded-2xl hover:bg-secondary/50 cursor-pointer transition-colors border border-transparent">
+                  <div className="relative">
+                     <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center font-bold text-muted-foreground">
+                       KN
+                     </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                     <div className="flex justify-between items-baseline mb-1">
+                        <h3 className="font-bold truncate">Kumar Nikhil</h3>
+                        <span className="text-xs text-muted-foreground">1d</span>
+                     </div>
+                     <p className="text-sm text-muted-foreground truncate">Great catching up today.</p>
+                  </div>
+               </div>
+            </div>
+          </div>
+
+          {/* Active Chat Window */}
+          <div className="flex-1 flex flex-col rounded-3xl bg-card border border-border/50 shadow-xl overflow-hidden relative">
+            
+            {/* Chat Header */}
+            <div className="h-20 border-b border-border/50 flex items-center justify-between px-6 bg-card/80 backdrop-blur-md z-10">
+               <div className="flex items-center space-x-4">
+                  <div className="relative">
+                     <div className="h-12 w-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                       AC
+                     </div>
+                     {isConnected ? (
+                       <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-card rounded-full" />
+                     ) : (
+                       <div className="absolute bottom-0 right-0 h-3 w-3 bg-red-500 border-2 border-card rounded-full" />
+                     )}
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-lg">Global Chat Room</h2>
+                    <p className="text-xs text-muted-foreground flex items-center">
+                      {isConnected ? (
+                        <><Circle className="h-2 w-2 text-green-500 fill-green-500 mr-1.5" /> Connected ({clientId})</>
+                      ) : (
+                        <><Circle className="h-2 w-2 text-red-500 fill-red-500 mr-1.5" /> Disconnected</>
+                      )}
+                    </p>
+                  </div>
+               </div>
+               
+               <div className="flex items-center space-x-2 text-muted-foreground">
+                  <button className="p-2 hover:bg-secondary rounded-xl transition-colors"><Phone className="h-5 w-5" /></button>
+                  <button className="p-2 hover:bg-secondary rounded-xl transition-colors"><Video className="h-5 w-5" /></button>
+                  <button className="p-2 hover:bg-secondary rounded-xl transition-colors"><MoreVertical className="h-5 w-5" /></button>
+               </div>
+            </div>
+
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="text-center text-xs text-muted-foreground font-bold tracking-widest uppercase my-4">
+                Today
+              </div>
+              
+              <div className="flex justify-start">
+                 <div className="max-w-[70%] rounded-2xl rounded-tl-sm px-5 py-3 bg-secondary text-foreground">
+                    <p>Welcome to Kaarya.OS Real-Time Networking. This is a live WebSocket connection.</p>
+                    <span className="text-[10px] text-muted-foreground mt-2 block">System</span>
+                 </div>
+              </div>
+
+              <AnimatePresence initial={false}>
+                {messages.map((msg, idx) => (
+                  <motion.div 
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    className={`flex ${msg.isSelf ? 'justify-end' : 'justify-start'}`}
+                  >
+                     <div className={`max-w-[70%] rounded-2xl px-5 py-3 ${
+                       msg.isSelf 
+                         ? 'bg-primary text-primary-foreground rounded-tr-sm' 
+                         : 'bg-secondary text-foreground rounded-tl-sm'
+                     }`}>
+                        <p>{msg.message}</p>
+                        <div className={`flex items-center mt-1.5 space-x-1 ${msg.isSelf ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                           <span className="text-[10px]">{msg.timestamp}</span>
+                           {msg.isSelf && <CheckCircle2 className="h-3 w-3" />}
+                        </div>
+                     </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div className="p-4 border-t border-border/50 bg-card/80 backdrop-blur-md">
+              <form onSubmit={sendMessage} className="flex items-center space-x-3">
+                 <input 
+                   type="text" 
+                   value={inputText}
+                   onChange={(e) => setInputText(e.target.value)}
+                   disabled={!isConnected}
+                   placeholder={isConnected ? "Type a message..." : "Connecting to socket..."}
+                   className="flex-1 bg-secondary/50 border border-border rounded-xl px-5 py-3.5 focus:outline-none focus:border-primary transition-colors disabled:opacity-50"
+                 />
+                 <button 
+                   type="submit" 
+                   disabled={!inputText.trim() || !isConnected}
+                   className="p-3.5 rounded-xl bg-primary text-primary-foreground disabled:opacity-50 hover:shadow-[0_0_20px_rgba(var(--primary),0.3)] transition-all"
+                 >
+                   <Send className="h-5 w-5" />
+                 </button>
+              </form>
+            </div>
+            
+          </div>
+        </main>
+      </div>
+    </div>
   );
 }

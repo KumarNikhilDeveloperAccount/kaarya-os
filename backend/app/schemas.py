@@ -28,6 +28,7 @@ class UserOut(BaseModel):
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
+    primary_role: Optional[str] = None
     bio: Optional[str] = None
     profile_picture: Optional[str] = None
     skills: Optional[str] = None
@@ -97,6 +98,9 @@ class TicketMessageOut(BaseModel):
 class TicketCreate(BaseModel):
     subject: str
     content: str # Initial message content
+    category: Optional[str] = None
+    sub_category: Optional[str] = None
+    screenshot_url: Optional[str] = None
 
 class TicketOut(BaseModel):
     id: int
@@ -104,6 +108,10 @@ class TicketOut(BaseModel):
     subject: str
     status: str
     priority: str
+    reference_number: Optional[str] = None
+    category: Optional[str] = None
+    sub_category: Optional[str] = None
+    screenshot_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     messages: list[TicketMessageOut] = []

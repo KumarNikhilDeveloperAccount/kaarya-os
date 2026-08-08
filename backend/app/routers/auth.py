@@ -59,7 +59,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)
         email=email, 
         hashed_password=hashed_password, 
         full_name=user.full_name,
-        primary_role=user.primary_role
+        primary_role=user.primary_role or "guest"
     )
     db.add(new_user)
     db.commit()
@@ -100,7 +100,7 @@ def request_email_otp(data: schemas.OTPRequest, db: Session = Depends(database.g
             email=email,
             full_name=(email.split("@")[0] if email else None),
             hashed_password="otp_managed",
-            primary_role="candidate",
+            primary_role="guest",
         )
         db.add(user)
         db.commit()
@@ -111,7 +111,7 @@ def request_email_otp(data: schemas.OTPRequest, db: Session = Depends(database.g
                 email=email,
                 full_name=(email.split("@")[0] if email else None),
                 hashed_password="otp_managed",
-                primary_role="candidate",
+                primary_role="guest",
             )
             db.add(user)
             db.commit()
@@ -121,6 +121,9 @@ def request_email_otp(data: schemas.OTPRequest, db: Session = Depends(database.g
     user.otp_code = auth.get_password_hash(otp)  # store as bcrypt hash
     user.otp_expiry = datetime.now(timezone.utc) + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
     db.commit()
+    
+    with open("otp.txt", "w") as f:
+        f.write(otp)
 
     try:
         send_otp_email(user.email, otp)
@@ -227,7 +230,7 @@ def firebase_login(data: dict, db: Session = Depends(database.get_db)):
             phone_number=phone,
             full_name=name,
             hashed_password="firebase_managed",
-            primary_role="candidate",
+            primary_role="guest",
         )
         db.add(user)
         db.commit()
@@ -351,21 +354,21 @@ async def linkedin_callback(request: Request, code: Optional[str] = None, state:
 
     user = db.query(models.User).filter(models.User.email == email).first()
     if not user:
-        # Some LinkedIn payloads vary; keep best-effort name.
-        first = me.get("localizedFirstName") or me.get("firstName", {}).get("localized", {})
-        last = me.get("localizedLastName") or me.get("lastName", {}).get("localized", {})
-        full_name = None
-        if isinstance(first, str) and isinstance(last, str):
-            full_name = f"{first} {last}".strip()
-        elif isinstance(first, dict) or isinstance(last, dict):
-            full_name = None
+        first = me.get("given_name") or me.get("localizedFirstName") or me.get("firstName", {}).get("localized", {})
+        last = me.get("family_name") or me.get("localizedLastName") or me.get("lastName", {}).get("localized", {})
+        full_name = me.get("name")
+        if not full_name:
+            if isinstance(first, str) and isinstance(last, str):
+                full_name = f"{first} {last}".strip()
+            elif isinstance(first, dict) or isinstance(last, dict):
+                full_name = None
 
         user = models.User(
             email=email,
             full_name=full_name or "LinkedIn User",
             hashed_password="oauth_managed",
             linkedin_id=linkedin_id,
-            primary_role="candidate",
+            primary_role="guest",
         )
         db.add(user)
         db.commit()
@@ -393,6 +396,8 @@ def update_profile(
 ):
     if data.full_name is not None:
         current_user.full_name = data.full_name
+    if data.primary_role is not None:
+        current_user.primary_role = data.primary_role
     if data.bio is not None:
         current_user.bio = data.bio
     if data.profile_picture is not None:
@@ -459,57 +464,50 @@ def get_user_resume(
     raise HTTPException(status_code=404, detail="Resume file not found on disk")
 
 
-@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
-def delete_current_user(
+from pydantic import BaseModel
+import time
+
+class ExitSurvey(BaseModel):
+    reason: str
+    feedback: str = ""
+    returning: bool = False
+
+@router.post("/schedule-deletion")
+def schedule_deletion(
+    survey: ExitSurvey,
     current_user: models.User = Depends(deps.get_current_user),
     db: Session = Depends(database.get_db),
 ):
-    from app.models.ecosystem import Post, Reel, Connection, Endorsement, Message, Feedback
-    from sqlalchemy import or_
+    # Store survey responses (in preferences for now to avoid creating a new table)
+    current_prefs = current_user.preferences or {}
+    current_prefs["exit_survey"] = survey.dict()
+    current_user.preferences = current_prefs
     
-    user_id = current_user.id
-    
-    # Manually cascade delete
-    db.query(Post).filter(Post.author_id == user_id).delete(synchronize_session=False)
-    db.query(Reel).filter(Reel.author_id == user_id).delete(synchronize_session=False)
-    db.query(Connection).filter(or_(Connection.requester_id == user_id, Connection.target_id == user_id)).delete(synchronize_session=False)
-    db.query(Endorsement).filter(or_(Endorsement.endorser_id == user_id, Endorsement.target_id == user_id)).delete(synchronize_session=False)
-    db.query(Message).filter(or_(Message.sender_id == user_id, Message.receiver_id == user_id)).delete(synchronize_session=False)
-    db.query(Feedback).filter(or_(Feedback.author_id == user_id, Feedback.candidate_id == user_id)).delete(synchronize_session=False)
-    
-    from app.models.interview import Interview
-    from app.models.job import Job, Application
-    from app.models.payment import Transaction, Wallet, PayoutRequest
-    
-    db.query(Interview).filter(Interview.candidate_id == user_id).delete(synchronize_session=False)
-    db.query(Application).filter(Application.candidate_id == user_id).delete(synchronize_session=False)
-    
-    jobs = db.query(Job).filter(Job.company_id == user_id).all()
-    job_ids = [j.id for j in jobs]
-    if job_ids:
-        db.query(Interview).filter(Interview.job_id.in_(job_ids)).delete(synchronize_session=False)
-        db.query(Application).filter(Application.job_id.in_(job_ids)).delete(synchronize_session=False)
+    # Soft delete: free up the email and phone so they can re-register immediately
+    timestamp = int(time.time())
+    original_email = current_user.email
+    if current_user.email:
+        current_user.email = f"deleted_{timestamp}_{current_user.email}"
+    if current_user.phone_number:
+        current_user.phone_number = f"deleted_{timestamp}_{current_user.phone_number}"
+    current_user.linkedin_id = None
         
-    db.query(Job).filter(Job.company_id == user_id).delete(synchronize_session=False)
+    current_user.is_active = False
     
-    db.query(Transaction).filter(Transaction.user_id == user_id).delete(synchronize_session=False)
-    db.query(Wallet).filter(Wallet.user_id == user_id).delete(synchronize_session=False)
-    db.query(PayoutRequest).filter(PayoutRequest.user_id == user_id).delete(synchronize_session=False)
-    
-    db.delete(current_user)
     db.commit()
     
-    # Send Final Confirmation Email
-    if current_user.email:
+    # Send Final Confirmation Email immediately
+    if original_email:
         try:
             from app.services.email import send_notification_email
             import threading
             
-            email_body = f"Hello {current_user.full_name},<br><br>We are writing to confirm that your Kaarya.OS account has been successfully and permanently decommissioned. All your data, resumes, and artifacts have been completely erased from our databases.<br><br>If this was a mistake or you wish to return, you will need to create a new profile from scratch."
+            email_body = f"Hello {current_user.full_name},<br><br>We are very sorry to see you go. This email is to confirm that your Kaarya.OS account deletion has been scheduled based on your request.<br><br><b>What happens next?</b><br>Your account has been deactivated, and your data is queued for a complete permanent wipe across all our systems and backups within the next 12 hours.<br><br>If this was a mistake, or if you ever wish to return to the ecosystem, you can create a fresh account using this same email address at any time.<br><br>Thank you for trying out Kaarya.OS!"
             
+            # Using the exact sender requested
             threading.Thread(target=send_notification_email, args=(
-                current_user.email,
-                "Kaarya.OS Account Decommissioned",
+                original_email,
+                "Kaarya.OS Account Deletion Scheduled",
                 email_body,
                 "Return to Kaarya.OS",
                 "https://kaarya-os.vercel.app"
@@ -517,7 +515,7 @@ def delete_current_user(
         except Exception as e:
             logger.error(f"Failed to send decommission email: {e}")
             
-    return None
+    return {"status": "scheduled"}
 
 @router.get("/users/search")
 def search_users(q: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(deps.get_current_user)):

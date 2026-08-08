@@ -7,7 +7,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
+import { useAuth } from '@/contexts/AuthContext';
+
 export default function CollegeDashboard() {
+  const { user } = useAuth();
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,7 +61,10 @@ export default function CollegeDashboard() {
     <div className="space-y-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
          <div>
-            <h1 className="text-5xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-fuchsia-500 to-indigo-600">Institutional Hub</h1>
+            <h1 className="text-5xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-fuchsia-500 to-indigo-600 flex items-center">
+              Institutional Hub
+              {user?.is_identity_verified && <Sparkles className="ml-4 h-8 w-8 text-blue-500 animate-pulse" title="Verified Authentic" />}
+            </h1>
             <p className="text-muted-foreground mt-2 text-lg font-medium tracking-tight">Managing <span className="text-foreground font-bold">{data?.stats?.total_students || 0} scholars</span>. Placement integrity: <span className="text-emerald-500 font-bold">{data?.stats?.placements || '0%'}</span>.</p>
          </div>
          <div className="flex space-x-3">
@@ -78,6 +84,15 @@ export default function CollegeDashboard() {
              </button>
          </div>
       </div>
+
+      {user && !user.is_identity_verified && (
+        <div className="w-full bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-center justify-between text-amber-500">
+           <div className="flex items-center space-x-3">
+              <Sparkles className="h-5 w-5" />
+              <p className="text-sm font-bold">Your institution profile is pending manual verification. Please ensure you have uploaded your Registration Document during onboarding.</p>
+           </div>
+        </div>
+      )}
 
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

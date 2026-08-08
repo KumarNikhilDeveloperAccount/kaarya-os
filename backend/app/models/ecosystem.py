@@ -20,6 +20,15 @@ class Post(Base):
 
     author = relationship("User", foreign_keys=[author_id])
 
+class PostComment(Base):
+    __tablename__ = "post_comments"
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), nullable=False)
+    author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    text = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    author = relationship("User", foreign_keys=[author_id])
+
 class Reel(Base):
     __tablename__ = "reels"
 
@@ -35,6 +44,15 @@ class Reel(Base):
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
+    author = relationship("User", foreign_keys=[author_id])
+
+class ReelComment(Base):
+    __tablename__ = "reel_comments"
+    id = Column(Integer, primary_key=True, index=True)
+    reel_id = Column(Integer, ForeignKey("reels.id", ondelete="CASCADE"), nullable=False)
+    author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    text = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     author = relationship("User", foreign_keys=[author_id])
 
 class Connection(Base):

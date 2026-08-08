@@ -71,7 +71,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.routers import auth, jobs, sandbox, interviews, payments, admin, support, ai, dashboard, boomi, ecosystem, upload, coding, payment, files, messages, salary
+from app.routers import auth, jobs, sandbox, interviews, payments, admin, support, ai, dashboard, boomi, ecosystem, upload, coding, payment, files, messages, salary, candidates, chat, lens, negotiate, oracle
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(jobs.router, prefix="/api/jobs", tags=["jobs"])
@@ -90,6 +90,11 @@ app.include_router(payment.router, prefix="/api/payment", tags=["payment"])
 app.include_router(files.router, prefix="/api/files", tags=["files"])
 app.include_router(messages.router, prefix="/api/messages", tags=["messages"])
 app.include_router(salary.router, prefix="/api/salary", tags=["salary"])
+app.include_router(candidates.router, prefix="/api/candidates", tags=["candidates"])
+app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
+app.include_router(lens.router, prefix="/api/lens", tags=["lens"])
+app.include_router(negotiate.router, prefix="/api/negotiate", tags=["negotiate"])
+app.include_router(oracle.router, prefix="/api/oracle", tags=["oracle"])
 
 # Mount uploads directory to serve static files
 import os
@@ -145,3 +150,42 @@ def startup_db_migration():
             logger.info("Database wiped and recreated successfully.")
         except Exception as e2:
             logger.error(f"Failed to wipe and recreate: {e2}")
+
+from pydantic import BaseModel
+class DirectSupportReply(BaseModel):
+    reference_number: str
+    worknotes: str
+    status: str
+    user_email: str
+
+from app import models, database
+from fastapi import BackgroundTasks, Depends
+from sqlalchemy.orm import Session
+from app.services import email_service
+
+@app.post("/api/support/internal/reply")
+def direct_receive_support_desk_reply(
+    reply: DirectSupportReply,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(database.get_db)
+):
+    ticket = db.query(models.Ticket).filter(models.Ticket.reference_number == reply.reference_number).first()
+    if ticket:
+        ticket.status = reply.status
+        new_msg = models.TicketMessage(
+            ticket_id=ticket.id,
+            sender_id=1,
+            content=reply.worknotes
+        )
+        db.add(new_msg)
+        db.commit()
+
+    background_tasks.add_task(
+        email_service.send_ticket_updated_email,
+        reply.user_email,
+        reply.reference_number,
+        reply.worknotes,
+        reply.status
+    )
+    return {"status": "ok"}
+

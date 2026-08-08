@@ -54,6 +54,26 @@ def send_message(
     db.add(db_msg)
     db.commit()
     db.refresh(db_msg)
+    
+    # Send email notification
+    if receiver.email:
+        try:
+            from app.services.email import send_notification_email
+            import threading
+            import logging
+            
+            email_body = f"Hello {receiver.full_name or 'User'},<br><br>You have received a new message from {current_user.full_name or 'Someone'} on Kaarya.OS:<br><br><i>\"{msg.content}\"</i><br><br>Log in to reply."
+            
+            threading.Thread(target=send_notification_email, args=(
+                receiver.email,
+                f"New Message from {current_user.full_name or 'Someone'}",
+                email_body,
+                "View Message",
+                "https://kaarya-os.vercel.app/messages"
+            )).start()
+        except Exception as e:
+            logging.getLogger(__name__).error(f"Failed to send message email: {e}")
+            
     return db_msg
 
 @router.get("", response_model=List[MessageResponse])
@@ -81,3 +101,20 @@ def get_messages(
         ).order_by(Message.created_at.desc()).all()
         
     return messages
+
+@router.patch("/{user_id}/read")
+def mark_messages_read(
+    user_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    """Mark all messages from user_id to current_user as read"""
+    unread_msgs = db.query(Message).filter(
+        and_(Message.sender_id == user_id, Message.receiver_id == current_user.id, Message.is_read == False)
+    ).all()
+    
+    for m in unread_msgs:
+        m.is_read = True
+        
+    db.commit()
+    return {"message": f"Marked {len(unread_msgs)} messages as read"}

@@ -20,7 +20,10 @@ const loadRazorpayScript = () => {
   })
 }
 
+import { useAuth } from '@/contexts/AuthContext';
+
 export default function CompanyDashboard() {
+  const { user } = useAuth();
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newJob, setNewJob] = useState({ title: '', description: '', location: '', salary_range: '' });
@@ -164,7 +167,10 @@ export default function CompanyDashboard() {
     <div className="space-y-8 animate-in fade-in duration-700 slide-in-from-bottom-4 relative">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
          <div className="relative">
-            <h1 className="text-5xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-primary via-blue-400 to-indigo-500">Hiring Console</h1>
+            <h1 className="text-5xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-primary via-blue-400 to-indigo-500 flex items-center">
+               Hiring Console
+               {user?.is_identity_verified && <Sparkles className="ml-4 h-8 w-8 text-blue-500 animate-pulse" title="Verified Authentic" />}
+            </h1>
             <p className="text-muted-foreground mt-2 text-lg font-medium">Your decision engine is calibrated. <span className="text-secondary-foreground font-bold">{candidates.length} candidates</span> ready for review.</p>
          </div>
          <button 
@@ -175,6 +181,15 @@ export default function CompanyDashboard() {
             <span className="uppercase tracking-widest text-xs">Create Requisition</span>
          </button>
       </div>
+
+      {user && !user.is_identity_verified && (
+        <div className="w-full bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-center justify-between text-amber-500">
+           <div className="flex items-center space-x-3">
+              <Zap className="h-5 w-5" />
+              <p className="text-sm font-bold">Your company profile is pending manual verification. Please ensure you have uploaded your Registration Document during onboarding.</p>
+           </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
          <div className="lg:col-span-1 space-y-6">

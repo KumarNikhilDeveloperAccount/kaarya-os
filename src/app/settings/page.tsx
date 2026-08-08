@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Shield, Bell, Layout, Eye, Trash2, 
   ChevronRight, Camera, Smartphone, Mail, Globe, 
-  Lock, LogOut, CheckCircle2, AlertCircle
+  Lock, LogOut, CheckCircle2, AlertCircle, Code
 } from 'lucide-react';
 import { useTheme } from '@/components/layout/ThemeProvider';
 import { useRouter } from 'next/navigation';
@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
+
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -338,35 +339,97 @@ function SecuritySettings() {
 function AccountManagement() {
   const { logout } = useAuth();
   const [showConfirm, setShowConfirm] = useState(false);
+  const [step, setStep] = useState(1);
+  const [survey, setSurvey] = useState({ reason: '', feedback: '', returning: false });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDecommission = async () => {
+      setIsDeleting(true);
       try {
-        await api.delete('/api/auth/me');
+        await api.post('/api/auth/schedule-deletion', survey);
         clearAllData();
         logout();
-        toast.success("Account Decommissioned.");
+        toast.success("Account Deletion Scheduled. Check your email.");
         setTimeout(() => {
           window.location.href = '/';
-        }, 1000);
+        }, 1500);
       } catch (e) {
         console.error("Decommission error:", e);
         toast.error("Failed to decommission account. Please try again or contact support.");
         setShowConfirm(false);
+        setIsDeleting(false);
       }
   };
 
   return (
     <div className="space-y-10 relative">
        {showConfirm && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-background/90 backdrop-blur-sm rounded-[2rem]">
-             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-card border border-red-500/50 shadow-2xl rounded-3xl p-8 max-w-md w-full text-center">
-                 <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                 <h3 className="text-xl font-black uppercase tracking-widest mb-2 text-red-500">Account Deletion</h3>
-                 <p className="text-sm text-muted-foreground mb-6">Are you absolutely sure you want to permanently delete your global account and erase all local data? This cannot be undone.</p>
-                 <div className="flex gap-4">
-                    <button onClick={() => setShowConfirm(false)} className="flex-1 py-3 bg-secondary rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-muted transition-colors">Cancel</button>
-                    <button onClick={handleDecommission} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-red-500/20 hover:bg-red-600 transition-colors">Delete Account</button>
-                 </div>
+          <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-background/90 backdrop-blur-md rounded-[2rem]">
+             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-card border border-red-500/50 shadow-2xl rounded-3xl p-8 max-w-md w-full text-left relative overflow-hidden">
+                 
+                 {step === 1 && (
+                   <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
+                     <h3 className="text-xl font-black uppercase tracking-widest mb-4 text-primary">Exit Survey (1/3)</h3>
+                     <p className="text-sm font-bold mb-4 text-foreground">Why are you leaving Kaarya.OS?</p>
+                     <div className="space-y-2 mb-6">
+                       {['Found a job', 'Not enough features', 'Too complicated', 'Privacy concerns', 'Other'].map(r => (
+                         <label key={r} className="flex items-center space-x-3 p-3 border border-border rounded-xl cursor-pointer hover:bg-secondary transition-colors">
+                           <input type="radio" name="reason" value={r} onChange={(e) => setSurvey({...survey, reason: e.target.value})} className="accent-primary" />
+                           <span className="text-sm font-medium">{r}</span>
+                         </label>
+                       ))}
+                     </div>
+                     <div className="flex gap-4">
+                        <button onClick={() => setShowConfirm(false)} className="flex-1 py-3 bg-secondary rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-muted transition-colors">Cancel</button>
+                        <button onClick={() => setStep(2)} disabled={!survey.reason} className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold uppercase tracking-widest text-[10px] hover:scale-105 disabled:opacity-50 transition-all">Next</button>
+                     </div>
+                   </motion.div>
+                 )}
+
+                 {step === 2 && (
+                   <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
+                     <h3 className="text-xl font-black uppercase tracking-widest mb-4 text-primary">Exit Survey (2/3)</h3>
+                     <p className="text-sm font-bold mb-4 text-foreground">What could we have done better?</p>
+                     <textarea 
+                       className="w-full bg-secondary border border-transparent focus:border-primary/30 rounded-xl p-4 text-sm font-medium outline-none h-32 resize-none mb-6"
+                       placeholder="Please share any feedback..."
+                       value={survey.feedback}
+                       onChange={(e) => setSurvey({...survey, feedback: e.target.value})}
+                     />
+                     <div className="flex gap-4">
+                        <button onClick={() => setStep(1)} className="flex-1 py-3 bg-secondary rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-muted transition-colors">Back</button>
+                        <button onClick={() => setStep(3)} className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold uppercase tracking-widest text-[10px] hover:scale-105 transition-all">Next</button>
+                     </div>
+                   </motion.div>
+                 )}
+
+                 {step === 3 && (
+                   <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="text-center">
+                     <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                     <h3 className="text-xl font-black uppercase tracking-widest mb-2 text-red-500">Confirm Deletion</h3>
+                     <p className="text-sm text-muted-foreground mb-4">Would you consider returning in the future?</p>
+                     <div className="flex justify-center gap-4 mb-8">
+                       <label className="flex items-center space-x-2 cursor-pointer">
+                         <input type="radio" name="returning" onChange={() => setSurvey({...survey, returning: true})} className="accent-primary" />
+                         <span className="text-sm font-bold">Yes</span>
+                       </label>
+                       <label className="flex items-center space-x-2 cursor-pointer">
+                         <input type="radio" name="returning" onChange={() => setSurvey({...survey, returning: false})} className="accent-primary" />
+                         <span className="text-sm font-bold">No</span>
+                       </label>
+                     </div>
+                     <p className="text-xs text-red-500/80 font-bold mb-6 bg-red-500/10 p-4 rounded-xl border border-red-500/20">
+                       By clicking below, your account will be instantly deactivated. All data will be permanently wiped within 12 hours.
+                     </p>
+                     <div className="flex gap-4">
+                        <button onClick={() => setStep(2)} className="flex-1 py-3 bg-secondary rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-muted transition-colors">Back</button>
+                        <button onClick={handleDecommission} disabled={isDeleting} className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-red-500/20 hover:bg-red-600 disabled:opacity-50 transition-colors">
+                           {isDeleting ? 'Deleting...' : 'Delete Permanently'}
+                        </button>
+                     </div>
+                   </motion.div>
+                 )}
+                 
              </motion.div>
           </div>
        )}
@@ -381,10 +444,10 @@ function AccountManagement() {
        <div className="p-8 border border-red-500/30 bg-red-500/5 rounded-3xl">
           <h4 className="text-xl font-bold mb-2">Delete Global Account</h4>
           <p className="text-sm text-muted-foreground mb-6">
-            This will permanently delete your account, wipe your profiles, delete your resume, and clear all local storage.
+            This will deactivate your account and schedule a permanent data wipe across all our systems. 
           </p>
           <button 
-            onClick={() => setShowConfirm(true)}
+            onClick={() => { setStep(1); setShowConfirm(true); }}
             className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-red-500/20"
           >
              Yes, Delete Account

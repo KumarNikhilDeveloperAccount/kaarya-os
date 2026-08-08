@@ -1,557 +1,308 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FileText, User, Briefcase, GraduationCap, 
-  Settings, ChevronRight, CheckCircle2, 
-  Plus, Trash2, Mail, Globe, MapPin, 
-  Sparkles, Bot, Save, Download, Play, Upload
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { saveProfileData, getProfileData } from '@/lib/store';
-import { api } from '@/lib/api';
+import { UploadCloud, FileText, CheckCircle2, User, Briefcase, GraduationCap, Code, Loader2, Sparkles, X } from 'lucide-react';
+import Topbar from '@/components/layout/Topbar';
 
-export default function ResumePage() {
-  const [activeStep, setActiveStep] = useState(0);
-  const [isParsing, setIsParsing] = useState(false);
-  
-  // Real State to render AI extraction
-  const [jd, setJd] = useState('Senior Software Engineer focusing on Backend Architecture, Python, Next.js, and Cloud Infrastructure.');
-  const [rawResume, setRawResume] = useState('Kumar Nikhil. Founded NikVerse AI. 4 years of experience building massive distributed systems using FastAPI, Postgres, and NextJS. Graduated Stanford 2024.');
-  const [aiOpinion, setAiOpinion] = useState<any>(null);
-  const [parsedData, setParsedData] = useState<any>({
-    personal: { name: '', email: '', location: '', objective: '' },
-    experience: [],
-    skills: [],
-    education: []
-  });
+export default function ResumeParserPage() {
+  const [file, setFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [parsedData, setParsedData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const steps = [
-    { id: 'setup', name: 'Context', icon: Play },
-    { id: 'personal', name: 'Identity', icon: User },
-    { id: 'experience', name: 'Legacy', icon: Briefcase },
-    { id: 'skills', name: 'Specialties', icon: Settings },
-    { id: 'education', name: 'Foundation', icon: GraduationCap }
-  ];
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
 
-  const handleParse = async () => {
-    if (!jd || !rawResume) {
-       toast.error("Both Job Description and Resume Text are required.");
-       return;
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileSelection(e.dataTransfer.files[0]);
     }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFileSelection(e.target.files[0]);
+    }
+  };
+
+  const handleFileSelection = (selectedFile: File) => {
+    if (selectedFile.type !== 'application/pdf') {
+      setError("Please upload a PDF file.");
+      return;
+    }
+    setError(null);
+    setFile(selectedFile);
+  };
+
+  const handleProcessResume = async () => {
+    if (!file) return;
     
-    setIsParsing(true);
+    setIsProcessing(true);
+    setError(null);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
     try {
-      const response = await api.post('/api/ai/parse-resume', {
-        resume_text: rawResume,
-        job_description: jd
+      // Assuming backend runs on 8000
+      const response = await fetch('http://localhost:8000/api/candidates/upload-resume', {
+        method: 'POST',
+        body: formData,
       });
       
-      const payload = response.data;
+      const data = await response.json();
       
-      setParsedData(payload);
-      setAiOpinion(payload.rit_analysis);
-      toast.success('Rit AI Analysis Complete');
-      setActiveStep(1); // Move to Identity Step
+      if (!response.ok) {
+        throw new Error(data.detail || "Failed to process resume");
+      }
       
+      setParsedData(data.data);
     } catch (err: any) {
-      toast.error("AI Parsing failed");
+      setError(err.message || "An unexpected error occurred.");
     } finally {
-      setIsParsing(false);
+      setIsProcessing(false);
     }
   };
 
-  const handleFinalize = async () => {
-    toast.success("Portfolio integration initiated!");
-    const currentProfile = getProfileData('candidate') || {};
-    
-    const updatedProfile = {
-       ...currentProfile,
-       fullName: parsedData.personal.name,
-       location: parsedData.personal.location,
-       bio: parsedData.personal.objective,
-       skills: parsedData.skills,
-    };
-    saveProfileData('candidate', updatedProfile);
-    
-    try {
-      await api.patch('/api/auth/me', {
-        full_name: parsedData.personal.name,
-        bio: parsedData.personal.objective,
-        skills: Array.isArray(parsedData.skills) ? parsedData.skills.join(',') : '',
-        resume_data: parsedData
-      });
-      toast.success("Saved to database successfully.");
-    } catch (err) {
-      console.warn("Backend sync skipped (User likely offline/unauthenticated). Saved locally.");
-      // Do not throw error toast if it's just 401 unauthenticated
-      // Just rely on the local storage save which succeeded above
-    }
-    
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 1000);
+  const resetState = () => {
+    setFile(null);
+    setParsedData(null);
+    setError(null);
   };
 
-  const handleDownload = async () => {
-    toast.success("Preparing PDF...", { duration: 2000 });
-    setTimeout(() => {
-       window.print();
-    }, 500);
+  const fadeUp = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-      <div className="flex flex-col lg:flex-row gap-12 print:block">
-        {/* Builder Panel */}
-        <div className="flex-1 space-y-10 print:hidden">
-          <div className="flex items-center justify-between">
-             <div className="flex items-center space-x-3 text-primary">
-                <FileText className="h-8 w-8" />
-                <div>
-                   <h1 className="text-3xl font-black tracking-tight uppercase">Resume Architect</h1>
-                   <p className="text-[10px] font-black tracking-[0.3em] text-muted-foreground/60 uppercase">Powered by Rit.AI v4.2</p>
-                </div>
-             </div>
-             
-             {activeStep > 0 && (
-                 <button 
-                   onClick={handleParse}
-                   disabled={isParsing}
-                   className="flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
-                 >
-                    {isParsing ? <Bot className="h-4 w-4 animate-bounce" /> : <Sparkles className="h-4 w-4" />}
-                    <span>{isParsing ? 'Rit Analyzing...' : 'Re-Extract (AI)'}</span>
-                 </button>
-             )}
-          </div>
-
-          {/* Stepper */}
-          <div className="flex items-center justify-between bg-card border border-border p-2 rounded-[2rem] shadow-xl">
-             {steps.map((step, idx) => (
-               <button 
-                 key={step.id}
-                 onClick={() => setActiveStep(idx)}
-                 className={`flex-1 flex items-center justify-center space-x-3 py-4 rounded-[1.5rem] transition-all ${
-                   activeStep === idx 
-                   ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-105 z-10' 
-                   : 'text-muted-foreground hover:bg-secondary'
-                 }`}
-               >
-                  <step.icon className={`h-5 w-5 ${activeStep === idx ? 'animate-pulse' : ''}`} />
-                  <span className="text-[10px] font-black uppercase tracking-widest hidden md:inline">{step.name}</span>
-                  {idx < activeStep && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
-               </button>
-             ))}
-          </div>
-
-          {/* Form Area */}
-          <div className="bg-card border border-border rounded-[2.5rem] shadow-2xl p-10 min-h-[500px] flex flex-col relative overflow-hidden">
-             {isParsing && (
-                <div className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center">
-                   <Bot className="h-16 w-16 text-primary animate-bounce mb-4" />
-                   <p className="text-xl font-black uppercase tracking-widest text-primary">Rit is Thinking...</p>
-                   <p className="text-xs text-muted-foreground mt-2 font-bold tracking-widest uppercase">Executing Deep Semantic Extraction</p>
-                </div>
-             )}
-
-             <AnimatePresence mode="wait">
-                {activeStep === 0 && (
-                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
-                      <div className="space-y-3">
-                         <label className="text-[10px] font-black uppercase tracking-[0.3em] text-primary ml-2">Target Job Description</label>
-                         <textarea 
-                            value={jd} onChange={(e) => setJd(e.target.value)}
-                            className="w-full bg-secondary border border-transparent focus:border-primary/30 rounded-3xl p-6 text-sm font-medium focus:ring-8 focus:ring-primary/5 outline-none transition-all h-24 resize-none placeholder:text-muted-foreground/30" 
-                            placeholder="Paste the Job Description here..." 
-                         />
-                      </div>
-                      <div className="space-y-3">
-                         <label className="text-[10px] font-black uppercase tracking-[0.3em] text-primary ml-2 flex justify-between items-center">
-                            <span>Raw Resume Content</span>
-                            <button 
-                                onClick={() => document.getElementById('resume-pdf-upload')?.click()}
-                                className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
-                            >
-                                <Upload className="h-3 w-3" /> Or Upload PDF
-                            </button>
-                            <input 
-                                id="resume-pdf-upload" 
-                                type="file" 
-                                accept="application/pdf" 
-                                className="hidden" 
-                                onChange={async (e) => {
-                                    if (e.target.files && e.target.files[0]) {
-                                        setIsParsing(true);
-                                        try {
-                                            const formData = new FormData();
-                                            formData.append('file', e.target.files[0]);
-                                            formData.append('job_description', jd);
-                                            const response = await api.post('/api/ai/parse-pdf', formData, {
-                                                headers: { 'Content-Type': 'multipart/form-data' }
-                                            });
-                                            const payload = response.data;
-                                            setParsedData(payload);
-                                            setAiOpinion(payload.rit_analysis);
-                                            toast.success('PDF Analyzed via Rit AI');
-                                            setActiveStep(1);
-                                        } catch (err) {
-                                            toast.error('Failed to parse PDF.');
-                                        } finally {
-                                            setIsParsing(false);
-                                        }
-                                    }
-                                }}
-                            />
-                         </label>
-                         <textarea 
-                            value={rawResume} onChange={(e) => setRawResume(e.target.value)}
-                            className="w-full bg-secondary border border-transparent focus:border-primary/30 rounded-3xl p-6 text-sm font-medium focus:ring-8 focus:ring-primary/5 outline-none transition-all h-48 resize-none placeholder:text-muted-foreground/30" 
-                            placeholder="Paste candiate text here..." 
-                         />
-                      </div>
-                      <button 
-                        onClick={handleParse} disabled={isParsing}
-                        className="w-full h-16 bg-gradient-to-r from-primary to-blue-600 text-white font-black rounded-2xl shadow-xl shadow-primary/25 hover:scale-[1.02] active:scale-98 transition-all flex items-center justify-center space-x-3 uppercase tracking-widest text-sm disabled:opacity-50"
-                      >
-                         <Sparkles className="h-5 w-5" />
-                         <span>Deploy Rit Engine</span>
-                      </button>
-                   </motion.div>
-                )}
-                {activeStep === 1 && <PersonalInfoForm data={parsedData.personal} onChange={(val: any) => setParsedData({...parsedData, personal: val})} />}
-                {activeStep === 2 && <ExperienceForm data={parsedData.experience} onChange={(val: any) => setParsedData({...parsedData, experience: val})} />}
-                {activeStep === 3 && <SkillsForm data={parsedData.skills} onChange={(val: any) => setParsedData({...parsedData, skills: val})} />}
-                {activeStep === 4 && <EducationForm data={parsedData.education} onChange={(val: any) => setParsedData({...parsedData, education: val})} />}
-             </AnimatePresence>
-
-             {activeStep > 0 && (
-                <div className="mt-auto pt-10 border-t border-border/50 flex justify-between items-center">
-                    <button 
-                    disabled={activeStep === 0}
-                    onClick={() => setActiveStep(prev => prev - 1)}
-                    className="px-6 py-3 rounded-xl border border-border text-[10px] font-black uppercase tracking-widest hover:bg-secondary transition-all disabled:opacity-20"
-                    >
-                    Previous Phase
-                    </button>
-                    <div className="flex space-x-3">
-                    <button className="p-3 rounded-xl bg-secondary hover:bg-muted text-muted-foreground transition-all">
-                        <Save className="h-5 w-5" />
-                    </button>
-                    <button 
-                        onClick={() => {
-                          if (activeStep < 4) setActiveStep(prev => prev + 1);
-                          else handleFinalize();
-                        }}
-                        className="px-10 py-3 rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
-                    >
-                        {activeStep === 4 ? 'Finalize Portfolio' : 'Next Integration'}
-                    </button>
-                    </div>
-                </div>
-             )}
-          </div>
-        </div>
-
-        {/* Intelligence / Preview Preview */}
-        <div className="lg:w-[400px] space-y-8 print:w-full print:m-0 print:p-0">
-           {aiOpinion ? (
-              <div className="p-8 bg-gradient-to-br from-primary via-blue-600 to-indigo-600 rounded-[2.5rem] text-white shadow-[0_20px_50px_rgba(59,130,246,0.3)] print:hidden">
-                 <div className="flex items-start justify-between mb-8">
-                    <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-xl border border-white/20">
-                       <Bot className="h-6 w-6" />
-                    </div>
-                    <div className="h-10 w-10 flex items-center justify-center rounded-full bg-white/10 font-black text-xs border border-white/20">
-                       {aiOpinion.fit_score || 'N/A'}
-                    </div>
-                 </div>
-                 <h3 className="text-2xl font-black tracking-tight mb-2 uppercase">Rit.AI Opinion</h3>
-                 <p className="text-sm font-medium text-white/80 leading-relaxed mb-6">
-                   {aiOpinion.summary || "Analysis perfectly mapped."}
-                 </p>
-                 <div className="space-y-4">
-                    <div className="p-4 bg-white/10 rounded-2xl backdrop-blur-md border border-white/10 space-y-3">
-                       <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                          <span>ATS Match Check</span>
-                          <span>{aiOpinion.fit_score || 0}%</span>
-                       </div>
-                       <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                          <motion.div initial={{ width: 0 }} animate={{ width: `${aiOpinion.fit_score || 0}%` }} className="h-full bg-emerald-400" />
-                       </div>
-                    </div>
-                    
-                    {aiOpinion.missing_keywords && aiOpinion.missing_keywords.length > 0 && (
-                       <div className="p-4 bg-red-500/20 border border-red-500/30 rounded-2xl">
-                          <p className="text-[10px] font-black uppercase tracking-widest mb-2 text-red-200">Missing Critical Keywords</p>
-                          <div className="flex flex-wrap gap-2">
-                             {aiOpinion.missing_keywords.map((k: string) => (
-                               <span key={k} className="px-2 py-1 bg-red-500/30 rounded text-[10px] font-bold">{k}</span>
-                             ))}
-                          </div>
-                       </div>
-                    )}
-                 </div>
-              </div>
-           ) : (
-              <div className="p-8 border border-dashed border-border rounded-[2.5rem] flex flex-col items-center justify-center h-[300px] text-center bg-card/50 print:hidden">
-                 <Bot className="h-10 w-10 text-muted-foreground/30 mb-4" />
-                 <p className="text-xs uppercase font-black tracking-widest text-muted-foreground">Awaiting Input Context</p>
-              </div>
-           )}
-
-           <div className="relative group cursor-zoom-in">
-              <div className="absolute inset-0 bg-primary/20 rounded-[2.5rem] blur-2xl group-hover:blur-3xl transition-all print:hidden" />
-              <div id="resume-preview" className="relative bg-white text-black p-8 rounded-[2rem] aspect-[1/1.4] shadow-2xl scale-95 group-hover:scale-100 transition-all duration-700">
-                 <div className="border-b-2 border-primary pb-4 mb-4">
-                    <h4 className="text-xl font-black uppercase tracking-tight text-black">{parsedData.personal.name || 'Candidate Name'}</h4>
-                    <p className="text-[10px] font-medium text-gray-600">
-                      {parsedData.personal.email} {parsedData.personal.location ? `• ${parsedData.personal.location}` : ''}
-                    </p>
-                    <p className="text-[8px] font-black text-primary uppercase tracking-[0.2em] mt-1">AI Structured Format</p>
-                 </div>
-                 <div className="space-y-4 text-left overflow-y-auto max-h-[calc(100%-80px)]">
-                    {parsedData.personal.objective && (
-                      <div className="space-y-1">
-                         <h5 className="text-[10px] font-black uppercase tracking-widest text-black">Summary</h5>
-                         <p className="text-[9px] leading-relaxed text-gray-700">{parsedData.personal.objective}</p>
-                      </div>
-                    )}
-                    {parsedData.experience && parsedData.experience.length > 0 && (
-                      <div className="space-y-2">
-                         <h5 className="text-[10px] font-black uppercase tracking-widest text-black border-b border-gray-200 pb-1">Experience</h5>
-                         {parsedData.experience.map((exp: any, i: number) => (
-                           <div key={i} className="mb-2">
-                              <div className="flex justify-between items-baseline">
-                                 <strong className="text-[9px] text-black uppercase tracking-wide">{exp.title}</strong>
-                                 <span className="text-[8px] text-gray-500">{exp.duration}</span>
-                              </div>
-                              <div className="text-[8px] font-medium text-primary mb-1">{exp.company}</div>
-                              <p className="text-[8px] text-gray-700 leading-tight">{exp.description}</p>
-                           </div>
-                         ))}
-                      </div>
-                    )}
-                    {parsedData.education && parsedData.education.length > 0 && (
-                      <div className="space-y-2">
-                         <h5 className="text-[10px] font-black uppercase tracking-widest text-black border-b border-gray-200 pb-1">Education</h5>
-                         {parsedData.education.map((edu: any, i: number) => (
-                           <div key={i}>
-                              <div className="flex justify-between items-baseline">
-                                 <strong className="text-[9px] text-black uppercase tracking-wide">{edu.degree}</strong>
-                                 <span className="text-[8px] text-gray-500">{edu.year}</span>
-                              </div>
-                              <div className="text-[8px] text-gray-700">{edu.institution}</div>
-                           </div>
-                         ))}
-                      </div>
-                    )}
-                    {parsedData.skills && parsedData.skills.length > 0 && (
-                      <div className="space-y-2">
-                         <h5 className="text-[10px] font-black uppercase tracking-widest text-black border-b border-gray-200 pb-1">Skills</h5>
-                         <p className="text-[8px] text-gray-700">{parsedData.skills.join(' • ')}</p>
-                      </div>
-                    )}
-                 </div>
-                 <button 
-                    onClick={handleDownload}
-                    className="absolute bottom-6 left-1/2 -translate-x-1/2 p-3 bg-black text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 active:scale-95"
-                 >
-                    <Download className="h-5 w-5" />
-                 </button>
-              </div>
+    <div className="min-h-screen bg-background">
+      <Topbar />
+      
+      <main className="max-w-5xl mx-auto px-6 py-12">
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} className="space-y-4 text-center mb-12">
+           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 mb-4">
+             <Sparkles className="h-4 w-4" />
+             <span className="text-xs font-bold uppercase tracking-wider">Gemini 1.5 Intelligence</span>
            </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+           <h1 className="text-4xl md:text-5xl font-black tracking-tight">AI Resume Parser</h1>
+           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+             Upload your resume and watch our intelligent engine instantly extract your career DNA.
+           </p>
+        </motion.div>
 
-function PersonalInfoForm({ data, onChange }: any) {
-  const handleChange = (field: string, val: string) => {
-    onChange({ ...data, [field]: val });
-  };
-  return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <InputGroup label="Full Portfolio Identity" placeholder="Jane Doe" icon={User} val={data.name} onChange={(val: string) => handleChange('name', val)} />
-          <InputGroup label="Primary Digital Reach" placeholder="jane@example.com" icon={Mail} val={data.email} onChange={(val: string) => handleChange('email', val)} />
-          <InputGroup label="Global Location" placeholder="San Francisco, CA" icon={MapPin} val={data.location} onChange={(val: string) => handleChange('location', val)} />
-          <InputGroup label="Digital Network" placeholder="github.com/janedoe" icon={Globe} val="" onChange={() => {}} />
-       </div>
-       <div className="space-y-3">
-          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-2">Legacy Overview</label>
-          <textarea 
-            value={data.objective || ''}
-            onChange={(e) => handleChange('objective', e.target.value)}
-            className="w-full bg-secondary border border-transparent focus:border-primary/30 rounded-3xl p-6 text-sm font-medium focus:ring-8 focus:ring-primary/5 outline-none transition-all h-32 resize-none" 
-          />
-       </div>
-    </motion.div>
-  );
-}
+        <AnimatePresence mode="wait">
+          {!parsedData ? (
+            <motion.div 
+              key="upload-zone"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="max-w-3xl mx-auto"
+            >
+              <div 
+                className={`relative border-2 border-dashed rounded-3xl p-12 text-center transition-all duration-300 ${isDragging ? 'border-primary bg-primary/5 shadow-[0_0_50px_rgba(var(--primary),0.1)]' : 'border-border/50 bg-secondary/10 hover:border-primary/50'}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  accept=".pdf" 
+                  className="hidden" 
+                />
+                
+                {isProcessing ? (
+                  <div className="flex flex-col items-center justify-center space-y-6 py-8">
+                    <div className="relative">
+                       <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+                       <Loader2 className="h-16 w-16 text-primary animate-spin relative z-10" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-2xl font-bold">Decoding your professional journey...</h3>
+                      <p className="text-muted-foreground">Extracting skills, experience, and education via AI</p>
+                    </div>
+                  </div>
+                ) : file ? (
+                  <div className="flex flex-col items-center justify-center space-y-6 py-8">
+                    <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
+                      <FileText className="h-10 w-10 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold">{file.name}</h3>
+                      <p className="text-sm text-muted-foreground mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                    <div className="flex space-x-4">
+                       <button onClick={resetState} className="px-6 py-3 rounded-xl border border-border bg-background hover:bg-secondary font-medium transition-colors">
+                         Cancel
+                       </button>
+                       <button onClick={handleProcessResume} className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold hover:shadow-[0_0_30px_rgba(var(--primary),0.3)] transition-all">
+                         Analyze Resume
+                       </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center space-y-6 py-12">
+                    <div className="h-20 w-20 rounded-2xl bg-secondary flex items-center justify-center border border-border group-hover:scale-110 transition-transform">
+                      <UploadCloud className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold">Drag & drop your resume</h3>
+                      <p className="text-sm text-muted-foreground mt-2">Only PDF files are supported up to 5MB</p>
+                    </div>
+                    <button onClick={() => fileInputRef.current?.click()} className="px-8 py-3 rounded-xl bg-foreground text-background font-bold hover:scale-105 transition-transform shadow-xl">
+                      Browse Files
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              {error && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-center text-sm font-medium">
+                  {error}
+                </motion.div>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="results"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+            >
+              {/* Left Column: Personal Info & Skills */}
+              <div className="space-y-8">
+                {/* Profile Card */}
+                <div className="p-6 rounded-3xl bg-card border border-border/50 shadow-xl relative overflow-hidden group">
+                   <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                   <div className="flex items-center space-x-4 mb-6 relative z-10">
+                     <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-2xl font-black">
+                        {parsedData.personal_info?.name?.charAt(0) || "U"}
+                     </div>
+                     <div>
+                        <h2 className="text-2xl font-bold">{parsedData.personal_info?.name || "Candidate Name"}</h2>
+                        <p className="text-muted-foreground text-sm flex items-center mt-1">
+                          {parsedData.personal_info?.location || "Location Unknown"}
+                        </p>
+                     </div>
+                   </div>
+                   <div className="space-y-3 text-sm relative z-10">
+                      <div className="flex justify-between items-center py-2 border-b border-border/30">
+                        <span className="text-muted-foreground">Email</span>
+                        <span className="font-medium text-right">{parsedData.personal_info?.email || "N/A"}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-border/30">
+                        <span className="text-muted-foreground">Phone</span>
+                        <span className="font-medium text-right">{parsedData.personal_info?.phone || "N/A"}</span>
+                      </div>
+                   </div>
+                </div>
 
-function ExperienceForm({ data, onChange }: any) {
-  const handleUpdate = (idx: number, field: string, val: string) => {
-     const newData = [...data];
-     newData[idx] = { ...newData[idx], [field]: val };
-     onChange(newData);
-  };
-  const handleAdd = () => {
-     onChange([{ title: '', company: '', duration: '', description: '' }, ...data]);
-  };
-  const handleDelete = (idx: number) => {
-     const newData = [...data];
-     newData.splice(idx, 1);
-     onChange(newData);
-  };
+                {/* Skills Card */}
+                <div className="p-6 rounded-3xl bg-card border border-border/50 shadow-xl">
+                   <div className="flex items-center space-x-3 mb-6">
+                     <div className="p-2 bg-primary/10 rounded-lg text-primary"><Code className="h-5 w-5" /></div>
+                     <h3 className="text-lg font-bold">Extracted Skills</h3>
+                   </div>
+                   <div className="flex flex-wrap gap-2">
+                     {parsedData.skills && parsedData.skills.length > 0 ? (
+                       parsedData.skills.map((skill: string, idx: number) => (
+                         <span key={idx} className="px-3 py-1.5 rounded-lg bg-secondary text-sm font-medium border border-border/50">
+                           {skill}
+                         </span>
+                       ))
+                     ) : (
+                       <p className="text-sm text-muted-foreground">No skills detected.</p>
+                     )}
+                   </div>
+                </div>
+                
+                <button onClick={resetState} className="w-full px-6 py-4 rounded-xl border border-border bg-background hover:bg-secondary font-bold transition-colors flex items-center justify-center space-x-2">
+                  <UploadCloud className="h-5 w-5" />
+                  <span>Parse Another Resume</span>
+                </button>
+              </div>
 
-  return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
-       <div onClick={handleAdd} className="p-8 border border-dashed border-border rounded-[2rem] flex flex-col items-center justify-center text-center group hover:bg-secondary/20 transition-all cursor-pointer">
-          <div className="w-16 h-16 bg-primary/10 text-primary rounded-[1.5rem] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-             <Plus className="h-8 w-8" />
-          </div>
-          <p className="font-bold uppercase tracking-widest text-[10px] text-muted-foreground group-hover:text-primary transition-colors">Integrate New Workforce Experience</p>
-       </div>
-       
-       {data && data.length > 0 ? data.map((exp: any, idx: number) => (
-         <ExperienceItem 
-            key={idx}
-            item={exp}
-            onChange={(field: string, val: string) => handleUpdate(idx, field, val)}
-            onDelete={() => handleDelete(idx)}
-         />
-       )) : (
-         <div className="text-center text-muted-foreground text-sm py-4">No experience added.</div>
-       )}
-    </motion.div>
-  );
-}
+              {/* Right Column: Summary, Experience, Education */}
+              <div className="lg:col-span-2 space-y-8">
+                 {/* Summary */}
+                 <div className="p-6 rounded-3xl bg-card border border-border/50 shadow-xl">
+                   <div className="flex items-center space-x-3 mb-4">
+                     <div className="p-2 bg-primary/10 rounded-lg text-primary"><User className="h-5 w-5" /></div>
+                     <h3 className="text-lg font-bold">AI Professional Summary</h3>
+                   </div>
+                   <p className="text-muted-foreground leading-relaxed">
+                     {parsedData.summary || "No summary available."}
+                   </p>
+                 </div>
 
-function SkillsForm({ data, onChange }: any) {
-  const [newSkill, setNewSkill] = useState('');
-  const handleAdd = (e: any) => {
-     if (e.key === 'Enter' && newSkill.trim()) {
-        onChange([...(data || []), newSkill.trim()]);
-        setNewSkill('');
-     }
-  };
-  const handleDelete = (idx: number) => {
-     const newData = [...data];
-     newData.splice(idx, 1);
-     onChange(newData);
-  };
+                 {/* Experience */}
+                 <div className="p-6 rounded-3xl bg-card border border-border/50 shadow-xl">
+                   <div className="flex items-center space-x-3 mb-6">
+                     <div className="p-2 bg-primary/10 rounded-lg text-primary"><Briefcase className="h-5 w-5" /></div>
+                     <h3 className="text-lg font-bold">Experience Timeline</h3>
+                   </div>
+                   <div className="space-y-6">
+                     {parsedData.experience && parsedData.experience.length > 0 ? (
+                       parsedData.experience.map((exp: any, idx: number) => (
+                         <div key={idx} className="relative pl-6 border-l-2 border-border/50 pb-6 last:pb-0">
+                           <div className="absolute w-3 h-3 bg-primary rounded-full -left-[7px] top-1.5 ring-4 ring-background" />
+                           <h4 className="text-xl font-bold">{exp.title}</h4>
+                           <div className="flex items-center justify-between mt-1 mb-3">
+                             <p className="text-primary font-medium">{exp.company}</p>
+                             <p className="text-sm text-muted-foreground font-mono bg-secondary px-2 py-1 rounded-md">
+                               {exp.start_date} - {exp.end_date}
+                             </p>
+                           </div>
+                           <p className="text-sm text-muted-foreground leading-relaxed">{exp.description}</p>
+                         </div>
+                       ))
+                     ) : (
+                       <p className="text-sm text-muted-foreground">No experience detected.</p>
+                     )}
+                   </div>
+                 </div>
 
-  return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-10">
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {data && data.length > 0 ? data.map((skill: string, idx: number) => (
-            <div key={idx} className="flex items-center justify-between p-4 bg-secondary/40 border border-border/20 rounded-2xl group border-l-4 border-l-primary">
-               <span className="text-sm font-bold tracking-tight">{skill}</span>
-               <Trash2 onClick={() => handleDelete(idx)} className="h-4 w-4 text-muted-foreground hover:text-red-500 cursor-pointer transition-colors" />
-            </div>
-          )) : (
-             <div className="p-4 border border-dashed border-border rounded-2xl flex items-center justify-center text-xs font-black uppercase tracking-widest text-muted-foreground">No Skills Extracted</div>
+                 {/* Education */}
+                 <div className="p-6 rounded-3xl bg-card border border-border/50 shadow-xl">
+                   <div className="flex items-center space-x-3 mb-6">
+                     <div className="p-2 bg-primary/10 rounded-lg text-primary"><GraduationCap className="h-5 w-5" /></div>
+                     <h3 className="text-lg font-bold">Education</h3>
+                   </div>
+                   <div className="space-y-4">
+                     {parsedData.education && parsedData.education.length > 0 ? (
+                       parsedData.education.map((edu: any, idx: number) => (
+                         <div key={idx} className="flex justify-between items-start p-4 rounded-xl bg-secondary/30 border border-border/30">
+                           <div>
+                             <h4 className="font-bold">{edu.degree}</h4>
+                             <p className="text-sm text-muted-foreground">{edu.institution}</p>
+                           </div>
+                           <span className="text-xs font-bold px-2 py-1 bg-background rounded-md border border-border">{edu.graduation_year}</span>
+                         </div>
+                       ))
+                     ) : (
+                       <p className="text-sm text-muted-foreground">No education detected.</p>
+                     )}
+                   </div>
+                 </div>
+              </div>
+            </motion.div>
           )}
-          <div className="relative">
-             <input 
-                type="text"
-                value={newSkill}
-                onChange={(e) => setNewSkill(e.target.value)}
-                onKeyDown={handleAdd}
-                placeholder="Type and press Enter to add..."
-                className="w-full h-full p-4 border border-dashed border-border rounded-2xl text-sm font-medium bg-transparent focus:border-primary/50 outline-none transition-all"
-             />
-             <Plus className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          </div>
-       </div>
-    </motion.div>
-  );
-}
-
-function EducationForm({ data, onChange }: any) {
-  const handleUpdate = (idx: number, field: string, val: string) => {
-     const newData = [...data];
-     newData[idx] = { ...newData[idx], [field]: val };
-     onChange(newData);
-  };
-  const handleAdd = () => {
-     onChange([{ degree: '', institution: '', year: '' }, ...data]);
-  };
-  const handleDelete = (idx: number) => {
-     const newData = [...data];
-     newData.splice(idx, 1);
-     onChange(newData);
-  };
-
-  return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
-       <div onClick={handleAdd} className="p-8 border border-dashed border-border rounded-[2rem] flex flex-col items-center justify-center text-center group hover:bg-secondary/20 transition-all cursor-pointer mb-8">
-          <div className="w-16 h-16 bg-primary/10 text-primary rounded-[1.5rem] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-             <Plus className="h-8 w-8" />
-          </div>
-          <p className="font-bold uppercase tracking-widest text-[10px] text-muted-foreground group-hover:text-primary transition-colors">Integrate New Foundation</p>
-       </div>
-       {data && data.length > 0 ? data.map((edu: any, idx: number) => (
-         <ExperienceItem 
-           key={idx}
-           item={{ title: edu.degree, company: edu.institution, duration: edu.year, description: '' }}
-           onChange={(field: string, val: string) => {
-              if (field === 'title') handleUpdate(idx, 'degree', val);
-              if (field === 'company') handleUpdate(idx, 'institution', val);
-              if (field === 'duration') handleUpdate(idx, 'year', val);
-           }}
-           onDelete={() => handleDelete(idx)}
-           isEdu
-         />
-       )) : (
-         <div className="text-center text-muted-foreground text-sm py-4">No education added.</div>
-       )}
-    </motion.div>
-  );
-}
-
-function InputGroup({ label, placeholder, icon: Icon, val, onChange }: any) {
-  return (
-    <div className="space-y-3">
-       <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground ml-2">{label}</label>
-       <div className="relative">
-          <Icon className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input value={val || ''} onChange={(e) => onChange(e.target.value)} className="w-full bg-secondary border border-transparent focus:border-primary/30 rounded-2xl pl-14 pr-6 py-4 text-sm font-medium focus:ring-8 focus:ring-primary/5 outline-none transition-all placeholder:opacity-50" placeholder={placeholder} />
-       </div>
-    </div>
-  );
-}
-
-function ExperienceItem({ item, onChange, onDelete, isEdu }: any) {
-  return (
-    <div className="p-8 bg-secondary/20 border border-border/50 rounded-3xl relative group hover:border-primary/20 transition-all flex flex-col space-y-4">
-       <div className="absolute top-4 right-4 flex space-x-2">
-          <div onClick={onDelete} className="p-2 bg-card border border-border rounded-xl cursor-pointer hover:bg-red-500/10 hover:text-red-500 transition-colors">
-             <Trash2 className="h-4 w-4" />
-          </div>
-       </div>
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mr-10">
-          <div>
-             <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-1 block">{isEdu ? 'Degree' : 'Designation'}</label>
-             <input value={item.title || ''} onChange={(e) => onChange('title', e.target.value)} className="w-full bg-secondary border border-border/50 focus:border-primary/50 rounded-xl px-4 py-3 text-sm font-bold outline-none transition-all" placeholder={isEdu ? 'Degree' : 'Role Title'} />
-          </div>
-          <div>
-             <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-1 block">{isEdu ? 'Institution' : 'Company'}</label>
-             <input value={item.company || ''} onChange={(e) => onChange('company', e.target.value)} className="w-full bg-secondary border border-border/50 focus:border-primary/50 rounded-xl px-4 py-3 text-sm font-medium outline-none transition-all" placeholder={isEdu ? 'Institution' : 'Company'} />
-          </div>
-       </div>
-       <div>
-          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-1 block">{isEdu ? 'Year' : 'Duration'}</label>
-          <input value={item.duration || ''} onChange={(e) => onChange('duration', e.target.value)} className="w-full md:w-1/2 bg-secondary border border-border/50 focus:border-primary/50 rounded-xl px-4 py-3 text-sm font-medium outline-none transition-all" placeholder="e.g. 2021 - 2024" />
-       </div>
-       {!isEdu && (
-          <div>
-             <label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-1 block">Description</label>
-             <textarea value={item.description || ''} onChange={(e) => onChange('description', e.target.value)} className="w-full bg-secondary border border-border/50 focus:border-primary/50 rounded-xl px-4 py-3 text-sm font-medium outline-none transition-all h-24 resize-none" placeholder="Description of your responsibilities..." />
-          </div>
-       )}
+        </AnimatePresence>
+      </main>
     </div>
   );
 }

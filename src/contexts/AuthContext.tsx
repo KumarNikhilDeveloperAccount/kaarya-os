@@ -3,16 +3,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import api from '@/lib/api';
-import { signInWithPopup, signOut as firebaseSignOut, RecaptchaVerifier, signInWithPhoneNumber, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, type ConfirmationResult } from '@/lib/firebase';
-import { auth, googleProvider } from '@/lib/firebase';
 
 interface User {
   id: number;
   email: string;
   full_name: string;
-  primary_role: str;
+  primary_role: string;
   bio?: string;
   profile_picture?: string;
+  resume_data?: any;
+  preferences?: any;
 }
 
 interface AuthContextType {
@@ -21,10 +21,6 @@ interface AuthContextType {
   login: (token: string, user: User) => void;
   updateUser: (user: User) => void;
   logout: () => void;
-  signInWithGoogle: () => Promise<void>;
-  signInWithPhone: (phoneNumber: string) => Promise<ConfirmationResult>;
-  sendEmailLink: (email: string) => Promise<void>;
-  verifyEmailLink: (email: string, link: string) => Promise<any>;
   loading: boolean;
 }
 
@@ -34,10 +30,6 @@ const AuthContext = createContext<AuthContextType>({
   login: () => {},
   updateUser: () => {},
   logout: () => {},
-  signInWithGoogle: async () => {},
-  signInWithPhone: async () => null as any,
-  sendEmailLink: async () => {},
-  verifyEmailLink: async () => null,
   loading: true,
 });
 
@@ -50,26 +42,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
-    const isPublicRoute = pathname === '/login' || pathname === '/signup';
+    const isPublicRoute = pathname === '/login' || pathname === '/signup' || pathname === '/auth/callback';
 
     if (storedToken) {
       if (!token) {
         setToken(storedToken);
         fetchUser(storedToken);
-      } else if (user && !user.primary_role && pathname !== '/role-selection' && !isPublicRoute) {
-        router.push('/role-selection');
+      } else if (user) {
+        // Enforce onboarding
+        const isGuest = user.primary_role === 'guest';
+        const isDefaultLinkedIn = user.primary_role === 'candidate' && (!user.full_name || user.full_name === 'LinkedIn User');
+        const needsOnboarding = !user.primary_role || isGuest || isDefaultLinkedIn;
+        
+        const isOnboardingRoute = pathname === '/role-selection' || pathname?.startsWith('/onboarding');
+        
+        if (needsOnboarding && !isOnboardingRoute && !isPublicRoute) {
+           router.push('/onboarding');
+        }
       }
     } else {
       setLoading(false);
+      // Strict redirect for unauthenticated users, except home page
       if (!isPublicRoute && pathname !== '/') {
         router.push('/login');
       }
     }
   }, [pathname, router, user, token]);
-
-  useEffect(() => {
-    // Lazy init recaptcha only when needed, or ensure container exists
-  }, []);
 
   const fetchUser = async (tokenStr: string) => {
     try {
@@ -77,33 +75,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const userData = response.data;
       setUser(userData);
       
-      // Hydrate local storage for profile data
       if (userData.primary_role) {
         localStorage.setItem('kaarya_active_role', userData.primary_role);
-        const dbProfile = {
+        const dbProfile: any = {
           fullName: userData.full_name,
           bio: userData.bio,
           profilePic: userData.profile_picture,
           skills: userData.skills ? userData.skills.split(',') : [],
         };
+        if (userData.preferences?.coverPic) dbProfile.coverPic = userData.preferences.coverPic;
+        if (userData.resume_data?.resumeUrl || userData.resume_data?.resume_url) {
+          dbProfile.resumeUrl = userData.resume_data.resumeUrl || userData.resume_data.resume_url;
+        }
         const existingStr = localStorage.getItem(`kaarya_profile_${userData.primary_role}`);
         let existing = {};
         if (existingStr) {
            try { existing = JSON.parse(existingStr); } catch (e) {}
         }
-        // DB fields overwrite local fields
         localStorage.setItem(`kaarya_profile_${userData.primary_role}`, JSON.stringify({ ...existing, ...dbProfile }));
       }
     } catch (err: any) {
       console.error('Failed to validate token', err);
-      // If backend is temporarily unavailable, keep the token and allow UI to render;
-      // login page / protected flows will surface errors on action.
-      // However, if the error is a 401, the token is invalid, so remove it.
-      if (err.response && err.response.status === 401) {
+      if (err?.response?.status === 401) {
+         setUser(null);
          localStorage.removeItem('token');
          setToken(null);
+      } else {
+         setUser(null);
       }
-      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -113,8 +112,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem('token', newToken);
     setToken(newToken);
     setUser(newUser);
-    if (!newUser.primary_role) {
-      router.push('/role-selection');
+    
+    // Strict redirect logic upon login
+    const isGuest = newUser.primary_role === 'guest';
+    const isDefaultLinkedIn = newUser.primary_role === 'candidate' && (!newUser.full_name || newUser.full_name === 'LinkedIn User');
+    const needsOnboarding = !newUser.primary_role || isGuest || isDefaultLinkedIn;
+    
+    if (needsOnboarding) {
+      router.push('/onboarding');
     } else {
       router.push('/');
     }
@@ -128,63 +133,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
-    firebaseSignOut(auth);
     router.push('/login');
   };
 
-  const signInWithGoogle = async () => {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const idToken = await result.user.getIdToken();
-      
-      const response = await api.post('/api/auth/firebase-login', { idToken });
-      const { access_token, user: userData } = response.data;
-      
-      login(access_token, userData);
-    } catch (error) {
-      console.error('Google sign in error:', error);
-      throw error;
-    }
-  };
-
-  const signInWithPhone = async (phoneNumber: string) => {
-    try {
-      if (typeof window === 'undefined' || !window.recaptchaVerifier) {
-        throw new Error('Recaptcha not initialized');
-      }
-      return await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
-    } catch (error) {
-      console.error('Phone sign-in error:', error);
-      throw error;
-    }
-  };
-
-  const sendEmailLink = async (emailAddress: string) => {
-    const actionCodeSettings = {
-      url: window.location.origin + '/login?emailAuth=true',
-      handleCodeInApp: true,
-    };
-    await sendSignInLinkToEmail(auth, emailAddress, actionCodeSettings);
-    window.localStorage.setItem('emailForSignIn', emailAddress);
-  };
-
-  const verifyEmailLink = async (emailAddress: string, link: string) => {
-    if (isSignInWithEmailLink(auth, link)) {
-      const result = await signInWithEmailLink(auth, emailAddress, link);
-      const idToken = await result.user.getIdToken();
-      const response = await api.post('/api/auth/firebase-login', { idToken });
-      const { access_token, user: userData } = response.data;
-      login(access_token, userData);
-      return userData;
-    }
-    throw new Error('Invalid email link');
-  };
-
   return (
-    <AuthContext.Provider value={{ user, token, login, updateUser, logout, signInWithGoogle, signInWithPhone, sendEmailLink, verifyEmailLink, loading }}>
+    <AuthContext.Provider value={{ user, token, login, updateUser, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => useContext(AuthContext);
+

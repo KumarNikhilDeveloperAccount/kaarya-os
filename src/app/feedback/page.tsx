@@ -1,87 +1,113 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { MessageSquare, Star, ThumbsUp, ThumbsDown, Filter, Search } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import Link from 'next/link';
+import { Star, ArrowLeft } from 'lucide-react';
 
-export default function FeedbackPage() {
-  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+function FeedbackContent() {
+  const searchParams = useSearchParams();
+  const ticket = searchParams.get('ticket');
+  const router = useRouter();
+  
+  const [rating, setRating] = useState(0);
+  const [hoveredRating, setHoveredRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
-  useEffect(() => {
-    const fetchFeedbacks = async () => {
-      try {
-        const { api } = await import('@/lib/api');
-        const res = await api.get('/api/ecosystem/feedbacks');
-        setFeedbacks(res.data);
-      } catch (err) {
-        console.error('Failed to fetch feedbacks:', err);
-      }
-    };
-    fetchFeedbacks();
-  }, []);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (rating === 0) return;
+    
+    // In a real app, send to backend here
+    setSubmitted(true);
+    
+    // Redirect back to settings after 3 seconds
+    setTimeout(() => {
+      router.push('/settings');
+    }, 3000);
+  };
+
+  if (submitted) {
+    return (
+      <div className="max-w-md w-full mx-auto p-8 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md shadow-2xl text-center">
+        <div className="w-16 h-16 bg-gradient-to-tr from-green-500 to-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h2 className="text-2xl font-black text-white mb-2">Thank you!</h2>
+        <p className="text-white/60 mb-8">Your feedback helps us continuously improve Kaarya OS.</p>
+        <p className="text-xs text-white/40 uppercase tracking-widest font-bold">Redirecting you to dashboard...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4 animate-in fade-in duration-1000">
-      <div className="flex justify-between items-center mb-8">
+    <div className="max-w-md w-full mx-auto p-8 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md shadow-2xl">
+      <Link href="/settings" className="inline-flex items-center text-sm font-bold text-white/40 hover:text-white transition-colors mb-6">
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back to Dashboard
+      </Link>
+      
+      <h1 className="text-3xl font-black text-white tracking-tight mb-2">Ticket Feedback</h1>
+      {ticket && <p className="text-white/50 font-mono text-sm mb-8">Reference: {ticket}</p>}
+      
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <h1 className="text-4xl font-black tracking-tight uppercase flex items-center">
-            <MessageSquare className="h-8 w-8 mr-3 text-primary" /> Interview Feedback
-          </h1>
-          <p className="text-muted-foreground mt-2 font-medium">Review AI assessments and human interviewer feedback.</p>
-        </div>
-        <div className="flex space-x-3">
-          <div className="relative">
-            <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input 
-              type="text" 
-              placeholder="Search candidates..." 
-              className="pl-10 pr-4 py-2 bg-secondary border border-border rounded-xl focus:border-primary/50 outline-none text-sm"
-            />
+          <label className="block text-sm font-bold uppercase tracking-widest text-white/60 mb-3">How was your experience?</label>
+          <div className="flex justify-center space-x-2 py-4">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                onClick={() => setRating(star)}
+                onMouseEnter={() => setHoveredRating(star)}
+                onMouseLeave={() => setHoveredRating(0)}
+                className={`p-2 transition-all rounded-full hover:bg-white/5 ${
+                  (hoveredRating || rating) >= star ? 'text-yellow-400 scale-110' : 'text-white/20'
+                }`}
+              >
+                <Star className={`w-8 h-8 ${ (hoveredRating || rating) >= star ? 'fill-yellow-400' : ''}`} />
+              </button>
+            ))}
           </div>
-          <button className="px-4 py-2 bg-secondary rounded-xl border border-border hover:border-primary/50 transition-all flex items-center">
-            <Filter className="h-4 w-4 mr-2" /> Filter
-          </button>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {feedbacks.map((item) => (
-          <motion.div 
-            whileHover={{ y: -5 }}
-            key={item.id} 
-            className="bg-card border border-border rounded-[2rem] p-6 shadow-xl flex flex-col"
-          >
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="font-bold text-lg">{item.candidate}</h3>
-                <p className="text-xs text-muted-foreground">{item.role}</p>
-              </div>
-              <div className="flex space-x-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className={`h-4 w-4 ${i < item.rating ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground'}`} />
-                ))}
-              </div>
-            </div>
-            
-            <p className="text-sm leading-relaxed text-muted-foreground flex-1 mb-6">
-              "{item.feedback}"
-            </p>
-            
-            <div className="flex items-center justify-between pt-4 border-t border-border/50">
-              <span className="px-3 py-1 bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest rounded-full">
-                Score: {item.score}/100
-              </span>
-              <div className="flex space-x-2">
-                <button className="p-2 bg-secondary rounded-lg hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors">
-                  <ThumbsUp className="h-4 w-4" />
-                </button>
-                <button className="p-2 bg-secondary rounded-lg hover:bg-red-500/10 hover:text-red-500 transition-colors">
-                  <ThumbsDown className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        ))}
+        <div>
+          <label className="block text-sm font-bold uppercase tracking-widest text-white/60 mb-3">Additional Comments</label>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            rows={4}
+            className="w-full bg-black/50 border border-white/20 rounded-xl p-4 text-white outline-none focus:border-blue-500 transition-colors resize-none"
+            placeholder="Tell us what you liked or what we can improve..."
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={rating === 0}
+          className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black uppercase tracking-widest text-sm rounded-xl transition-all active:scale-[0.98]"
+        >
+          Submit Feedback
+        </button>
+      </form>
+    </div>
+  );
+}
+
+export default function FeedbackPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[#030014]">
+      {/* Background decoration */}
+      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/20 blur-[120px]" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/20 blur-[120px]" />
+      
+      <div className="relative z-10 w-full">
+        <Suspense fallback={<div className="text-center text-white/50 font-bold uppercase tracking-widest">Loading...</div>}>
+          <FeedbackContent />
+        </Suspense>
       </div>
     </div>
   );

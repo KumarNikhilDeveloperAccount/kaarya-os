@@ -12,6 +12,11 @@ class Ticket(Base):
     status = Column(String, default="Open") # Open, In Progress, Resolved, Closed
     priority = Column(String, default="Medium") # Low, Medium, High, Urgent
     
+    reference_number = Column(String, unique=True, index=True, nullable=True)
+    category = Column(String, nullable=True)
+    sub_category = Column(String, nullable=True)
+    screenshot_url = Column(String, nullable=True)
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

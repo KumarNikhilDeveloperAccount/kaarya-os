@@ -25,6 +25,23 @@ def approve_interviewer(
     db.commit()
     return {"status": "success", "message": f"Interviewer {user.full_name} approved."}
 
+@router.post("/verify-entity/{user_id}")
+def verify_entity(
+    user_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(deps.get_current_admin_user)
+):
+    """
+    Manually verify a company or college.
+    """
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.is_identity_verified = True
+    db.commit()
+    return {"status": "success", "message": f"{user.full_name} has been verified."}
+
 @router.get("/applications", response_model=list[schemas.ApplicationOut])
 def get_applications(
     db: Session = Depends(database.get_db),
@@ -38,6 +55,30 @@ def get_applications(
     for a in apps:
         a.created_at = a.created_at.isoformat()
     return apps
+
+@router.get("/unverified-entities")
+def get_unverified_entities(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(deps.get_current_admin_user)
+):
+    """
+    Fetch all companies and colleges that are pending verification.
+    """
+    users = db.query(models.User).filter(
+        models.User.is_identity_verified == False,
+        models.User.primary_role.in_(["company", "college"])
+    ).all()
+    
+    return [
+        {
+            "id": u.id,
+            "name": u.full_name,
+            "role": u.primary_role,
+            "email": u.email,
+            "resume_url": u.resume_url,
+            "created_at": u.created_at.isoformat() if u.created_at else None
+        } for u in users
+    ]
 
 @router.get("/monitoring/transactions")
 def get_all_transactions(
@@ -79,3 +120,31 @@ def process_manual_refund(
     tx.status = "refunded"
     db.commit()
     return {"status": "success", "message": "Manual refund processed successfully."}
+
+@router.get("/users")
+def get_all_users(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(deps.get_current_admin_user)
+):
+    """ Fetch all users for Admin to manage roles. """
+    users = db.query(models.User).all()
+    return [{"id": u.id, "email": u.email, "full_name": u.full_name, "is_admin": u.is_admin, "primary_role": u.primary_role} for u in users]
+
+@router.put("/users/{user_id}/role")
+def toggle_admin_role(
+    user_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(deps.get_current_admin_user)
+):
+    """ Toggle admin privileges for a user. """
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Prevent removing own admin rights
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="You cannot remove your own admin rights.")
+        
+    user.is_admin = not user.is_admin
+    db.commit()
+    return {"status": "success", "is_admin": user.is_admin}

@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageCircle, Share2, Play, Pause, Volume2, VolumeX, Plus, Upload, X } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Play, Pause, Volume2, VolumeX, Plus, Upload, X, Trash2 } from 'lucide-react';
+import { FaWhatsapp, FaTwitter, FaInstagram, FaSnapchatGhost, FaEnvelope, FaGoogleDrive } from 'react-icons/fa';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -40,7 +41,9 @@ export default function ReelsPage() {
 
       <div className="h-full w-full snap-y snap-mandatory overflow-y-scroll hide-scrollbar relative">
         {reels.map((reel, index) => (
-          <ReelVideo key={reel.id} reel={reel} index={index} />
+          <ReelVideo key={reel.id} reel={reel} index={index} onDelete={() => {
+              setReels(reels.filter(r => r.id !== reel.id));
+          }} />
         ))}
         {!loading && reels.length === 0 && (
           <div className="h-full w-full flex items-center justify-center text-muted-foreground font-bold">No Reels Available. Upload one!</div>
@@ -109,7 +112,8 @@ function UploadModal({ onClose, onUploadSuccess }: { onClose: () => void, onUplo
   );
 }
 
-function ReelVideo({ reel, index }: { reel: any, index: number }) {
+function ReelVideo({ reel, index, onDelete }: { reel: any, index: number, onDelete: () => void }) {
+  const { user } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
@@ -117,7 +121,8 @@ function ReelVideo({ reel, index }: { reel: any, index: number }) {
   const [likesCount, setLikesCount] = useState(reel.likes_count || 0);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<any[]>(reel.comments || []);
+  const [showShareMenu, setShowShareMenu] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -171,11 +176,29 @@ function ReelVideo({ reel, index }: { reel: any, index: number }) {
     setShowComments(true);
   };
 
-  const submitComment = () => {
+  const submitComment = async () => {
     if (!commentText.trim()) return;
-    setComments([{ id: Date.now(), text: commentText, author: 'You' }, ...comments]);
+    const currentText = commentText;
+    setComments([{ id: Date.now(), text: currentText, author: { full_name: 'You' } }, ...comments]);
     setCommentText('');
     toast.success("Comment added!");
+    try {
+      await api.post(`/api/ecosystem/reels/${reel.id}/comment`, { text: currentText });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this reel?')) return;
+    try {
+      await api.delete(`/api/ecosystem/reels/${reel.id}`);
+      toast.success("Reel deleted successfully!");
+      onDelete();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete reel.");
+    }
   };
 
   return (
@@ -221,12 +244,54 @@ function ReelVideo({ reel, index }: { reel: any, index: number }) {
           <span className="text-white text-xs font-bold mt-1 shadow-black drop-shadow-md">0</span>
         </div>
 
-        <div className="flex flex-col items-center">
-          <button onClick={handleShare} className="p-3 bg-black/40 rounded-full text-white hover:scale-110 transition-transform">
+        <div className="flex flex-col items-center relative">
+          <button onClick={() => setShowShareMenu(!showShareMenu)} className={`p-3 rounded-full text-white transition-transform ${showShareMenu ? 'bg-primary scale-110' : 'bg-black/40 hover:scale-110'}`}>
             <Share2 className="h-7 w-7" />
           </button>
           <span className="text-white text-xs font-bold mt-1 shadow-black drop-shadow-md">Share</span>
+          
+          <AnimatePresence>
+            {showShareMenu && (
+              <motion.div initial={{ opacity: 0, scale: 0.95, x: 10 }} animate={{ opacity: 1, scale: 1, x: 0 }} exit={{ opacity: 0, scale: 0.95, x: 10 }} className="absolute right-full bottom-0 mr-4 w-56 bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden">
+                <div className="px-4 py-3 border-b border-border/30 flex justify-between items-center">
+                  <span className="font-bold text-sm">Share to...</span>
+                  <button onClick={() => setShowShareMenu(false)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4"/></button>
+                </div>
+                
+                <button onClick={() => { window.open(`https://api.whatsapp.com/send?text=Check out this reel on Kaarya OS: ${window.location.origin}/reels?id=${reel.id}`, '_blank'); setShowShareMenu(false); }} className="w-full flex items-center px-4 py-3 text-sm font-medium hover:bg-secondary/80 transition-colors">
+                  <FaWhatsapp className="h-5 w-5 mr-3 text-[#25D366]" /> WhatsApp
+                </button>
+                <button onClick={() => { window.open(`https://twitter.com/intent/tweet?url=${window.location.origin}/reels?id=${reel.id}&text=Check out this awesome reel!`, '_blank'); setShowShareMenu(false); }} className="w-full flex items-center px-4 py-3 text-sm font-medium hover:bg-secondary/80 transition-colors">
+                  <FaTwitter className="h-5 w-5 mr-3 text-[#1DA1F2]" /> X (Twitter)
+                </button>
+                <button onClick={() => { window.open(`https://www.instagram.com/`, '_blank'); setShowShareMenu(false); }} className="w-full flex items-center px-4 py-3 text-sm font-medium hover:bg-secondary/80 transition-colors">
+                  <FaInstagram className="h-5 w-5 mr-3 text-[#E1306C]" /> Instagram
+                </button>
+                <button onClick={() => { window.open(`https://snapchat.com/`, '_blank'); setShowShareMenu(false); }} className="w-full flex items-center px-4 py-3 text-sm font-medium hover:bg-secondary/80 transition-colors">
+                  <FaSnapchatGhost className="h-5 w-5 mr-3 text-[#FFFC00] drop-shadow-sm" /> Snapchat
+                </button>
+                <button onClick={() => { window.open(`mailto:?subject=Check this out&body=See this reel: ${window.location.origin}/reels?id=${reel.id}`, '_blank'); setShowShareMenu(false); }} className="w-full flex items-center px-4 py-3 text-sm font-medium hover:bg-secondary/80 transition-colors">
+                  <FaEnvelope className="h-5 w-5 mr-3 text-[#EA4335]" /> Gmail
+                </button>
+                <button onClick={() => { window.open(`https://drive.google.com/`, '_blank'); setShowShareMenu(false); }} className="w-full flex items-center px-4 py-3 text-sm font-medium hover:bg-secondary/80 transition-colors">
+                  <FaGoogleDrive className="h-5 w-5 mr-3 text-[#0F9D58]" /> Drive
+                </button>
+                
+                <button onClick={() => { handleShare(); setShowShareMenu(false); }} className="w-full flex items-center px-4 py-3 text-sm font-bold hover:bg-primary/10 text-primary transition-colors border-t border-border/30">
+                  <Share2 className="h-5 w-5 mr-3" /> Copy Link
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+        
+        {user?.id === reel.author?.id && (
+          <div className="flex flex-col items-center mt-4">
+            <button onClick={handleDelete} className="p-3 bg-red-500/80 rounded-full text-white hover:scale-110 transition-transform">
+              <Trash2 className="h-6 w-6" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 p-6 pt-24 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10 pointer-events-none">
@@ -245,7 +310,7 @@ function ReelVideo({ reel, index }: { reel: any, index: number }) {
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                {comments.map((c: any) => (
                  <div key={c.id} className="text-sm border-b border-border/50 pb-2">
-                   <span className="font-bold text-primary mr-2">{c.author}:</span>
+                   <span className="font-bold text-primary mr-2">{c.author?.full_name || c.author}:</span>
                    <span>{c.text}</span>
                  </div>
                ))}

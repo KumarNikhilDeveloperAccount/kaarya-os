@@ -57,28 +57,49 @@ export default function FeedPage() {
     }
   };
 
-  const handleLike = (id: number) => {
+  const handleLike = async (id: number) => {
     setPosts(posts.map(p => {
-       if (p.id === id) {
-          return { ...p, is_liked: !p.is_liked, likes_count: p.is_liked ? Math.max(0, p.likes_count - 1) : (p.likes_count || 0) + 1 };
+       if (p.id === id && !p.is_liked) {
+          return { ...p, is_liked: true, likes_count: (p.likes_count || 0) + 1 };
        }
        return p;
     }));
+    try {
+      await api.post(`/api/ecosystem/feed/${id}/like`);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const [activeCommentPost, setActiveCommentPost] = useState<number | null>(null);
   const [commentText, setCommentText] = useState('');
 
-  const submitComment = (id: number) => {
+  const submitComment = async (id: number) => {
     if (!commentText.trim()) return;
     setPosts(posts.map(p => {
        if (p.id === id) {
-          const newComment = { id: Date.now(), text: commentText, author: user?.full_name || 'You' };
+          const newComment = { id: Date.now(), text: commentText, author: { full_name: user?.full_name || 'You' } };
           return { ...p, comments_count: (p.comments_count || 0) + 1, comments: [newComment, ...(p.comments || [])] };
        }
        return p;
     }));
     setCommentText('');
+    try {
+      await api.post(`/api/ecosystem/feed/${id}/comment`, { text: commentText });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this post?')) return;
+    try {
+      await api.delete(`/api/ecosystem/feed/${id}`);
+      setPosts(posts.filter(p => p.id !== id));
+    } catch (e) {
+      console.error(e);
+      alert('Failed to delete post.');
+    }
   };
 
   return (
@@ -168,7 +189,7 @@ export default function FeedPage() {
                    animate={{ opacity: 1, y: 0 }}
                    className="bg-card border border-border rounded-[2.5rem] p-8 shadow-lg hover:shadow-xl transition-all"
                  >
-                    <div className="flex justify-between items-start mb-6">
+                     <div className="flex justify-between items-start mb-6">
                        <div className="flex space-x-4">
                           <div className="w-12 h-12 rounded-full bg-secondary overflow-hidden shrink-0 border border-border">
                              {post.author?.profile_picture ? (
@@ -186,7 +207,19 @@ export default function FeedPage() {
                               </p>
                           </div>
                        </div>
-                       <button className="p-2 hover:bg-secondary rounded-xl transition-colors"><MoreHorizontal className="h-5 w-5 text-muted-foreground" /></button>
+                       
+                       <div className="relative group">
+                         <button className="p-2 hover:bg-secondary rounded-xl transition-colors">
+                           <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
+                         </button>
+                         <div className="absolute right-0 top-full mt-2 w-48 bg-card border border-border rounded-xl shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-10 flex flex-col overflow-hidden">
+                           {post.author?.id === user?.id ? (
+                             <button onClick={() => handleDelete(post.id)} className="w-full text-left px-4 py-3 text-sm font-bold text-red-500 hover:bg-secondary transition-colors">Delete Post</button>
+                           ) : (
+                             <button onClick={() => alert('Post reported to moderators.')} className="w-full text-left px-4 py-3 text-sm font-medium hover:bg-secondary transition-colors">Report Post</button>
+                           )}
+                         </div>
+                       </div>
                     </div>
                     
                     <p className="text-sm font-medium leading-relaxed mb-6 whitespace-pre-wrap">{post.content}</p>
@@ -212,10 +245,17 @@ export default function FeedPage() {
                           <div className={`p-2 rounded-full ${activeCommentPost === post.id ? 'bg-blue-500/10' : 'group-hover:bg-blue-500/10'}`}><MessageCircle className="h-4 w-4" /></div>
                           <span className="text-xs font-bold">{post.comments_count}</span>
                        </button>
-                       <button className="flex items-center space-x-2 text-muted-foreground hover:text-emerald-500 transition-colors group ml-auto">
-                          <div className="p-2 rounded-full group-hover:bg-emerald-500/10"><Share2 className="h-4 w-4" /></div>
-                       </button>
-                    </div>
+                       <div className="relative group ml-auto">
+                         <button className="flex items-center space-x-2 text-muted-foreground hover:text-emerald-500 transition-colors">
+                            <div className="p-2 rounded-full group-hover:bg-emerald-500/10"><Share2 className="h-4 w-4" /></div>
+                         </button>
+                         <div className="absolute right-0 bottom-full mb-2 w-48 bg-card border border-border rounded-xl shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-10 flex flex-col overflow-hidden">
+                            <button onClick={() => window.open(`https://api.whatsapp.com/send?text=Check out this post on Kaarya OS: ${window.location.origin}/feed?post_id=${post.id}`, '_blank')} className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-secondary transition-colors">Share on WhatsApp</button>
+                            <button onClick={() => window.open(`https://twitter.com/intent/tweet?url=${window.location.origin}/feed?post_id=${post.id}&text=Check out this post on Kaarya OS!`, '_blank')} className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-secondary transition-colors">Share on X</button>
+                            <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/feed?post_id=${post.id}`); alert('Link copied to clipboard!'); }} className="w-full text-left px-4 py-2 text-sm font-medium hover:bg-secondary transition-colors border-t border-border/50">Copy Link</button>
+                         </div>
+                     </div>
+                  </div>
 
                     {activeCommentPost === post.id && (
                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="pt-4 mt-4 border-t border-border/50">
@@ -226,7 +266,7 @@ export default function FeedPage() {
                           <div className="space-y-3 max-h-48 overflow-y-auto">
                              {post.comments?.map((c: any) => (
                                 <div key={c.id} className="text-sm bg-secondary/30 p-3 rounded-xl border border-border/50">
-                                   <span className="font-bold text-primary mr-2">{c.author}</span>
+                                   <span className="font-bold text-primary mr-2">{c.author?.full_name || c.author || 'User'}</span>
                                    <span>{c.text}</span>
                                 </div>
                              ))}

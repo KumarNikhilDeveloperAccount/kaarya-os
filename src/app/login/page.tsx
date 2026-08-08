@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import api from '@/lib/api';
+import api, { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Key, Linkedin, ArrowRight, Loader2, Phone } from 'lucide-react';
 import Link from 'next/link';
@@ -64,8 +64,9 @@ function LoginPageInner() {
       login(token, userResponse.data);
       toast.success('Access Granted. Welcome back.');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Invalid credentials');
-      toast.error('Authentication Failed');
+      const errMsg = err.response?.data?.detail || 'Incorrect email or password';
+      setError(errMsg);
+      toast.error(errMsg);
     } finally {
       setIsLoading(false);
     }
@@ -111,7 +112,7 @@ function LoginPageInner() {
   };
 
   const handleLinkedinLogin = () => {
-    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000'}/api/auth/linkedin/start`;
+    window.location.href = `${API_BASE_URL}/api/auth/linkedin/start`;
   };
 
   return (
@@ -164,6 +165,12 @@ function LoginPageInner() {
               <InputGroup label="Work Identity" icon={<Mail className="h-4 w-4" />} value={email} onChange={setEmail} type="email" placeholder="name@organization.com" />
               <InputGroup label="Access Key" icon={<Lock className="h-4 w-4" />} value={password} onChange={setPassword} type="password" placeholder="••••••••" />
               
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest p-4 rounded-xl flex items-center">
+                  <span className="text-red-500 text-lg mr-2">•</span> {error}
+                </div>
+              )}
+
               <button 
                 type="submit" 
                 disabled={isLoading}

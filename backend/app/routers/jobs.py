@@ -95,6 +95,16 @@ async def apply_to_job(
     except Exception as e:
         resume_text = "Parsing failure."
         print(f"Warning: PDF Parsing failure: {str(e)}")
+        
+    # 4. Extract Structured Info using Rit.ai
+    resume_data = {}
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content([
+            f"Extract the following information from this resume text into a JSON object: full_name, email, phone, skills (array of strings), experience_years (number), education (string). Here is the resume:\n\n{resume_text}"
+        ])
+    except Exception as e:
+        print(f"AI Extraction failed: {e}")
 
     # 4. Trigger Rit.ai Analysis
     ai_evaluation = evaluate_resume(resume_text, job.description)

@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { usePathname } from 'next/navigation';
 import RitPanel from '../rit/RitPanel';
 import BackendStatusBanner from '@/components/system/BackendStatusBanner';
+import SupportWidget from '../support/SupportWidget';
 
 function AppContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -50,6 +51,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
       </div>
       
       {!showIntro && <RitPanel />}
+      {!showIntro && <SupportWidget />}
     </>
   );
 }

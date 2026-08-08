@@ -48,7 +48,7 @@ export default function RoleSelectionPage() {
   const [selectedRole, setSelectedRole] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     if (!authLoading && user?.primary_role) {

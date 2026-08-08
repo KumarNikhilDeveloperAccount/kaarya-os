@@ -131,23 +131,33 @@ export default function Sidebar({ role = 'candidate', onPersonaSwitch = () => {}
       </nav>
 
       <div className="p-6 border-t border-border/50 mt-auto bg-muted/20">
-        <div className="flex items-center space-x-3 p-3 rounded-2xl bg-background/50 border border-border/50">
-           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold overflow-hidden">
-              {user?.profile_picture ? (
-                 <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                 user?.full_name ? user.full_name.substring(0,2).toUpperCase() : (role === 'company' ? 'HR' : 'U')
-              )}
-           </div>
-           <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold truncate">{user?.full_name || (role === 'company' ? 'Acme Corp' : 'Kaarya User')}</p>
-              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">{role}</p>
-           </div>
-           <Link href="/support">
-             <HelpCircle className="h-4 w-4 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
-           </Link>
+        {user ? (
+          <div className="flex items-center space-x-3 p-3 rounded-2xl bg-background/50 border border-border/50">
+             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold overflow-hidden">
+                {user.profile_picture ? (
+                   <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                   user.full_name ? user.full_name.substring(0,2).toUpperCase() : (role === 'company' ? 'HR' : 'U')
+                )}
+             </div>
+             <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold truncate">{user.full_name || (role === 'company' ? 'Acme Corp' : 'Kaarya User')}</p>
+                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">{role}</p>
+             </div>
+             <Link href="/support">
+               <HelpCircle className="h-4 w-4 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
+             </Link>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center p-3 rounded-2xl bg-background/50 border border-border/50">
+             <Link href="/login" className="text-xs font-bold text-primary hover:underline">Sign In to Kaarya</Link>
+          </div>
+        )}
+        <div className="flex flex-col items-center justify-center mt-4 space-y-2">
+           <Link href="/about" className="text-xs font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest">About Kaarya</Link>
+           <a href="mailto:kaarya.support@gmail.com" className="text-[10px] text-muted-foreground hover:text-primary transition-colors">kaarya.support@gmail.com</a>
         </div>
-        <div className="text-[9px] text-center text-muted-foreground/30 mt-6 uppercase font-bold tracking-widest">© 2026 Kaarya Operating System</div>
+        <div className="text-[9px] text-center text-muted-foreground/30 mt-4 uppercase font-bold tracking-widest">© 2026 Kaarya Operating System</div>
       </div>
     </aside>
     </>

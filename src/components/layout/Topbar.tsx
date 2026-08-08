@@ -49,6 +49,16 @@ export default function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
 
       <div className="flex flex-1 justify-end items-center space-x-2 md:space-x-4">
         <button 
+          onClick={() => {
+            const { openSupport } = require('../support/SupportWidget');
+            openSupport();
+          }}
+          className="flex items-center justify-center p-2 text-sm font-bold rounded-full bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-all border border-emerald-500/20 active:scale-95 mr-2"
+        >
+          <span className="hidden sm:inline">Help & Support</span>
+        </button>
+
+        <button 
           onClick={() => openRit()}
           className="flex items-center justify-center p-2 text-sm font-bold rounded-full bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-all border border-blue-500/20 active:scale-95"
         >
@@ -60,32 +70,40 @@ export default function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
         <NotificationBell />
         
         <div className="relative">
-          <div 
-             onClick={() => setProfileOpen(!profileOpen)}
-             className="h-8 w-8 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-white font-medium text-sm shadow-sm hover:scale-110 transition-transform cursor-pointer overflow-hidden"
-          >
-            {user?.profile_picture ? (
-              <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              user?.full_name ? user.full_name.substring(0,2).toUpperCase() : 'U'
-            )}
-          </div>
-          {profileOpen && (
-            <div className="absolute top-10 right-0 mt-2 w-48 bg-card border border-border rounded-xl shadow-2xl py-2 animate-in fade-in slide-in-from-top-2 p-1">
-               <Link href="/settings" className="flex items-center px-4 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors"><User className="h-4 w-4 mr-2" /> Your Profile</Link>
-               <Link href="/settings" className="flex items-center px-4 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors"><Settings className="h-4 w-4 mr-2" /> Global Settings</Link>
-               <div className="h-px bg-border my-2" />
-               <button
-                 type="button"
-                 onClick={() => {
-                   localStorage.removeItem('token');
-                   router.push('/login');
-                 }}
-                 className="w-full flex items-center px-4 py-2 text-sm font-bold text-red-500 hover:bg-red-500/10 rounded-md transition-colors"
-               >
-                 <LogOut className="h-4 w-4 mr-2" /> Log Out
-               </button>
-            </div>
+          {user ? (
+            <>
+              <div 
+                 onClick={() => setProfileOpen(!profileOpen)}
+                 className="h-8 w-8 rounded-full bg-gradient-to-tr from-primary to-purple-500 flex items-center justify-center text-white font-medium text-sm shadow-sm hover:scale-110 transition-transform cursor-pointer overflow-hidden"
+              >
+                {user?.profile_picture ? (
+                  <img src={user.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  user?.full_name ? user.full_name.substring(0,2).toUpperCase() : 'U'
+                )}
+              </div>
+              {profileOpen && (
+                <div className="absolute top-10 right-0 mt-2 w-48 bg-card border border-border rounded-xl shadow-2xl py-2 animate-in fade-in slide-in-from-top-2 p-1">
+                   <Link href="/settings" className="flex items-center px-4 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors"><User className="h-4 w-4 mr-2" /> Your Profile</Link>
+                   <Link href="/settings" className="flex items-center px-4 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors"><Settings className="h-4 w-4 mr-2" /> Global Settings</Link>
+                   <div className="h-px bg-border my-2" />
+                   <button
+                     type="button"
+                     onClick={() => {
+                       localStorage.removeItem('token');
+                       router.push('/login');
+                     }}
+                     className="w-full flex items-center px-4 py-2 text-sm font-bold text-red-500 hover:bg-red-500/10 rounded-md transition-colors"
+                   >
+                     <LogOut className="h-4 w-4 mr-2" /> Log Out
+                   </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <Link href="/login" className="flex items-center px-4 py-1.5 text-sm font-bold text-primary bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-full transition-colors">
+               Sign In
+            </Link>
           )}
         </div>
       </div>

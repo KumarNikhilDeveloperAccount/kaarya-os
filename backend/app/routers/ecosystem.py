@@ -19,6 +19,15 @@ class UserBasic(BaseModel):
     class Config:
         orm_mode = True
 
+class CommentResponse(BaseModel):
+    id: int
+    text: str
+    created_at: datetime
+    author: UserBasic
+
+    class Config:
+        orm_mode = True
+
 class PostResponse(BaseModel):
     id: int
     content: str
@@ -28,6 +37,7 @@ class PostResponse(BaseModel):
     comments_count: int
     created_at: datetime
     author: UserBasic
+    comments: List[CommentResponse] = []
 
     class Config:
         orm_mode = True
@@ -42,6 +52,7 @@ class ReelResponse(BaseModel):
     views_count: int
     created_at: datetime
     author: UserBasic
+    comments: List[CommentResponse] = []
 
     class Config:
         orm_mode = True
@@ -227,8 +238,27 @@ def get_reels(
 ):
     """Get the video reels feed"""
     reels = db.query(Reel).order_by(Reel.created_at.desc()).offset(skip).limit(limit).all()
+    
+    from app.models.ecosystem import ReelComment
+    response_reels = []
+    for r in reels:
+        comments = db.query(ReelComment).filter(ReelComment.reel_id == r.id).order_by(ReelComment.created_at.desc()).all()
+        r_dict = {
+            "id": r.id,
+            "video_url": r.video_url,
+            "thumbnail_url": r.thumbnail_url,
+            "caption": r.caption,
+            "tags": r.tags,
+            "likes_count": r.likes_count,
+            "views_count": r.views_count,
+            "created_at": r.created_at,
+            "author": r.author,
+            "comments": [{"id": c.id, "text": c.text, "created_at": c.created_at, "author": c.author} for c in comments]
+        }
+        response_reels.append(r_dict)
+        
     # If no reels exist in DB, return some dummy high-quality video links for testing the UI
-    if not reels:
+    if not response_reels:
         return [
             {
                 "id": 1,
@@ -253,7 +283,7 @@ def get_reels(
                 "author": {"id": 0, "full_name": "HR Expert", "email": "", "profile_picture": None, "primary_role": "company"}
             }
         ]
-    return reels
+    return response_reels
 
 @router.get("/orbit")
 def get_orbit_nodes(db: Session = Depends(database.get_db), current_user: models.User = Depends(deps.get_current_user)):
@@ -262,6 +292,8 @@ def get_orbit_nodes(db: Session = Depends(database.get_db), current_user: models
     Calculates spatial node properties and match scores based on candidate profile.
     """
     from app.models.job import Job
+    from app.services.ai import bulk_orbit_match
+    
     jobs = db.query(Job).all()
     
     if not jobs:
@@ -269,32 +301,27 @@ def get_orbit_nodes(db: Session = Depends(database.get_db), current_user: models
         
     user_skills = current_user.skills.lower() if current_user.skills else ""
     user_bio = current_user.bio.lower() if current_user.bio else ""
-    user_text = user_skills + " " + user_bio
+    user_text = f"Skills: {user_skills} | Bio: {user_bio}"
+    
+    # Prepare jobs list for AI
+    jobs_payload = []
+    for j in jobs:
+        jobs_payload.append({
+            "id": j.id,
+            "title": j.title,
+            "description": j.description[:200], # truncate for speed
+            "skills": j.skills_required
+        })
+        
+    # Get scores from AI (or fallback)
+    scores_map = bulk_orbit_match(user_text, jobs_payload)
     
     nodes = []
     rings = 3
     colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899']
     
     for i, job in enumerate(jobs):
-        # Calculate real match score
-        job_text = f"{job.title} {job.description} {job.skills_required}".lower()
-        
-        # Simple overlap algorithm
-        score = 60 # Base score
-        if current_user.primary_role == "candidate":
-            job_keywords = set([k.strip() for k in (job.skills_required or "").split(",") if k.strip()])
-            user_keywords = set([k.strip() for k in (current_user.skills or "").split(",") if k.strip()])
-            
-            overlap = len(job_keywords.intersection(user_keywords))
-            if len(job_keywords) > 0:
-                score += int((overlap / len(job_keywords)) * 40)
-            
-            # Bonus for bio matching title
-            if job.title.lower() in user_bio:
-                score += 10
-                
-        # Cap score at 99
-        match_score = min(99, max(45, score))
+        match_score = scores_map.get(str(job.id), 45)
         
         # Determine spatial properties based on match score
         # Higher score = lower ring (closer to center)
@@ -339,8 +366,28 @@ def get_feed(
     """
     posts = db.query(Post).order_by(Post.created_at.desc()).offset(skip).limit(limit).all()
     
+    # We need to attach comments manually since they are separated.
+    # In a larger app we would use relationships, but this works fine for small scale.
+    from app.models.ecosystem import PostComment
+    
+    response_posts = []
+    for p in posts:
+        comments = db.query(PostComment).filter(PostComment.post_id == p.id).order_by(PostComment.created_at.desc()).all()
+        p_dict = {
+            "id": p.id,
+            "content": p.content,
+            "media_url": p.media_url,
+            "post_type": p.post_type,
+            "likes_count": p.likes_count,
+            "comments_count": p.comments_count,
+            "created_at": p.created_at,
+            "author": p.author,
+            "comments": [{"id": c.id, "text": c.text, "created_at": c.created_at, "author": c.author} for c in comments]
+        }
+        response_posts.append(p_dict)
+    
     # If the feed is empty (initial DB), generate some mock data for the ecosystem
-    if not posts:
+    if not response_posts:
         mock_user = db.query(models.User).filter(models.User.email == "system@kaarya.os").first()
         if not mock_user:
             mock_user = models.User(
@@ -362,8 +409,14 @@ def get_feed(
         db.commit()
         
         posts = db.query(Post).order_by(Post.created_at.desc()).offset(skip).limit(limit).all()
+        for p in posts:
+            response_posts.append({
+                "id": p.id, "content": p.content, "media_url": p.media_url, "post_type": p.post_type,
+                "likes_count": p.likes_count, "comments_count": p.comments_count, "created_at": p.created_at,
+                "author": p.author, "comments": []
+            })
 
-    return posts
+    return response_posts
 
 
 @router.post("/feed", response_model=PostResponse)
@@ -387,9 +440,69 @@ def create_post(
     db.refresh(new_post)
     
     # Since we need to return the author, refresh to load the relationship
-    return new_post
+    return {
+        "id": new_post.id,
+        "content": new_post.content,
+        "media_url": new_post.media_url,
+        "post_type": new_post.post_type,
+        "likes_count": new_post.likes_count,
+        "comments_count": new_post.comments_count,
+        "created_at": new_post.created_at,
+        "author": new_post.author,
+        "comments": []
+    }
 
+@router.post("/feed/{post_id}/like")
+def like_post(post_id: int, db: Session = Depends(database.get_db)):
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if post:
+        post.likes_count += 1
+        db.commit()
+        return {"status": "success", "likes_count": post.likes_count}
+    raise HTTPException(status_code=404, detail="Post not found")
 
+@router.post("/feed/{post_id}/comment")
+def comment_post(
+    post_id: int, 
+    text: str = Body(..., embed=True),
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if post:
+        from app.models.ecosystem import PostComment
+        new_comment = PostComment(post_id=post.id, author_id=current_user.id, text=text)
+        db.add(new_comment)
+        post.comments_count += 1
+        db.commit()
+        db.refresh(new_comment)
+        return {
+            "status": "success", 
+            "comments_count": post.comments_count,
+            "comment": {
+                "id": new_comment.id,
+                "text": new_comment.text,
+                "created_at": new_comment.created_at,
+                "author": current_user
+            }
+        }
+    raise HTTPException(status_code=404, detail="Post not found")
+
+@router.delete("/feed/{post_id}")
+def delete_post(
+    post_id: int, 
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this post")
+        
+    db.delete(post)
+    db.commit()
+    return {"status": "success"}
 
 
 
@@ -421,6 +534,47 @@ def like_reel(reel_id: int, db: Session = Depends(database.get_db)):
         db.commit()
         return {"status": "success", "likes_count": reel.likes_count}
     raise HTTPException(status_code=404, detail="Reel not found")
+
+@router.post("/reels/{reel_id}/comment")
+def comment_reel(
+    reel_id: int, 
+    text: str = Body(..., embed=True),
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    reel = db.query(Reel).filter(Reel.id == reel_id).first()
+    if reel:
+        from app.models.ecosystem import ReelComment
+        new_comment = ReelComment(reel_id=reel.id, author_id=current_user.id, text=text)
+        db.add(new_comment)
+        db.commit()
+        db.refresh(new_comment)
+        return {
+            "status": "success",
+            "comment": {
+                "id": new_comment.id,
+                "text": new_comment.text,
+                "created_at": new_comment.created_at,
+                "author": current_user
+            }
+        }
+    raise HTTPException(status_code=404, detail="Reel not found")
+
+@router.delete("/reels/{reel_id}")
+def delete_reel(
+    reel_id: int, 
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    reel = db.query(Reel).filter(Reel.id == reel_id).first()
+    if not reel:
+        raise HTTPException(status_code=404, detail="Reel not found")
+    if reel.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this reel")
+        
+    db.delete(reel)
+    db.commit()
+    return {"status": "success"}
 
 @router.get("/candidates/pool")
 def get_talent_pool(db: Session = Depends(database.get_db), current_user: models.User = Depends(deps.get_current_user)):
