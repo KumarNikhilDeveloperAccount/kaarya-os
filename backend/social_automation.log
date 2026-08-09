@@ -1,0 +1,209 @@
+2026-07-25 14:39:11,460 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-07-25 14:39:11,461 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-07-25 14:39:11,462 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-07-25 14:39:11,465 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-07-25 14:39:13,569 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-07-25 14:39:13,570 [WARNING] [Twitter] Skipping - Missing API Keys in .env
+2026-07-25 14:39:13,570 [WARNING] [Facebook/Instagram] Skipping - Missing FACEBOOK_PAGE_TOKEN in .env
+2026-07-25 14:39:13,571 [WARNING] [LinkedIn] Skipping - Missing LINKEDIN_ACCESS_TOKEN or LINKEDIN_URN in .env
+2026-07-25 14:39:13,571 [INFO] === Broadcast Cycle Complete ===
+2026-07-25 14:39:13,571 [INFO] Next broadcast scheduled in 15.54 hours (at 2026-07-26 06:11:50)
+2026-08-08 15:16:07,932 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-08-08 15:16:07,933 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-08-08 15:16:07,933 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-08-08 15:16:07,934 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-08-08 15:16:09,970 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-08-08 15:16:23,737 [ERROR] [Twitter] Failed to post: 402 Payment Required
+credits depleted
+2026-08-08 15:16:23,762 [ERROR] [Facebook] Failed to post: 'GraphAPI' object has no attribute 'put_video'
+2026-08-08 15:16:24,854 [INFO] [LinkedIn] Successfully posted.
+2026-08-08 15:16:24,856 [INFO] === Broadcast Cycle Complete ===
+2026-08-08 15:16:24,856 [INFO] Next broadcast scheduled in 17.92 hours (at 2026-08-09 09:11:30)
+2026-08-08 15:34:09,303 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-08-08 15:34:09,304 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-08-08 15:34:09,304 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-08-08 15:34:09,305 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-08-08 15:34:10,827 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-08-08 15:34:13,649 [ERROR] [Twitter] Failed to post: 402 Payment Required
+credits depleted
+2026-08-08 15:34:15,461 [ERROR] [Facebook] Failed to post Image: {"error":{"message":"(#200) This endpoint is deprecated since the required permission publish_actions is deprecated","type":"OAuthException","code":200,"fbtrace_id":"A4LPZwYCHflLELmKP1C3w09"}}
+2026-08-08 15:34:16,402 [INFO] [LinkedIn] Successfully posted.
+2026-08-08 15:34:16,404 [INFO] === Broadcast Cycle Complete ===
+2026-08-08 15:34:16,404 [INFO] Next broadcast scheduled in 18.14 hours (at 2026-08-09 09:42:57)
+2026-08-08 15:37:07,247 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-08-08 15:37:07,247 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-08-08 15:37:07,247 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-08-08 15:37:07,248 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-08-08 15:37:08,969 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-08-08 15:37:09,683 [ERROR] [Twitter] Failed to post: 402 Payment Required
+credits depleted
+2026-08-08 15:37:10,423 [ERROR] [Facebook] Failed to post text: {"error":{"message":"(#200) If posting to a group, requires app being installed in the group, and \\\n          either publish_to_groups permission with user token, or both pages_read_engagement \\\n          and pages_manage_posts permission with page token; If posting to a page, \\\n          requires both pages_read_engagement and pages_manage_posts as an admin with \\\n          sufficient administrative permission","type":"OAuthException","code":200,"fbtrace_id":"AfJ_lAT5m3ok_4hqRUrpyK5"}}
+2026-08-08 15:37:11,318 [ERROR] [LinkedIn] Failed to post: {"errorDetailType":"com.linkedin.common.error.BadRequest","message":"com.linkedin.content.common.exception.BadRequestResponseException: Content is a duplicate of urn:li:share:7491797147722461186","errorDetails":{"inputErrors":[{"description":"Duplicate post is detected","input":{},"code":"DUPLICATE_POST"}]},"status":422}
+2026-08-08 15:37:11,320 [INFO] === Broadcast Cycle Complete ===
+2026-08-08 15:37:11,320 [INFO] Next broadcast scheduled in 18.35 hours (at 2026-08-09 09:57:53)
+2026-08-08 16:16:23,445 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-08-08 16:16:23,446 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-08-08 16:16:23,446 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-08-08 16:16:23,446 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-08-08 16:16:25,066 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-08-08 16:16:42,442 [ERROR] [Twitter] Failed to post: 402 Payment Required
+credits depleted
+2026-08-08 16:16:43,512 [INFO] [LinkedIn] Successfully posted.
+2026-08-08 16:16:43,513 [INFO] === Broadcast Cycle Complete ===
+2026-08-08 16:16:43,514 [INFO] Next broadcast scheduled in 17.91 hours (at 2026-08-09 10:11:14)
+2026-08-08 16:21:41,090 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-08-08 16:21:41,091 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-08-08 16:21:41,091 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-08-08 16:21:41,092 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-08-08 16:21:43,134 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-08-08 16:21:45,817 [ERROR] [Twitter] Failed to post: 402 Payment Required
+credits depleted
+2026-08-08 16:21:46,737 [ERROR] [LinkedIn] Failed to post: {"errorDetailType":"com.linkedin.common.error.BadRequest","message":"com.linkedin.content.common.exception.BadRequestResponseException: Content is a duplicate of urn:li:share:7491808369297547264","errorDetails":{"inputErrors":[{"description":"Duplicate post is detected","input":{},"code":"DUPLICATE_POST"}]},"status":422}
+2026-08-08 16:21:46,739 [INFO] === Broadcast Cycle Complete ===
+2026-08-08 16:21:46,740 [INFO] Next broadcast scheduled in 18.76 hours (at 2026-08-09 11:07:28)
+2026-08-08 16:22:06,339 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-08-08 16:22:06,339 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-08-08 16:22:06,339 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-08-08 16:22:06,340 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-08-08 16:22:08,047 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-08-08 16:22:10,326 [ERROR] [Twitter] Failed to post: 402 Payment Required
+credits depleted
+2026-08-08 16:22:10,329 [WARNING] [Facebook/Instagram Playwright] Skipping - Missing META_USERNAME or META_PASSWORD in .env
+2026-08-08 16:22:11,223 [ERROR] [LinkedIn] Failed to post: {"errorDetailType":"com.linkedin.common.error.BadRequest","message":"com.linkedin.content.common.exception.BadRequestResponseException: Content is a duplicate of urn:li:share:7491808471806390272","errorDetails":{"inputErrors":[{"description":"Duplicate post is detected","input":{},"code":"DUPLICATE_POST"}]},"status":422}
+2026-08-08 16:22:11,226 [INFO] === Broadcast Cycle Complete ===
+2026-08-08 16:22:11,226 [INFO] Next broadcast scheduled in 16.85 hours (at 2026-08-09 09:13:23)
+2026-08-08 16:22:38,597 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-08-08 16:22:38,597 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-08-08 16:22:38,597 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-08-08 16:22:38,598 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-08-08 16:22:39,973 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-08-08 16:22:54,312 [ERROR] [Twitter] Failed to post: 402 Payment Required
+credits depleted
+2026-08-08 16:23:02,137 [INFO] [Facebook Playwright] Not logged in. Authenticating...
+2026-08-08 16:23:33,490 [ERROR] [Facebook Playwright] Exception during automation: Page.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator("button[name='login']")
+
+2026-08-08 16:23:34,388 [ERROR] [LinkedIn] Failed to post: {"errorDetailType":"com.linkedin.common.error.BadRequest","message":"com.linkedin.content.common.exception.BadRequestResponseException: Content is a duplicate of urn:li:share:7491808820604801026","errorDetails":{"inputErrors":[{"description":"Duplicate post is detected","input":{},"code":"DUPLICATE_POST"}]},"status":422}
+2026-08-08 16:23:34,389 [INFO] === Broadcast Cycle Complete ===
+2026-08-08 16:23:34,390 [INFO] Next broadcast scheduled in 16.74 hours (at 2026-08-09 09:07:53)
+2026-08-08 16:23:57,126 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-08-08 16:23:57,126 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-08-08 16:23:57,127 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-08-08 16:23:57,127 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-08-08 16:23:58,925 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-08-08 16:23:59,740 [ERROR] [Twitter] Failed to post: 402 Payment Required
+credits depleted
+2026-08-08 16:24:02,183 [INFO] [Facebook Playwright] Not logged in. Authenticating...
+2026-08-08 16:24:35,023 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-08-08 16:24:35,023 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-08-08 16:24:35,023 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-08-08 16:24:35,024 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-08-08 16:24:36,459 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-08-08 16:24:46,800 [ERROR] [Twitter] Failed to post: 402 Payment Required
+credits depleted
+2026-08-08 16:24:48,764 [INFO] [Facebook Playwright] Not logged in. Authenticating...
+2026-08-08 16:26:43,607 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-08-08 16:26:43,608 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-08-08 16:26:43,608 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-08-08 16:26:43,608 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-08-08 16:26:46,136 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-08-08 16:26:46,946 [ERROR] [Twitter] Failed to post: 402 Payment Required
+credits depleted
+2026-08-08 16:26:48,505 [INFO] [Facebook Playwright] Not logged in. Authenticating...
+2026-08-08 16:27:38,954 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-08-08 16:27:38,954 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-08-08 16:27:38,954 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-08-08 16:27:38,955 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-08-08 16:27:40,714 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-08-08 16:27:51,378 [ERROR] [Twitter] Failed to post: 402 Payment Required
+credits depleted
+2026-08-08 16:27:54,701 [INFO] [Facebook Playwright] Not logged in. Authenticating...
+2026-08-08 16:28:25,679 [ERROR] [Facebook Playwright] Exception during automation: Locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator("[name='login']")
+
+2026-08-08 16:28:26,676 [INFO] [LinkedIn] Successfully posted.
+2026-08-08 16:28:26,678 [INFO] === Broadcast Cycle Complete ===
+2026-08-08 16:28:26,678 [INFO] Next broadcast scheduled in 16.02 hours (at 2026-08-09 08:29:48)
+2026-08-08 16:29:18,137 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-08-08 16:29:18,137 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-08-08 16:29:18,137 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-08-08 16:29:18,137 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-08-08 16:29:19,556 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-08-08 16:29:29,148 [ERROR] [Twitter] Failed to post: 402 Payment Required
+credits depleted
+2026-08-08 16:29:31,274 [INFO] [Facebook Playwright] Not logged in. Authenticating...
+2026-08-08 16:30:07,046 [ERROR] [Facebook Playwright] Exception during automation: Locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator("[data-testid='royal_login_button']")
+
+2026-08-08 16:30:07,826 [ERROR] [LinkedIn] Failed to post: {"errorDetailType":"com.linkedin.common.error.BadRequest","message":"com.linkedin.content.common.exception.BadRequestResponseException: Content is a duplicate of urn:li:share:7491810470912319488","errorDetails":{"inputErrors":[{"description":"Duplicate post is detected","input":{},"code":"DUPLICATE_POST"}]},"status":422}
+2026-08-08 16:30:07,827 [INFO] === Broadcast Cycle Complete ===
+2026-08-08 16:30:07,827 [INFO] Next broadcast scheduled in 16.22 hours (at 2026-08-09 08:43:15)
+2026-08-08 16:31:03,871 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-08-08 16:31:03,871 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-08-08 16:31:03,871 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-08-08 16:31:03,872 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-08-08 16:31:05,589 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-08-08 16:31:17,672 [ERROR] [Twitter] Failed to post: 402 Payment Required
+credits depleted
+2026-08-08 16:31:19,352 [INFO] [Facebook Playwright] Not logged in. Authenticating...
+2026-08-08 16:31:30,026 [INFO] [Facebook Playwright] Authentication successful. Navigating to Page...
+2026-08-08 16:31:31,756 [INFO] [Facebook Playwright] Creating post...
+2026-08-08 16:31:36,993 [ERROR] [Facebook Playwright] Exception during automation: Locator.click: Timeout 5000ms exceeded.
+Call log:
+  - waiting for get_by_role("button", name="Create post")
+
+2026-08-08 16:31:37,971 [ERROR] [LinkedIn] Failed to post: {"errorDetailType":"com.linkedin.common.error.BadRequest","message":"com.linkedin.content.common.exception.BadRequestResponseException: Content is a duplicate of urn:li:share:7491810848814886912","errorDetails":{"inputErrors":[{"description":"Duplicate post is detected","input":{},"code":"DUPLICATE_POST"}]},"status":422}
+2026-08-08 16:31:37,973 [INFO] === Broadcast Cycle Complete ===
+2026-08-08 16:31:37,973 [INFO] Next broadcast scheduled in 18.45 hours (at 2026-08-09 10:58:27)
+2026-08-08 16:32:06,013 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-08-08 16:32:06,013 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-08-08 16:32:06,013 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-08-08 16:32:06,013 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-08-08 16:32:07,467 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-08-08 16:32:10,060 [ERROR] [Twitter] Failed to post: 402 Payment Required
+credits depleted
+2026-08-08 16:32:11,785 [INFO] [Facebook Playwright] Not logged in. Authenticating...
+2026-08-08 16:32:20,324 [INFO] [Facebook Playwright] Authentication successful. Navigating to Page...
+2026-08-08 16:32:21,752 [INFO] [Facebook Playwright] Creating post...
+2026-08-08 16:32:42,095 [ERROR] [Facebook Playwright] Exception during automation: Locator.click: Timeout 5000ms exceeded.
+Call log:
+  - waiting for get_by_text("Write something").first
+
+2026-08-08 16:32:43,002 [ERROR] [LinkedIn] Failed to post: {"errorDetailType":"com.linkedin.common.error.BadRequest","message":"com.linkedin.content.common.exception.BadRequestResponseException: Content is a duplicate of urn:li:share:7491811121641758720","errorDetails":{"inputErrors":[{"description":"Duplicate post is detected","input":{},"code":"DUPLICATE_POST"}]},"status":422}
+2026-08-08 16:32:43,005 [INFO] === Broadcast Cycle Complete ===
+2026-08-08 16:32:43,006 [INFO] Next broadcast scheduled in 16.81 hours (at 2026-08-09 09:21:08)
+2026-08-08 16:33:08,720 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-08-08 16:33:08,720 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-08-08 16:33:08,720 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-08-08 16:33:08,721 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-08-08 16:33:10,224 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-08-08 16:33:13,249 [ERROR] [Twitter] Failed to post: 402 Payment Required
+credits depleted
+2026-08-08 16:33:14,999 [INFO] [Facebook Playwright] Not logged in. Authenticating...
+2026-08-08 16:33:21,458 [INFO] [Facebook Playwright] Authentication successful. Navigating to Page...
+2026-08-08 16:33:23,016 [INFO] [Facebook Playwright] Creating post...
+2026-08-08 16:33:29,037 [INFO] [Facebook Playwright] Uploading image...
+2026-08-08 16:33:59,360 [ERROR] [Facebook Playwright] Exception during automation: Locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for get_by_label("Photo/video")
+
+2026-08-08 16:34:00,400 [ERROR] [LinkedIn] Failed to post: {"errorDetailType":"com.linkedin.common.error.BadRequest","message":"com.linkedin.content.common.exception.BadRequestResponseException: Content is a duplicate of urn:li:share:7491811446180376577","errorDetails":{"inputErrors":[{"description":"Duplicate post is detected","input":{},"code":"DUPLICATE_POST"}]},"status":422}
+2026-08-08 16:34:00,401 [INFO] === Broadcast Cycle Complete ===
+2026-08-08 16:34:00,401 [INFO] Next broadcast scheduled in 16.82 hours (at 2026-08-09 09:23:11)
+2026-08-08 16:34:27,498 [INFO] Kaarya.OS Autonomous Social Engine Started.
+2026-08-08 16:34:27,498 [INFO] The system is programmed to post across all linked handles every 15 to 20 hours.
+2026-08-08 16:34:27,498 [INFO] Please ensure images and videos are placed in: C:\kaarya-os\backend\assets\social_media
+2026-08-08 16:34:27,499 [INFO] === Starting Social Media Broadcast Cycle ===
+2026-08-08 16:34:29,327 [INFO] Saved LIVE preview to artifact: C:\Users\nkash\.gemini\antigravity\brain\696e0031-fd0c-4506-90a5-5281b13775a4\live_social_broadcast.md
+2026-08-08 16:34:30,132 [ERROR] [Twitter] Failed to post: 402 Payment Required
+credits depleted
+2026-08-08 16:34:32,118 [INFO] [Facebook Playwright] Not logged in. Authenticating...
+2026-08-08 16:34:39,785 [INFO] [Facebook Playwright] Authentication successful. Navigating to Page...
+2026-08-08 16:34:41,177 [INFO] [Facebook Playwright] Creating post...
+2026-08-08 16:34:55,228 [INFO] [Facebook Playwright] Successfully posted via browser automation!
+2026-08-08 16:34:56,386 [ERROR] [LinkedIn] Failed to post: {"errorDetailType":"com.linkedin.common.error.BadRequest","message":"com.linkedin.content.common.exception.BadRequestResponseException: Content is a duplicate of urn:li:share:7491811681065435136","errorDetails":{"inputErrors":[{"description":"Duplicate post is detected","input":{},"code":"DUPLICATE_POST"}]},"status":422}
+2026-08-08 16:34:56,388 [INFO] === Broadcast Cycle Complete ===
+2026-08-08 16:34:56,389 [INFO] Next broadcast scheduled in 19.59 hours (at 2026-08-09 12:10:16)

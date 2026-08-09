@@ -84,36 +84,71 @@ def send_notification(subject, body):
         logger.error(f"Failed to send email notification: {e}")
 
 def generate_ad_image(prompt: str) -> str:
-    """Generates a new HD 1080x1080 ad image using Pollinations AI."""
-    import urllib.parse
-    logger.info("Generating new HD ad image...")
-    
-    # Enforce HD parameters
-    hd_prompt = prompt + " 8k resolution, ultra-detailed, photorealistic, professional B2B software advertisement, perfectly centered."
-    safe_prompt = urllib.parse.quote(hd_prompt)
-    url = f"https://image.pollinations.ai/prompt/{safe_prompt}?width=1080&height=1080&nologo=true"
+    """Generates a high-quality branded ad image using Pillow instead of AI."""
+    from PIL import Image, ImageDraw, ImageFont
+    import textwrap
+    logger.info("Generating new branded ad image...")
     
     try:
-        import requests
-        response = requests.get(url, timeout=30)
-        response.raise_for_status()
+        # Create a 1080x1080 canvas with brand background (Kaarya Purple to Dark Blue gradient style)
+        # For simplicity in PIL, we'll use a solid deep background
+        img = Image.new('RGB', (1080, 1080), color=(17, 24, 39)) # Tailwind gray-900
+        draw = ImageDraw.Draw(img)
         
+        # Load and paste the logo
+        logo_path = Path(__file__).parent.parent.parent / "public" / "kaarya-logo-final.png"
+        if logo_path.exists():
+            logo = Image.open(logo_path).convert("RGBA")
+            # Resize logo
+            logo.thumbnail((300, 300))
+            # Center horizontally, near top
+            logo_x = (1080 - logo.width) // 2
+            img.paste(logo, (logo_x, 150), logo)
+            
+        # Write the text
+        try:
+            # Try to load a nice font if available, fallback to default
+            font = ImageFont.truetype("arial.ttf", 60)
+        except:
+            font = ImageFont.load_default()
+            
+        # Clean up prompt text (remove quotes if any)
+        text = prompt.replace('"', '').strip()
+        
+        # Wrap text
+        lines = textwrap.wrap(text, width=35)
+        
+        # Calculate total height of text block
+        y_text = 500
+        for line in lines:
+            # Approximate height for PIL default or arial
+            draw.text((100, y_text), line, font=font, fill=(255, 255, 255))
+            y_text += 80
+            
         timestamp = datetime.datetime.now().strftime("%Y%md_%H%M%S")
         filepath = IMAGES_DIR / f"generated_ad_{timestamp}.jpg"
         
-        with open(filepath, 'wb') as f:
-            f.write(response.content)
-            
-        logger.info(f"Successfully generated and saved new HD image: {filepath}")
+        img.save(filepath, quality=95)
+        logger.info(f"Successfully generated and saved branded HD image: {filepath}")
         return str(filepath)
     except Exception as e:
-        logger.error(f"Failed to generate HD image: {e}")
+        logger.error(f"Failed to generate branded image: {e}")
         return None
 
 def get_media_for_run(media_type):
     """Generates a new image or falls back to existing assets."""
     if media_type == "image":
-        img_prompt = "A high quality, modern, sleek advertisement background for a B2B SaaS product called Kaarya OS. Minimalist, professional, corporate blue and white colors."
+        if ai_client:
+            try:
+                # Ask Gemini to generate a short, punchy marketing phrase
+                prompt = "Write a very short, punchy, 1-sentence marketing quote (max 15 words) for a B2B SaaS hiring platform named Kaarya.OS. Do not include hashtags. Just the quote."
+                res = ai_client.models.generate_content(model="gemini-3.5-flash", contents=prompt)
+                img_prompt = res.text.strip()
+            except:
+                img_prompt = "Hiring, decided. Smarter, faster, validated."
+        else:
+            img_prompt = "Hiring, decided. Smarter, faster, validated."
+            
         generated_path = generate_ad_image(img_prompt)
         if generated_path:
             return generated_path
@@ -124,6 +159,8 @@ def get_media_for_run(media_type):
         media_files = list(VIDEOS_DIR.glob("*.*"))
         if media_files:
             return str(random.choice(media_files))
+        # Fallback to image if no videos
+        return get_media_for_run("image")
     return None
 
 def post_to_twitter(text, media_path=None):

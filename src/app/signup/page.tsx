@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, ShieldCheck, Linkedin, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -10,7 +10,7 @@ import api, { API_BASE_URL } from '@/lib/api';
 import { toast } from 'sonner';
 import Image from 'next/image';
 
-export default function SignupPage() {
+function SignupContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -207,5 +207,13 @@ function InputGroup({ label, icon, value, onChange, type = "text", placeholder, 
         />
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="animate-spin text-primary w-10 h-10" /></div>}>
+      <SignupContent />
+    </Suspense>
   );
 }

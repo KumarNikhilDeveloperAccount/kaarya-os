@@ -18,7 +18,7 @@ client = None
 try:
     if genai and settings.GEMINI_API_KEY:
         genai.configure(api_key=settings.GEMINI_API_KEY)
-        client = genai.GenerativeModel("gemini-1.5-flash")
+        client = genai.GenerativeModel("gemini-3.5-flash")
     else:
         logger.warning("GEMINI_API_KEY is missing in settings.")
 except Exception as e:
