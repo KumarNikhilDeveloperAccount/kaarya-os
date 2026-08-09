@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Request
 from app import deps, database, models
 from sqlalchemy.orm import Session
 import razorpay
@@ -77,3 +77,60 @@ def get_transactions(current_user: models.User = Depends(deps.get_current_user),
     from app.models.payment import Transaction
     txs = db.query(Transaction).filter(Transaction.user_id == current_user.id).order_by(Transaction.created_at.desc()).all()
     return txs
+
+@router.post("/webhook")
+async def razorpay_webhook(
+    request: Request,
+    db: Session = Depends(database.get_db)
+):
+    webhook_secret = os.environ.get("RAZORPAY_WEBHOOK_SECRET")
+    if not webhook_secret or not client:
+        return {"status": "ignored", "reason": "Webhook secret not configured"}
+
+    payload = await request.body()
+    signature = request.headers.get("x-razorpay-signature")
+
+    try:
+        client.utility.verify_webhook_signature(payload.decode('utf-8'), signature, webhook_secret)
+    except razorpay.errors.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Webhook signature verification failed")
+    except Exception as e:
+        print(f"Webhook Verification Error: {e}")
+        raise HTTPException(status_code=400, detail="Invalid webhook request")
+
+    # Process Webhook Event
+    import json
+    data = json.loads(payload)
+    event = data.get("event")
+
+    from app.models.payment import Transaction
+    
+    if event in ["payment.captured", "order.paid"]:
+        payment_entity = data['payload']['payment']['entity']
+        order_id = payment_entity.get("order_id")
+        payment_id = payment_entity.get("id")
+        amount = payment_entity.get("amount") / 100.0 # Razorpay sends in paise
+        
+        # Check if transaction already exists (from synchronous verify)
+        existing_tx = db.query(Transaction).filter(Transaction.description.like(f"%{payment_id}%")).first()
+        if not existing_tx:
+            # We don't have the user_id context easily unless we pass it in notes, 
+            # but ideally the synchronous /verify flow catches it. 
+            # If we missed it, we handle it here.
+            notes = payment_entity.get("notes", {})
+            user_id = notes.get("user_id", "system_webhook_user")
+            
+            tx = Transaction(
+                id=str(uuid.uuid4()),
+                user_id=user_id, 
+                amount=amount,
+                currency=payment_entity.get("currency", "INR"),
+                status="completed",
+                type="deposit",
+                description=f"Razorpay Webhook deposit {payment_id}"
+            )
+            db.add(tx)
+            db.commit()
+            
+    return {"status": "ok"}
+
