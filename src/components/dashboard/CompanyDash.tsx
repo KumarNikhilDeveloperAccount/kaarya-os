@@ -234,6 +234,34 @@ export default function CompanyDashboard() {
                      <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Time to Forensic</p>
                   </div>
                </div>
+               
+               {/* Advanced Cohort Analytics */}
+               {data?.cohort_funnel && (
+                  <div className="mt-8 pt-8 border-t border-white/10">
+                     <div className="flex items-center space-x-3 text-primary mb-6">
+                        <TrendingUp className="h-6 w-6" />
+                        <h3 className="font-extrabold uppercase tracking-widest text-xs">Cohort Funnel</h3>
+                     </div>
+                     <div className="grid grid-cols-4 gap-4">
+                        <div className="bg-white/5 rounded-xl p-4 text-center">
+                           <p className="text-2xl font-black">{data.cohort_funnel.applied}</p>
+                           <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Applied</p>
+                        </div>
+                        <div className="bg-white/5 rounded-xl p-4 text-center border-l-2 border-primary/30">
+                           <p className="text-2xl font-black text-blue-400">{data.cohort_funnel.vetted}</p>
+                           <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Vetted</p>
+                        </div>
+                        <div className="bg-white/5 rounded-xl p-4 text-center border-l-2 border-indigo-400/50">
+                           <p className="text-2xl font-black text-indigo-400">{data.cohort_funnel.interviewed}</p>
+                           <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Interviewed</p>
+                        </div>
+                        <div className="bg-white/5 rounded-xl p-4 text-center border-l-2 border-emerald-500/70">
+                           <p className="text-2xl font-black text-emerald-500">{data.cohort_funnel.hired}</p>
+                           <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Hired</p>
+                        </div>
+                     </div>
+                  </div>
+               )}
             </div>
          </div>
       </div>
