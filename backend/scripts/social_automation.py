@@ -206,7 +206,9 @@ def post_to_facebook(text, media_path=None, media_type="image"):
                 user_data_dir=context_dir, headless=True, viewport={'width': 1280, 'height': 800}
             )
             page = context.new_page()
-            page.goto("https://www.facebook.com/")
+            
+            # Use m.facebook.com for a much simpler, predictable DOM that rarely breaks
+            page.goto("https://m.facebook.com/")
             
             if page.locator("input[name='email']").is_visible():
                 page.fill("input[name='email']", META_USERNAME)
@@ -216,30 +218,49 @@ def post_to_facebook(text, media_path=None, media_type="image"):
                 if page.locator("input[name='email']").is_visible():
                     return False
             
-            page.goto("https://www.facebook.com/kaaryaos")
+            page.goto("https://m.facebook.com/kaaryaos")
             page.wait_for_load_state("networkidle")
             
             try:
-                page.locator("div[role='button']:has-text('What\\'s on your mind')").first.click(timeout=5000)
+                # Click 'Write something' or 'Post' on mobile view
+                page.locator("div:has-text('Write something')").last.click(timeout=5000)
             except:
-                page.evaluate("() => { const el = Array.from(document.querySelectorAll('div, span, [role=\"button\"]')).find(e => e.innerText && (e.innerText.includes(\"What's on your mind\") || e.innerText.includes(\"Create post\"))); if(el) el.click(); }")
+                try:
+                    page.get_by_role("button", name="Write something").click(timeout=5000)
+                except:
+                    page.evaluate("() => { const el = Array.from(document.querySelectorAll('*')).find(e => e.innerText && (e.innerText.includes('Write something') || e.innerText.includes('Create a post'))); if(el) el.click(); }")
             
             page.wait_for_timeout(3000)
-            page.keyboard.insert_text(text)
+            
+            # Fill text
+            try:
+                page.locator("textarea").first.fill(text)
+            except:
+                page.keyboard.insert_text(text)
             
             if media_path:
                 try:
-                    page.locator("input[type='file']").first.set_input_files(media_path, timeout=5000)
+                    # In m.facebook, we can usually just set input files
+                    page.locator("input[type='file'][accept*='image'], input[type='file'][accept*='video']").first.set_input_files(media_path, timeout=5000)
                 except:
-                    with page.expect_file_chooser(timeout=10000) as fc_info:
+                    try:
+                        with page.expect_file_chooser(timeout=10000) as fc_info:
+                            page.get_by_role("button", name="Photo/video").click()
+                        file_chooser = fc_info.value
+                        file_chooser.set_files(media_path)
+                    except:
+                        # Fallback injection
                         page.evaluate("() => { const el = Array.from(document.querySelectorAll('div, span, [aria-label]')).find(e => e.getAttribute('aria-label') && (e.getAttribute('aria-label').includes('Photo/video') || e.getAttribute('aria-label').includes('Photo'))); if(el) el.click(); }")
-                    file_chooser = fc_info.value
-                    file_chooser.set_files(media_path)
+                        page.locator("input[type='file']").first.set_input_files(media_path, timeout=5000)
+                        
                 page.wait_for_timeout(8000)
                 
-            page.evaluate("() => { const el = Array.from(document.querySelectorAll('div, span, [role=\"button\"], button')).find(e => e.getAttribute('aria-label') === 'Post' || (e.innerText && e.innerText.trim() === 'Post')); if(el) el.click(); }")
+            try:
+                page.locator("button:has-text('Post')").first.click(timeout=5000)
+            except:
+                page.evaluate("() => { const el = Array.from(document.querySelectorAll('div, span, [role=\"button\"], button')).find(e => e.getAttribute('aria-label') === 'Post' || (e.innerText && e.innerText.trim() === 'Post')); if(el) el.click(); }")
+                
             page.wait_for_timeout(8000)
-            
             logger.info("[Facebook] Successfully posted via browser automation!")
             context.close()
             return True
@@ -301,6 +322,47 @@ def post_to_linkedin(text, media_path=None):
         logger.error(f"[LinkedIn] Failed: {e}")
         return False
 
+def challenge_code_handler(username, choice):
+    import imaplib
+    import email
+    import re
+    import time
+    logger.info("Challenge required. Fetching code from email...")
+    if choice != 2:
+        return False
+    time.sleep(15) # Wait for email to arrive
+    try:
+        mail = imaplib.IMAP4_SSL("smtp.gmail.com") # Using same host logic, wait imap is usually imap.gmail.com
+        mail.login(SMTP_USER, SMTP_PASSWORD)
+        mail.select("inbox")
+        status, messages = mail.search(None, 'ALL')
+        email_ids = messages[0].split()
+        if not email_ids:
+            return False
+        # Search the last 5 emails
+        for e_id in reversed(email_ids[-5:]):
+            status, msg_data = mail.fetch(e_id, '(RFC822)')
+            for response_part in msg_data:
+                if isinstance(response_part, tuple):
+                    msg = email.message_from_bytes(response_part[1])
+                    if "Instagram" in str(msg.get("From", "")):
+                        body = ""
+                        if msg.is_multipart():
+                            for part in msg.walk():
+                                if part.get_content_type() == "text/plain":
+                                    body = part.get_payload(decode=True).decode()
+                                    break
+                        else:
+                            body = msg.get_payload(decode=True).decode()
+                        match = re.search(r'\\b(\\d{6})\\b', body)
+                        if match:
+                            code = match.group(1)
+                            logger.info(f"Successfully extracted challenge code: {code}")
+                            return code
+    except Exception as e:
+        logger.error(f"Failed to fetch challenge code: {e}")
+    return False
+
 def post_to_instagram(text, media_path, is_story=False):
     from instagrapi import Client
     META_USERNAME = os.getenv("META_USERNAME")
@@ -309,10 +371,14 @@ def post_to_instagram(text, media_path, is_story=False):
         return True
         
     cl = Client()
+    # Configure challenge handler
+    cl.challenge_code_handler = challenge_code_handler
+    
     try:
         session_file = os.path.join(os.path.dirname(__file__), "ig_session.json")
         if os.path.exists(session_file):
             cl.load_settings(session_file)
+            
         cl.login(META_USERNAME, META_PASSWORD)
         cl.dump_settings(session_file)
         
