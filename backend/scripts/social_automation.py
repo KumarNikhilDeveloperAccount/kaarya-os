@@ -245,153 +245,95 @@ def post_to_linkedin(text, media_path=None):
         return False
 
 def post_to_facebook(text, media_path=None, media_type="image"):
-    META_USERNAME = os.getenv("META_USERNAME")
-    META_PASSWORD = os.getenv("META_PASSWORD")
-    if not META_USERNAME or not META_PASSWORD:
-        logger.warning("[Facebook Playwright] Skipping - Missing Credentials")
+    FACEBOOK_PAGE_TOKEN = os.getenv("FACEBOOK_PAGE_TOKEN")
+    if not FACEBOOK_PAGE_TOKEN:
+        logger.warning("[Facebook API] Skipping - Missing FACEBOOK_PAGE_TOKEN")
         return True
         
     try:
-        from playwright.sync_api import sync_playwright
-        with sync_playwright() as p:
-            context_dir = os.path.join(os.path.dirname(__file__), "playwright_session")
-            context = p.chromium.launch_persistent_context(
-                user_data_dir=context_dir, headless=True, viewport={'width': 1280, 'height': 800}
-            )
-            page = context.new_page()
-            page.goto("https://www.facebook.com/")
-            page.wait_for_timeout(3000)
+        import requests
+        if media_path and media_type == "image":
+            url = f"https://graph.facebook.com/v19.0/me/photos"
+            data = {
+                "message": text,
+                "access_token": FACEBOOK_PAGE_TOKEN
+            }
+            with open(media_path, "rb") as f:
+                files = {"source": f}
+                res = requests.post(url, data=data, files=files)
+        elif media_path and media_type == "video":
+            url = f"https://graph.facebook.com/v19.0/me/videos"
+            data = {
+                "description": text,
+                "access_token": FACEBOOK_PAGE_TOKEN
+            }
+            with open(media_path, "rb") as f:
+                files = {"source": f}
+                res = requests.post(url, data=data, files=files)
+        else:
+            url = f"https://graph.facebook.com/v19.0/me/feed"
+            data = {
+                "message": text,
+                "access_token": FACEBOOK_PAGE_TOKEN
+            }
+            res = requests.post(url, data=data)
             
-            if page.locator("input[name='email']").is_visible():
-                page.fill("input[name='email']", META_USERNAME)
-                page.fill("input[name='pass']", META_PASSWORD)
-                page.locator("button[name='login']").click()
-                page.wait_for_timeout(8000)
-                
-            # Navigate to Page
-            page.goto("https://www.facebook.com/kaaryaos")
-            page.wait_for_timeout(5000)
-            
-            # Switch to Page Context if prompted
-            if page.locator("div[aria-label='Switch now']").is_visible():
-                page.locator("div[aria-label='Switch now']").click()
-                page.wait_for_timeout(5000)
-                page.goto("https://www.facebook.com/kaaryaos")
-                page.wait_for_timeout(5000)
-                
-            try:
-                # Click "Photo/video" button
-                photo_btn = page.locator("div:has-text('Photo/video')").last
-                photo_btn.click(timeout=10000)
-            except:
-                try:
-                    page.locator("span:has-text('Photo/video')").first.click(timeout=10000)
-                except:
-                    # Generic post box click
-                    page.locator("div:has-text('Write something')").last.click(timeout=10000)
-            
-            page.wait_for_timeout(3000)
-            
-            # File upload
-            if media_path:
-                page.locator("input[type='file'][accept*='image'], input[type='file'][accept*='video']").first.set_input_files(media_path)
-                page.wait_for_timeout(5000)
-                
-            # Caption
-            try:
-                page.locator("div[aria-label*='Write something'], div[aria-label*='Create a post']").fill(text)
-            except:
-                page.keyboard.insert_text(text)
-                
-            page.wait_for_timeout(3000)
-            
-            # Post
-            page.locator("div[aria-label='Post']").click()
-            page.wait_for_timeout(10000)
-            logger.info("[Facebook] Successfully posted via Desktop automation!")
-            context.close()
-            return True
+        res.raise_for_status()
+        logger.info("[Facebook] Successfully posted via Graph API!")
+        return True
     except Exception as e:
-        logger.error(f"[Facebook desktop error] {e}")
+        logger.error(f"[Facebook API error] {e}")
+        # If API fails, we could fallback, but API is way more robust.
         return False
 
 def post_to_instagram(text, media_path, is_story=False):
     META_USERNAME = os.getenv("META_USERNAME")
     META_PASSWORD = os.getenv("META_PASSWORD")
     if not META_USERNAME or not META_PASSWORD:
-        logger.warning("[Instagram Playwright] Skipping - Missing Credentials")
+        logger.warning("[Instagram API] Skipping - Missing Credentials")
         return True
         
     try:
-        from playwright.sync_api import sync_playwright
-        with sync_playwright() as p:
-            context_dir = os.path.join(os.path.dirname(__file__), "playwright_session")
-            context = p.chromium.launch_persistent_context(
-                user_data_dir=context_dir, headless=True, viewport={'width': 1280, 'height': 800}
-            )
-            page = context.new_page()
-            page.goto("https://www.instagram.com/")
-            page.wait_for_timeout(5000)
+        from instagrapi import Client
+        cl = Client()
+        
+        # Configure logging in instagrapi to be less verbose
+        import logging as ig_logging
+        ig_logging.getLogger('instagrapi').setLevel(ig_logging.ERROR)
+        
+        session_file = os.path.join(os.path.dirname(__file__), "ig_session.json")
+        try:
+            if os.path.exists(session_file):
+                cl.load_settings(session_file)
+                cl.login(META_USERNAME, META_PASSWORD)
+            else:
+                cl.login(META_USERNAME, META_PASSWORD)
+                cl.dump_settings(session_file)
+        except Exception as auth_e:
+            # If session is invalid, re-login
+            logger.warning(f"Instagrapi login failed with session, retrying freshly: {auth_e}")
+            cl.login(META_USERNAME, META_PASSWORD, force=True)
+            cl.dump_settings(session_file)
             
-            if page.locator("input[name='username']").is_visible():
-                page.fill("input[name='username']", META_USERNAME)
-                page.fill("input[name='password']", META_PASSWORD)
-                page.locator("button[type='submit']").click()
-                page.wait_for_timeout(10000)
-                
-            # Handle "Save info" dialog or "Turn on Notifications"
-            if page.locator("button:has-text('Not Now')").is_visible():
-                page.locator("button:has-text('Not Now')").click()
-                page.wait_for_timeout(3000)
-            if page.locator("button:has-text('Not Now')").is_visible():
-                page.locator("button:has-text('Not Now')").click()
-                page.wait_for_timeout(3000)
-                
-            if "challenge" in page.url:
-                logger.error("[Instagram] Web challenge triggered. Needs manual approval.")
-                context.close()
-                return False
-
-            if is_story:
-                logger.warning("[Instagram] Playwright Story upload skipped on desktop.")
-                context.close()
-                return True
-                
-            try:
-                # Desktop sidebar New Post
-                try:
-                    page.locator("svg[aria-label='New post'], svg[aria-label='New Post']").first.locator("..").click(timeout=10000)
-                except:
-                    page.evaluate("() => { const el = Array.from(document.querySelectorAll('svg')).find(e => e.getAttribute('aria-label') && e.getAttribute('aria-label').toLowerCase().includes('new post')); if(el) el.closest('a, div[role=\"button\"], button').click(); }")
-                
-                page.wait_for_timeout(3000)
-                
-                # File upload
-                page.locator("input[type='file']").first.set_input_files(media_path)
-                page.wait_for_timeout(3000)
-                
-                # Next -> Next
-                page.locator("div[role='button']:has-text('Next')").click()
-                page.wait_for_timeout(2000)
-                page.locator("div[role='button']:has-text('Next')").click()
-                page.wait_for_timeout(2000)
-                
-                # Fill caption
-                page.locator("div[aria-label='Write a caption...']").fill(text)
-                
-                # Share
-                page.locator("div[role='button']:has-text('Share')").click()
-                page.wait_for_timeout(15000)
-                
-                logger.info("[Instagram] Successfully posted via Desktop web automation!")
-                context.close()
-                return True
-            except Exception as e:
-                logger.error(f"[Instagram desktop upload error] {e}")
-                context.close()
-                return False
+        if is_story:
+            if str(media_path).endswith('.mp4'):
+                cl.video_upload_to_story(media_path)
+            else:
+                cl.photo_upload_to_story(media_path)
+            logger.info("[Instagram] Story successfully posted via Instagrapi!")
+        else:
+            if str(media_path).endswith('.mp4'):
+                cl.video_upload(media_path, text)
+            else:
+                cl.photo_upload(media_path, text)
+            logger.info("[Instagram] Feed successfully posted via Instagrapi!")
+            
+        return True
     except Exception as e:
-        logger.error(f"[Instagram] Exception: {e}")
+        if "challenge" in str(e).lower() or "login_required" in str(e).lower():
+            logger.error("[Instagram] Account challenge triggered. Manual intervention required.")
+        else:
+            logger.error(f"[Instagram API error] {e}")
         return False
 
 def execute_broadcast():
