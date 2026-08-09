@@ -10,8 +10,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google import genai
 
-# Import our new Video Generator (Assumed existing in same dir)
-from video_generator import generate_kaarya_video
+
 
 # Load environment variables
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))

@@ -10,6 +10,8 @@ on:
 jobs:
   broadcast:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -20,6 +22,17 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+
+      - name: Cache Sessions and State
+        uses: actions/cache@v3
+        with:
+          path: |
+            backend/scripts/social_state.json
+            backend/scripts/ig_session.json
+            backend/scripts/playwright_session
+          key: social-engine-state-${{ github.run_id }}
+          restore-keys: |
+            social-engine-state-
 
       - name: Install Python dependencies
         run: |
@@ -49,3 +62,11 @@ jobs:
         run: |
           cd backend
           python scripts/social_automation.py
+
+      - name: Save State to Repository
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add backend/scripts/social_state.json
+          git commit -m "chore: auto-update social state [skip ci]" || echo "No changes to commit"
+          git push
