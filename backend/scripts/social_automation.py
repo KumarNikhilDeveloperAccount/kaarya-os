@@ -207,196 +207,109 @@ def post_to_facebook(text, media_path=None, media_type="image"):
             )
             page = context.new_page()
             
-            # Use m.facebook.com for a much simpler, predictable DOM that rarely breaks
-            page.goto("https://m.facebook.com/")
+            # Navigate to basic mobile site to bypass complex react DOM
+            page.goto("https://mbasic.facebook.com/")
             
             if page.locator("input[name='email']").is_visible():
                 page.fill("input[name='email']", META_USERNAME)
                 page.fill("input[name='pass']", META_PASSWORD)
-                page.keyboard.press('Enter')
+                page.locator("input[name='login']").click()
                 page.wait_for_load_state("networkidle")
-                if page.locator("input[name='email']").is_visible():
-                    return False
             
-            page.goto("https://m.facebook.com/kaaryaos")
+            # Sometimes it asks to save device, click Ok or Not Now
+            if page.locator("input[value='OK']").is_visible():
+                page.locator("input[value='OK']").click()
+                
+            page.goto("https://mbasic.facebook.com/kaaryaos")
             page.wait_for_load_state("networkidle")
             
+            # mbasic layout is raw HTML
             try:
-                # Click 'Write something' or 'Post' on mobile view
-                page.locator("div:has-text('Write something')").last.click(timeout=5000)
-            except:
-                try:
-                    page.get_by_role("button", name="Write something").click(timeout=5000)
-                except:
-                    page.evaluate("() => { const el = Array.from(document.querySelectorAll('*')).find(e => e.innerText && (e.innerText.includes('Write something') || e.innerText.includes('Create a post'))); if(el) el.click(); }")
-            
-            page.wait_for_timeout(3000)
-            
-            # Fill text
-            try:
-                page.locator("textarea").first.fill(text)
-            except:
-                page.keyboard.insert_text(text)
-            
-            if media_path:
-                try:
-                    # In m.facebook, we can usually just set input files
-                    page.locator("input[type='file'][accept*='image'], input[type='file'][accept*='video']").first.set_input_files(media_path, timeout=5000)
-                except:
-                    try:
-                        with page.expect_file_chooser(timeout=10000) as fc_info:
-                            page.get_by_role("button", name="Photo/video").click()
-                        file_chooser = fc_info.value
-                        file_chooser.set_files(media_path)
-                    except:
-                        # Fallback injection
-                        page.evaluate("() => { const el = Array.from(document.querySelectorAll('div, span, [aria-label]')).find(e => e.getAttribute('aria-label') && (e.getAttribute('aria-label').includes('Photo/video') || e.getAttribute('aria-label').includes('Photo'))); if(el) el.click(); }")
-                        page.locator("input[type='file']").first.set_input_files(media_path, timeout=5000)
+                page.fill("textarea[name='xc_message']", text)
+                if media_path:
+                    # Click Photo button
+                    page.locator("input[value='Photo']").click()
+                    page.wait_for_load_state("networkidle")
+                    page.locator("input[type='file']").set_input_files(media_path)
+                    page.locator("input[name='add_photo_done']").click()
+                    page.wait_for_load_state("networkidle")
+                    # Caption again in case it resets
+                    if page.locator("textarea[name='xc_message']").is_visible():
+                        page.fill("textarea[name='xc_message']", text)
                         
-                page.wait_for_timeout(8000)
-                
-            try:
-                page.locator("button:has-text('Post')").first.click(timeout=5000)
-            except:
-                page.evaluate("() => { const el = Array.from(document.querySelectorAll('div, span, [role=\"button\"], button')).find(e => e.getAttribute('aria-label') === 'Post' || (e.innerText && e.innerText.trim() === 'Post')); if(el) el.click(); }")
-                
-            page.wait_for_timeout(8000)
-            logger.info("[Facebook] Successfully posted via browser automation!")
-            context.close()
-            return True
+                page.locator("input[name='view_post']").click()
+                page.wait_for_load_state("networkidle")
+                logger.info("[Facebook] Successfully posted via mbasic automation!")
+                context.close()
+                return True
+            except Exception as e:
+                logger.error(f"[Facebook mbasic error] {e}")
+                context.close()
+                return False
     except Exception as e:
         logger.error(f"[Facebook] Exception: {e}")
         return False
 
-def post_to_linkedin(text, media_path=None):
-    if not all([LINKEDIN_ACCESS_TOKEN, LINKEDIN_URN]):
-        return True
-    try:
-        import requests
-        headers = {"Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}", "X-Restli-Protocol-Version": "2.0.0"}
-        asset = None
-        if media_path:
-            register_url = "https://api.linkedin.com/v2/assets?action=registerUpload"
-            is_video = str(media_path).endswith('.mp4')
-            recipe = "urn:li:digitalmediaRecipe:feedshare-video" if is_video else "urn:li:digitalmediaRecipe:feedshare-image"
-            
-            reg_data = {
-                "registerUploadRequest": {
-                    "recipes": [recipe],
-                    "owner": f"urn:li:organization:{LINKEDIN_URN}",
-                    "serviceRelationships": [{"relationshipType": "OWNER", "identifier": "urn:li:userGeneratedContent"}]
-                }
-            }
-            reg_res = requests.post(register_url, headers={**headers, "Content-Type": "application/json"}, json=reg_data)
-            if reg_res.status_code == 200:
-                reg_json = reg_res.json()
-                upload_url = reg_json['value']['uploadMechanism']['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']['uploadUrl']
-                asset = reg_json['value']['asset']
-                with open(media_path, 'rb') as f:
-                    image_data = f.read()
-                upload_res = requests.put(upload_url, headers={"Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}", "Content-Type": "application/octet-stream"}, data=image_data)
-                upload_res.raise_for_status()
-
-        post_url = "https://api.linkedin.com/v2/ugcPosts"
-        media_cat = "VIDEO" if is_video else "IMAGE"
-        post_data = {
-            "author": f"urn:li:organization:{LINKEDIN_URN}",
-            "lifecycleState": "PUBLISHED",
-            "specificContent": {
-                "com.linkedin.ugc.ShareContent": {
-                    "shareCommentary": {"text": text},
-                    "shareMediaCategory": media_cat if asset else "NONE",
-                    "media": [{"status": "READY", "media": asset}] if asset else []
-                }
-            },
-            "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"}
-        }
-        res = requests.post(post_url, headers={**headers, "Content-Type": "application/json"}, json=post_data)
-        res.raise_for_status()
-        logger.info("[LinkedIn] Successfully posted.")
-        return True
-    except Exception as e:
-        if "DUPLICATE_POST" in str(e):
-            logger.warning("[LinkedIn] Gracefully skipping due to DUPLICATE_POST.")
-            return True # Don't block retries for this
-        logger.error(f"[LinkedIn] Failed: {e}")
-        return False
-
-def challenge_code_handler(username, choice):
-    import imaplib
-    import email
-    import re
-    import time
-    logger.info("Challenge required. Fetching code from email...")
-    if choice != 2:
-        return False
-    time.sleep(15) # Wait for email to arrive
-    try:
-        mail = imaplib.IMAP4_SSL("imap.gmail.com") # Corrected to imap.gmail.com
-        mail.login(SMTP_USER, SMTP_PASSWORD)
-        mail.select("inbox")
-        status, messages = mail.search(None, 'ALL')
-        email_ids = messages[0].split()
-        if not email_ids:
-            return False
-        # Search the last 5 emails
-        for e_id in reversed(email_ids[-5:]):
-            status, msg_data = mail.fetch(e_id, '(RFC822)')
-            for response_part in msg_data:
-                if isinstance(response_part, tuple):
-                    msg = email.message_from_bytes(response_part[1])
-                    if "Instagram" in str(msg.get("From", "")):
-                        body = ""
-                        if msg.is_multipart():
-                            for part in msg.walk():
-                                if part.get_content_type() == "text/plain":
-                                    body = part.get_payload(decode=True).decode()
-                                    break
-                        else:
-                            body = msg.get_payload(decode=True).decode()
-                        match = re.search(r'\\b(\\d{6})\\b', body)
-                        if match:
-                            code = match.group(1)
-                            logger.info(f"Successfully extracted challenge code: {code}")
-                            return code
-    except Exception as e:
-        logger.error(f"Failed to fetch challenge code: {e}")
-    return False
-
 def post_to_instagram(text, media_path, is_story=False):
-    from instagrapi import Client
     META_USERNAME = os.getenv("META_USERNAME")
     META_PASSWORD = os.getenv("META_PASSWORD")
-    if not all([META_USERNAME, META_PASSWORD]):
+    if not META_USERNAME or not META_PASSWORD:
+        logger.warning("[Instagram Playwright] Skipping - Missing Credentials")
         return True
         
-    cl = Client()
-    # Configure challenge handler
-    cl.challenge_code_handler = challenge_code_handler
-    
     try:
-        session_file = os.path.join(os.path.dirname(__file__), "ig_session.json")
-        if os.path.exists(session_file):
-            cl.load_settings(session_file)
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context_dir = os.path.join(os.path.dirname(__file__), "playwright_session")
+            context = p.chromium.launch_persistent_context(
+                user_data_dir=context_dir, headless=True, viewport={'width': 400, 'height': 800}, user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1"
+            )
+            page = context.new_page()
+            page.goto("https://www.instagram.com/")
+            page.wait_for_timeout(3000)
             
-        cl.login(META_USERNAME, META_PASSWORD)
-        cl.dump_settings(session_file)
-        
-        is_video = str(media_path).endswith('.mp4')
-        
-        if is_story:
-            if is_video:
-                cl.video_upload_to_story(media_path)
-            else:
-                cl.photo_upload_to_story(media_path)
-        else:
-            if is_video:
-                cl.video_upload(media_path, text)
-            else:
-                cl.photo_upload(media_path, text)
+            if page.locator("input[name='username']").is_visible():
+                page.fill("input[name='username']", META_USERNAME)
+                page.fill("input[name='password']", META_PASSWORD)
+                page.locator("button[type='submit']").click()
+                page.wait_for_timeout(8000)
                 
-        logger.info("[Instagram] Successfully posted.")
-        return True
+            # Handle "Save info" dialog
+            if page.locator("button:has-text('Not Now')").is_visible():
+                page.locator("button:has-text('Not Now')").click()
+                page.wait_for_timeout(2000)
+                
+            # Check if blocked or challenged
+            if "challenge" in page.url:
+                logger.error("[Instagram] Web challenge triggered. Requires manual device approval.")
+                context.close()
+                return False
+
+            if is_story:
+                logger.warning("[Instagram] Playwright Story upload not natively supported easily on web. Skipping story.")
+                context.close()
+                return True
+                
+            # Upload Post (Mobile Web View)
+            try:
+                page.locator("svg[aria-label='New post']").locator("..").click()
+                page.wait_for_timeout(2000)
+                page.locator("input[type='file']").set_input_files(media_path)
+                page.wait_for_timeout(3000)
+                page.locator("button:has-text('Next')").click()
+                page.wait_for_timeout(2000)
+                # Fill caption
+                page.locator("textarea[aria-label='Write a caption...']").fill(text)
+                page.locator("button:has-text('Share')").click()
+                page.wait_for_timeout(8000)
+                logger.info("[Instagram] Successfully posted via web automation!")
+                context.close()
+                return True
+            except Exception as e:
+                logger.error(f"[Instagram web upload error] {e}")
+                context.close()
+                return False
     except Exception as e:
         logger.error(f"[Instagram] Exception: {e}")
         return False
