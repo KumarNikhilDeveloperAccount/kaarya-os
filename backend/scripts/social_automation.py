@@ -332,7 +332,7 @@ def challenge_code_handler(username, choice):
         return False
     time.sleep(15) # Wait for email to arrive
     try:
-        mail = imaplib.IMAP4_SSL("smtp.gmail.com") # Using same host logic, wait imap is usually imap.gmail.com
+        mail = imaplib.IMAP4_SSL("imap.gmail.com") # Corrected to imap.gmail.com
         mail.login(SMTP_USER, SMTP_PASSWORD)
         mail.select("inbox")
         status, messages = mail.search(None, 'ALL')
