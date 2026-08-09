@@ -253,7 +253,6 @@ def post_to_facebook(text, media_path=None, media_type="image"):
         
     try:
         from playwright.sync_api import sync_playwright
-        import os
         debug_dir = os.path.join(os.path.dirname(__file__), "debug")
         os.makedirs(debug_dir, exist_ok=True)
         
@@ -337,7 +336,6 @@ def post_to_instagram(text, media_path, is_story=False):
         
     try:
         from playwright.sync_api import sync_playwright
-        import os
         debug_dir = os.path.join(os.path.dirname(__file__), "debug")
         os.makedirs(debug_dir, exist_ok=True)
         
