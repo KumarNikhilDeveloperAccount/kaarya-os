@@ -190,6 +190,60 @@ def post_to_twitter(text, media_path=None):
         logger.error(f"[Twitter] Failed to post: {e}")
         return False
 
+def post_to_linkedin(text, media_path=None):
+    if not all([LINKEDIN_ACCESS_TOKEN, LINKEDIN_URN]):
+        return True
+    try:
+        import requests
+        headers = {"Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}", "X-Restli-Protocol-Version": "2.0.0"}
+        asset = None
+        if media_path:
+            register_url = "https://api.linkedin.com/v2/assets?action=registerUpload"
+            is_video = str(media_path).endswith('.mp4')
+            recipe = "urn:li:digitalmediaRecipe:feedshare-video" if is_video else "urn:li:digitalmediaRecipe:feedshare-image"
+            
+            reg_data = {
+                "registerUploadRequest": {
+                    "recipes": [recipe],
+                    "owner": f"urn:li:organization:{LINKEDIN_URN}",
+                    "serviceRelationships": [{"relationshipType": "OWNER", "identifier": "urn:li:userGeneratedContent"}]
+                }
+            }
+            reg_res = requests.post(register_url, headers={**headers, "Content-Type": "application/json"}, json=reg_data)
+            if reg_res.status_code == 200:
+                reg_json = reg_res.json()
+                upload_url = reg_json['value']['uploadMechanism']['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']['uploadUrl']
+                asset = reg_json['value']['asset']
+                with open(media_path, 'rb') as f:
+                    image_data = f.read()
+                upload_res = requests.put(upload_url, headers={"Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}", "Content-Type": "application/octet-stream"}, data=image_data)
+                upload_res.raise_for_status()
+
+        post_url = "https://api.linkedin.com/v2/ugcPosts"
+        media_cat = "VIDEO" if is_video else "IMAGE"
+        post_data = {
+            "author": f"urn:li:organization:{LINKEDIN_URN}",
+            "lifecycleState": "PUBLISHED",
+            "specificContent": {
+                "com.linkedin.ugc.ShareContent": {
+                    "shareCommentary": {"text": text},
+                    "shareMediaCategory": media_cat if asset else "NONE",
+                    "media": [{"status": "READY", "media": asset}] if asset else []
+                }
+            },
+            "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"}
+        }
+        res = requests.post(post_url, headers={**headers, "Content-Type": "application/json"}, json=post_data)
+        res.raise_for_status()
+        logger.info("[LinkedIn] Successfully posted.")
+        return True
+    except Exception as e:
+        if "DUPLICATE_POST" in str(e):
+            logger.warning("[LinkedIn] Gracefully skipping due to DUPLICATE_POST.")
+            return True # Don't block retries for this
+        logger.error(f"[LinkedIn] Failed: {e}")
+        return False
+
 def post_to_facebook(text, media_path=None, media_type="image"):
     META_USERNAME = os.getenv("META_USERNAME")
     META_PASSWORD = os.getenv("META_PASSWORD")
@@ -213,7 +267,7 @@ def post_to_facebook(text, media_path=None, media_type="image"):
             if page.locator("input[name='email']").is_visible():
                 page.fill("input[name='email']", META_USERNAME)
                 page.fill("input[name='pass']", META_PASSWORD)
-                page.locator("input[name='login']").click()
+                page.keyboard.press("Enter")
                 page.wait_for_load_state("networkidle")
             
             # Sometimes it asks to save device, click Ok or Not Now
