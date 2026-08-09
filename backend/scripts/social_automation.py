@@ -254,54 +254,65 @@ def post_to_facebook(text, media_path=None, media_type="image"):
     try:
         from playwright.sync_api import sync_playwright
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
             context_dir = os.path.join(os.path.dirname(__file__), "playwright_session")
             context = p.chromium.launch_persistent_context(
                 user_data_dir=context_dir, headless=True, viewport={'width': 1280, 'height': 800}
             )
             page = context.new_page()
-            
-            # Navigate to basic mobile site to bypass complex react DOM
-            page.goto("https://mbasic.facebook.com/")
+            page.goto("https://www.facebook.com/")
+            page.wait_for_timeout(3000)
             
             if page.locator("input[name='email']").is_visible():
                 page.fill("input[name='email']", META_USERNAME)
                 page.fill("input[name='pass']", META_PASSWORD)
-                page.keyboard.press("Enter")
-                page.wait_for_load_state("networkidle")
-            
-            # Sometimes it asks to save device, click Ok or Not Now
-            if page.locator("input[value='OK']").is_visible():
-                page.locator("input[value='OK']").click()
+                page.locator("button[name='login']").click()
+                page.wait_for_timeout(8000)
                 
-            page.goto("https://mbasic.facebook.com/kaaryaos")
-            page.wait_for_load_state("networkidle")
+            # Navigate to Page
+            page.goto("https://www.facebook.com/kaaryaos")
+            page.wait_for_timeout(5000)
             
-            # mbasic layout is raw HTML
+            # Switch to Page Context if prompted
+            if page.locator("div[aria-label='Switch now']").is_visible():
+                page.locator("div[aria-label='Switch now']").click()
+                page.wait_for_timeout(5000)
+                page.goto("https://www.facebook.com/kaaryaos")
+                page.wait_for_timeout(5000)
+                
             try:
-                page.fill("textarea[name='xc_message']", text)
-                if media_path:
-                    # Click Photo button
-                    page.locator("input[value='Photo']").click()
-                    page.wait_for_load_state("networkidle")
-                    page.locator("input[type='file']").set_input_files(media_path)
-                    page.locator("input[name='add_photo_done']").click()
-                    page.wait_for_load_state("networkidle")
-                    # Caption again in case it resets
-                    if page.locator("textarea[name='xc_message']").is_visible():
-                        page.fill("textarea[name='xc_message']", text)
-                        
-                page.locator("input[name='view_post']").click()
-                page.wait_for_load_state("networkidle")
-                logger.info("[Facebook] Successfully posted via mbasic automation!")
-                context.close()
-                return True
-            except Exception as e:
-                logger.error(f"[Facebook mbasic error] {e}")
-                context.close()
-                return False
+                # Click "Photo/video" button
+                photo_btn = page.locator("div:has-text('Photo/video')").last
+                photo_btn.click(timeout=10000)
+            except:
+                try:
+                    page.locator("span:has-text('Photo/video')").first.click(timeout=10000)
+                except:
+                    # Generic post box click
+                    page.locator("div:has-text('Write something')").last.click(timeout=10000)
+            
+            page.wait_for_timeout(3000)
+            
+            # File upload
+            if media_path:
+                page.locator("input[type='file'][accept*='image'], input[type='file'][accept*='video']").first.set_input_files(media_path)
+                page.wait_for_timeout(5000)
+                
+            # Caption
+            try:
+                page.locator("div[aria-label*='Write something'], div[aria-label*='Create a post']").fill(text)
+            except:
+                page.keyboard.insert_text(text)
+                
+            page.wait_for_timeout(3000)
+            
+            # Post
+            page.locator("div[aria-label='Post']").click()
+            page.wait_for_timeout(10000)
+            logger.info("[Facebook] Successfully posted via Desktop automation!")
+            context.close()
+            return True
     except Exception as e:
-        logger.error(f"[Facebook] Exception: {e}")
+        logger.error(f"[Facebook desktop error] {e}")
         return False
 
 def post_to_instagram(text, media_path, is_story=False):
@@ -314,54 +325,69 @@ def post_to_instagram(text, media_path, is_story=False):
     try:
         from playwright.sync_api import sync_playwright
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
             context_dir = os.path.join(os.path.dirname(__file__), "playwright_session")
             context = p.chromium.launch_persistent_context(
-                user_data_dir=context_dir, headless=True, viewport={'width': 400, 'height': 800}, user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1"
+                user_data_dir=context_dir, headless=True, viewport={'width': 1280, 'height': 800}
             )
             page = context.new_page()
             page.goto("https://www.instagram.com/")
-            page.wait_for_timeout(3000)
+            page.wait_for_timeout(5000)
             
             if page.locator("input[name='username']").is_visible():
                 page.fill("input[name='username']", META_USERNAME)
                 page.fill("input[name='password']", META_PASSWORD)
                 page.locator("button[type='submit']").click()
-                page.wait_for_timeout(8000)
+                page.wait_for_timeout(10000)
                 
-            # Handle "Save info" dialog
+            # Handle "Save info" dialog or "Turn on Notifications"
             if page.locator("button:has-text('Not Now')").is_visible():
                 page.locator("button:has-text('Not Now')").click()
-                page.wait_for_timeout(2000)
+                page.wait_for_timeout(3000)
+            if page.locator("button:has-text('Not Now')").is_visible():
+                page.locator("button:has-text('Not Now')").click()
+                page.wait_for_timeout(3000)
                 
-            # Check if blocked or challenged
             if "challenge" in page.url:
-                logger.error("[Instagram] Web challenge triggered. Requires manual device approval.")
+                logger.error("[Instagram] Web challenge triggered. Needs manual approval.")
                 context.close()
                 return False
 
             if is_story:
-                logger.warning("[Instagram] Playwright Story upload not natively supported easily on web. Skipping story.")
+                logger.warning("[Instagram] Playwright Story upload skipped on desktop.")
                 context.close()
                 return True
                 
-            # Upload Post (Mobile Web View)
             try:
-                page.locator("svg[aria-label='New post']").locator("..").click()
-                page.wait_for_timeout(2000)
-                page.locator("input[type='file']").set_input_files(media_path)
+                # Desktop sidebar New Post
+                try:
+                    page.locator("svg[aria-label='New post'], svg[aria-label='New Post']").first.locator("..").click(timeout=10000)
+                except:
+                    page.evaluate("() => { const el = Array.from(document.querySelectorAll('svg')).find(e => e.getAttribute('aria-label') && e.getAttribute('aria-label').toLowerCase().includes('new post')); if(el) el.closest('a, div[role=\"button\"], button').click(); }")
+                
                 page.wait_for_timeout(3000)
-                page.locator("button:has-text('Next')").click()
+                
+                # File upload
+                page.locator("input[type='file']").first.set_input_files(media_path)
+                page.wait_for_timeout(3000)
+                
+                # Next -> Next
+                page.locator("div[role='button']:has-text('Next')").click()
                 page.wait_for_timeout(2000)
+                page.locator("div[role='button']:has-text('Next')").click()
+                page.wait_for_timeout(2000)
+                
                 # Fill caption
-                page.locator("textarea[aria-label='Write a caption...']").fill(text)
-                page.locator("button:has-text('Share')").click()
-                page.wait_for_timeout(8000)
-                logger.info("[Instagram] Successfully posted via web automation!")
+                page.locator("div[aria-label='Write a caption...']").fill(text)
+                
+                # Share
+                page.locator("div[role='button']:has-text('Share')").click()
+                page.wait_for_timeout(15000)
+                
+                logger.info("[Instagram] Successfully posted via Desktop web automation!")
                 context.close()
                 return True
             except Exception as e:
-                logger.error(f"[Instagram web upload error] {e}")
+                logger.error(f"[Instagram desktop upload error] {e}")
                 context.close()
                 return False
     except Exception as e:
