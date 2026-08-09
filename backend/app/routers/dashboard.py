@@ -42,13 +42,26 @@ def get_company_stats(
             "resume_url": app.candidate.resume_data.get("resume_url") if app.candidate.resume_data else None
         })
 
+    # Cohort Analysis: Funnel metrics
+    vetted_count = db.query(models.Application).filter(models.Application.job_id.in_(job_ids) if job_ids else False, models.Application.status.in_(["tech_round", "hired", "rejected"])).count()
+    interviewed_count = db.query(models.Application).filter(models.Application.job_id.in_(job_ids) if job_ids else False, models.Application.status.in_(["hired", "rejected"])).count()
+    hired_count = db.query(models.Application).filter(models.Application.job_id.in_(job_ids) if job_ids else False, models.Application.status == "hired").count()
+
+    funnel = {
+        "applied": total_apps,
+        "vetted": vetted_count,
+        "interviewed": interviewed_count,
+        "hired": hired_count
+    }
+
     return {
         "stats": {
             "active_jobs": len(jobs),
             "new_applicants": total_apps,
             "hiring_speed": "4.2d" # Placeholder for dynamic metric
         },
-        "recent_candidates": formatted_candidates
+        "recent_candidates": formatted_candidates,
+        "cohort_funnel": funnel
     }
 
 @router.get("/interviewer")
