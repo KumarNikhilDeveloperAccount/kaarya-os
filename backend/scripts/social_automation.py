@@ -245,86 +245,44 @@ def post_to_linkedin(text, media_path=None):
         return False
 
 def post_to_facebook(text, media_path=None, media_type="image"):
-    META_USERNAME = os.getenv("META_USERNAME")
-    META_PASSWORD = os.getenv("META_PASSWORD")
-    if not META_USERNAME or not META_PASSWORD:
-        logger.warning("[Facebook Playwright] Skipping - Missing Credentials")
+    FACEBOOK_PAGE_TOKEN = os.getenv("FACEBOOK_PAGE_TOKEN")
+    if not FACEBOOK_PAGE_TOKEN:
+        logger.warning("[Facebook API] Skipping - Missing FACEBOOK_PAGE_TOKEN")
         return True
         
     try:
-        from playwright.sync_api import sync_playwright
-        debug_dir = os.path.join(os.path.dirname(__file__), "debug")
-        os.makedirs(debug_dir, exist_ok=True)
-        
-        with sync_playwright() as p:
-            context_dir = os.path.join(os.path.dirname(__file__), "playwright_session")
-            context = p.chromium.launch_persistent_context(
-                user_data_dir=context_dir, headless=True, viewport={'width': 1280, 'height': 800}
-            )
-            page = context.new_page()
-            page.goto("https://www.facebook.com/")
-            page.wait_for_timeout(3000)
+        import requests
+        if media_path and media_type == "image":
+            url = f"https://graph.facebook.com/v19.0/me/photos"
+            data = {
+                "message": text,
+                "access_token": FACEBOOK_PAGE_TOKEN
+            }
+            with open(media_path, "rb") as f:
+                files = {"source": f}
+                res = requests.post(url, data=data, files=files)
+        elif media_path and media_type == "video":
+            url = f"https://graph.facebook.com/v19.0/me/videos"
+            data = {
+                "description": text,
+                "access_token": FACEBOOK_PAGE_TOKEN
+            }
+            with open(media_path, "rb") as f:
+                files = {"source": f}
+                res = requests.post(url, data=data, files=files)
+        else:
+            url = f"https://graph.facebook.com/v19.0/me/feed"
+            data = {
+                "message": text,
+                "access_token": FACEBOOK_PAGE_TOKEN
+            }
+            res = requests.post(url, data=data)
             
-            if page.locator("input[name='email']").is_visible():
-                page.fill("input[name='email']", META_USERNAME)
-                page.fill("input[name='pass']", META_PASSWORD)
-                page.locator("button[name='login']").click()
-                page.wait_for_timeout(8000)
-                
-            page.screenshot(path=os.path.join(debug_dir, "fb_after_login.png"))
-            
-            # Navigate to Page
-            page.goto("https://www.facebook.com/kaaryaos")
-            page.wait_for_timeout(5000)
-            
-            # Switch to Page Context if prompted
-            if page.locator("div[aria-label='Switch now']").is_visible():
-                page.locator("div[aria-label='Switch now']").click()
-                page.wait_for_timeout(5000)
-                page.goto("https://www.facebook.com/kaaryaos")
-                page.wait_for_timeout(5000)
-                
-            page.screenshot(path=os.path.join(debug_dir, "fb_on_page.png"))
-            
-            # Click "Photo/video" button
-            try:
-                page.evaluate("() => { const spans = Array.from(document.querySelectorAll('span')); const photoSpan = spans.find(s => s.textContent.includes('Photo/video')); if(photoSpan) photoSpan.click(); else { const divs = Array.from(document.querySelectorAll('div')); const createPost = divs.find(d => d.getAttribute('aria-label') && d.getAttribute('aria-label').includes('Create a post')); if(createPost) createPost.click(); } }")
-            except:
-                pass
-                
-            page.wait_for_timeout(5000)
-            page.screenshot(path=os.path.join(debug_dir, "fb_post_modal.png"))
-            
-            # File upload
-            if media_path:
-                try:
-                    page.locator("input[type='file']").first.set_input_files(media_path)
-                except Exception as e:
-                    logger.error(f"[FB] File input failed: {e}")
-                    page.screenshot(path=os.path.join(debug_dir, "fb_file_input_fail.png"))
-                page.wait_for_timeout(5000)
-                
-            # Caption
-            try:
-                page.evaluate(f"() => {{ document.execCommand('insertText', false, '{text}'); }}")
-            except:
-                page.keyboard.insert_text(text)
-                
-            page.wait_for_timeout(3000)
-            page.screenshot(path=os.path.join(debug_dir, "fb_before_post.png"))
-            
-            # Post
-            try:
-                page.locator("div[aria-label='Post']").first.click(timeout=10000)
-            except:
-                page.evaluate("() => { const el = document.querySelector('div[aria-label=\"Post\"]'); if(el) el.click(); }")
-                
-            page.wait_for_timeout(10000)
-            logger.info("[Facebook] Successfully posted via Desktop automation!")
-            context.close()
-            return True
+        res.raise_for_status()
+        logger.info("[Facebook] Successfully posted via Graph API!")
+        return True
     except Exception as e:
-        logger.error(f"[Facebook desktop error] {e}")
+        logger.error(f"[Facebook API error] {e}")
         return False
 
 def post_to_instagram(text, media_path, is_story=False):
